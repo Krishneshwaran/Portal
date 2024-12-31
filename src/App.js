@@ -71,7 +71,7 @@ function App() {
     <Router>
       <Routes>
         {/* General Home */}
-        <Route path="/" element={<GeneralHome />} />
+        <Route path="/" element={<StudentLogin onLogin={setStudentId} />}/>
 
         {/* Student Routes */}
         <Route path="/StudentRegister" element={<StudentRegister />} />
