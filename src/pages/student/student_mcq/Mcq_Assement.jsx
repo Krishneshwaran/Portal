@@ -1,231 +1,3 @@
-// import React, { useState, useEffect, useRef } from "react";
-// import { useParams, useNavigate } from "react-router-dom";
-// import axios from "axios";
-// import Header from "../../../components/staff/mcq/Header";
-// import Question from "../../../components/staff/mcq/Question";
-// import Sidebar from "../../../components/staff/mcq/Sidebar";
-
-// export default function Mcq_Assessment() {
-//   const { contestId } = useParams(); // Get contestId from the URL
-//   const studentId = localStorage.getItem("studentId")
-//   const navigate = useNavigate();
-//   const [questions, setQuestions] = useState([]);
-//   const [selectedAnswers, setSelectedAnswers] = useState({});
-//   const [reviewStatus, setReviewStatus] = useState({});
-//   const [currentIndex, setCurrentIndex] = useState(0);
-//   const [loading, setLoading] = useState(true);
-//   const [duration, setDuration] = useState(0);
-//   const [fullScreenMode, setFullScreenMode] = useState(false);
-//   const [fullscreenWarnings, setFullscreenWarnings] = useState(0); // Track warnings
-//   const [isTestFinished, setIsTestFinished] = useState(false); // Track if the test is finished
-//   const mediaStreamRef = useRef(null);
-
-//   // Fetch questions from backend
-//   useEffect(() => {
-//     const fetchQuestions = async () => {
-//       try {
-//         const response = await axios.get(
-//           `https://vercel-1bge.onrender.com/api/mcq/get_mcqquestions/${contestId}`
-//         );
-//         setQuestions(response.data.questions);
-//         const { hours, minutes } = response.data.duration;
-//         setDuration((parseInt(hours) * 3600) + (parseInt(minutes) * 60)); // Convert duration to seconds
-
-//         // Fetch fullscreen mode setting from localStorage
-//         const storedFullScreenMode = JSON.parse(localStorage.getItem(`fullScreenMode_${contestId}`));
-//         setFullScreenMode(storedFullScreenMode !== null ? storedFullScreenMode : true); // Default to true if not set
-
-//         setFullscreenWarnings(Number(localStorage.getItem(`fullscreenWarnings_${studentId}`)) || 0); // Get previous warnings count for student
-//         setLoading(false);
-//       } catch (error) {
-//         console.error("Error fetching questions:", error);
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchQuestions();
-//   }, [contestId, studentId]);
-
-//   const handleAnswerSelect = (index, answer) => {
-//     setSelectedAnswers((prev) => ({ ...prev, [index]: answer }));
-//   };
-
-//   const handleReviewMark = (index) => {
-//     setReviewStatus((prev) => ({
-//       ...prev,
-//       [index]: !prev[index],
-//     }));
-//   };
-
-//   useEffect(() => {
-//     const goFullScreen = async () => {
-//       try {
-//         if (fullScreenMode && !isTestFinished) { // Check if fullscreen is allowed and the test is not finished
-//           if (document.documentElement.requestFullscreen) {
-//             await document.documentElement.requestFullscreen();
-//           } else if (document.documentElement.webkitRequestFullscreen) {
-//             await document.documentElement.webkitRequestFullscreen();
-//           } else if (document.documentElement.mozRequestFullScreen) {
-//             await document.documentElement.mozRequestFullScreen();
-//           } else if (document.documentElement.msRequestFullscreen) {
-//             await document.documentElement.msRequestFullscreen();
-//           }
-//         }
-//       } catch (error) {
-//         console.error("Error entering fullscreen mode:", error);
-//       }
-//     };
-
-//     const exitFullScreen = () => {
-//       if (!isTestFinished) { // Only trigger warning if test is not finished
-//         if (
-//           document.fullscreenElement || 
-//           document.webkitFullscreenElement || 
-//           document.mozFullScreenElement || 
-//           document.msFullscreenElement
-//         ) {
-//           if (document.exitFullscreen) {
-//             document.exitFullscreen();
-//           } else if (document.webkitExitFullscreen) {
-//             document.webkitExitFullscreen();
-//           } else if (document.mozCancelFullScreen) {
-//             document.mozCancelFullScreen();
-//           } else if (document.msExitFullscreen) {
-//             document.msExitFullscreen();
-//           }
-
-//           addWarning(); // Add warning only if test is not finished
-//         } else {
-//           console.log("Not in fullscreen mode. Cannot exit.");
-//         }
-//       }
-//     };
-
-//     const addWarning = () => {
-//       let warnings = fullscreenWarnings + 1;
-//       setFullscreenWarnings(warnings);
-//       localStorage.setItem(`fullscreenWarnings_${studentId}`, warnings); // Save warning count with student ID
-//       alert(`Warning ${warnings}: You have switched fullscreen mode.`);
-      
-//       // After the alert, re-enter fullscreen after a small delay
-//       setTimeout(() => {
-//         goFullScreen(); // This ensures the fullscreen request happens after the alert is dismissed
-//       }, 100); // 100ms delay
-//     };
-
-//     // Fullscreen change events
-//     const onFullscreenChange = () => {
-//       const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-//       setFullScreenMode(isFullscreen);
-//       localStorage.setItem(`fullScreenMode_${contestId}`, isFullscreen ? "true" : "false");
-
-//       if (!isFullscreen && !isTestFinished) {
-//         addWarning(); // If exiting fullscreen, increment warning (but not after test completion)
-//       }
-//     };
-
-//     document.addEventListener("fullscreenchange", onFullscreenChange);
-//     document.addEventListener("mozfullscreenchange", onFullscreenChange);
-//     document.addEventListener("webkitfullscreenchange", onFullscreenChange);
-//     document.addEventListener("msfullscreenchange", onFullscreenChange);
-
-//     // Run fullscreen logic when page loads
-//     goFullScreen();
-
-//     // Cleanup event listeners
-//     return () => {
-//       document.removeEventListener("fullscreenchange", onFullscreenChange);
-//       document.removeEventListener("mozfullscreenchange", onFullscreenChange);
-//       document.removeEventListener("webkitfullscreenchange", onFullscreenChange);
-//       document.removeEventListener("msfullscreenchange", onFullscreenChange);
-
-//       if (mediaStreamRef.current) {
-//         mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-//       }
-//     };
-//   }, [fullScreenMode, studentId, contestId, isTestFinished]); // Now dependent on isTestFinished
-
-//   const handleNext = () => {
-//     if (currentIndex < questions.length - 1) {
-//       setCurrentIndex(currentIndex + 1);
-//     }
-//   };
-
-//   const handlePrevious = () => {
-//     if (currentIndex > 0) {
-//       setCurrentIndex(currentIndex - 1);
-//     }
-//   };
-
-//   const handleFinish = async () => {
-//     try {
-//       const payload = {
-//         contestId,
-//         answers: selectedAnswers,
-//         warnings: fullscreenWarnings, // Send cumulative warnings with the test
-//       };
-
-//       const response = await axios.post(
-//         "https://vercel-1bge.onrender.com/api/mcq/submit_assessment/",
-//         payload,
-//         {
-//           headers: {
-//             "Content-Type": "application/json",
-//           },
-//           withCredentials: true,
-//         }
-//       );
-//       if (response.status === 200) {
-//         navigate('/studentdashboard');
-//       }
-
-//       console.log("Test submitted successfully:", response.data);
-//       alert("Test submitted successfully!");
-
-//       // Mark the test as finished
-//       setIsTestFinished(true); // Disable fullscreen warnings after test is finished
-//     } catch (error) {
-//       console.error("Error submitting test:", error);
-//       alert("Failed to submit the test.");
-//     }
-//   };
-
-//   if (loading) {
-//     return <div>Loading questions...</div>;
-//   }
-
-//   if (!questions.length) {
-//     return <div>No questions available.</div>;
-//   }
-
-//   return (
-//     <div className="w-full min-h-screen bg-white rounded-[21px] p-8">
-//       <Header duration={duration} />
-//       <div className="flex gap-8">
-//         <Question
-//           question={questions[currentIndex]}
-//           currentIndex={currentIndex}
-//           totalQuestions={questions.length}
-//           onNext={handleNext}
-//           onPrevious={handlePrevious}
-//           onFinish={handleFinish}
-//           onAnswerSelect={handleAnswerSelect}
-//           selectedAnswers={selectedAnswers}
-//           onReviewMark={handleReviewMark}
-//         />
-
-//         <Sidebar
-//           totalQuestions={questions.length}
-//           currentIndex={currentIndex}
-//           selectedAnswers={selectedAnswers}
-//           reviewStatus={reviewStatus}
-//           onQuestionClick={(index) => setCurrentIndex(index - 1)}
-//         />
-//       </div>
-//     </div>
-//   );
-// }
-
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -235,7 +7,7 @@ import Sidebar from "../../../components/staff/mcq/Sidebar";
 
 export default function Mcq_Assessment() {
   const { contestId } = useParams();
-  const studentId = localStorage.getItem("studentId");
+  const studentId = sessionStorage.getItem("studentId");
   const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
   const [selectedAnswers, setSelectedAnswers] = useState({});
@@ -249,6 +21,8 @@ export default function Mcq_Assessment() {
   const [showWarningModal, setShowWarningModal] = useState(false);
   const mediaStreamRef = useRef(null);
   const [remainingTime, setRemainingTime] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -261,19 +35,19 @@ export default function Mcq_Assessment() {
         const totalDuration = parseInt(hours) * 3600 + parseInt(minutes) * 60;
         setDuration(totalDuration);
 
-        const storedFullScreenMode = JSON.parse(localStorage.getItem(`fullScreenMode_${contestId}`));
+        const storedFullScreenMode = JSON.parse(sessionStorage.getItem(`fullScreenMode_${contestId}`));
         setFullScreenMode(storedFullScreenMode !== null ? storedFullScreenMode : true);
 
         setFullscreenWarnings(
-          Number(localStorage.getItem(`fullscreenWarnings_${studentId}`)) || 0
+          Number(sessionStorage.getItem(`fullscreenWarnings_${studentId}`)) || 0
         );
 
-        const startTime = localStorage.getItem(`startTime_${contestId}`);
+        const startTime = sessionStorage.getItem(`startTime_${contestId}`);
         if (startTime) {
           const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
           setRemainingTime(totalDuration - elapsedTime);
         } else {
-          localStorage.setItem(`startTime_${contestId}`, Date.now());
+          sessionStorage.setItem(`startTime_${contestId}`, Date.now());
           setRemainingTime(totalDuration);
         }
 
@@ -320,7 +94,7 @@ export default function Mcq_Assessment() {
     const addWarning = () => {
       let warnings = fullscreenWarnings + 1;
       setFullscreenWarnings(warnings);
-      localStorage.setItem(`fullscreenWarnings_${studentId}`, warnings);
+      sessionStorage.setItem(`fullscreenWarnings_${studentId}`, warnings);
       setShowWarningModal(true);
     };
 
@@ -331,7 +105,7 @@ export default function Mcq_Assessment() {
         document.mozFullScreenElement ||
         document.msFullscreenElement;
       setFullScreenMode(isFullscreen);
-      localStorage.setItem(
+      sessionStorage.setItem(
         `fullScreenMode_${contestId}`,
         isFullscreen ? "true" : "false"
       );
@@ -446,75 +220,131 @@ export default function Mcq_Assessment() {
   }, [remainingTime]);
 
   if (loading) {
-    return <div>Loading questions...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="bg-white p-8 rounded-lg shadow-md text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-lg text-gray-700">Loading questions...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!questions.length) {
-    return <div>No questions available.</div>;
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="bg-white p-8 rounded-lg shadow-md text-center">
+          <p className="text-xl text-gray-700 mb-4">No questions available</p>
+          <button
+            onClick={() => navigate("/studentdashboard")}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="w-full min-h-screen bg-white rounded-[21px] p-8 no-select" style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}>
-      <Header duration={remainingTime} />
-      <div className="flex gap-8">
-        <Question
-          question={questions[currentIndex]}
-          currentIndex={currentIndex}
-          totalQuestions={questions.length}
-          onNext={handleNext}
-          onPrevious={handlePrevious}
-          onFinish={handleFinish}
-          onAnswerSelect={handleAnswerSelect}
-          selectedAnswers={selectedAnswers}
-          onReviewMark={handleReviewMark}
-        />
-
-        <Sidebar
-          totalQuestions={questions.length}
-          currentIndex={currentIndex}
-          selectedAnswers={selectedAnswers}
-          reviewStatus={reviewStatus}
-          onQuestionClick={(index) => setCurrentIndex(index - 1)}
-        />
-      </div>
-
-      <div className="watermark" style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        pointerEvents: 'none',
-        background: 'rgba(0, 0, 0, 0.1)',
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'rgba(255, 255, 255, 0.5)',
-        fontSize: '50px',
-        fontWeight: 'bold',
-        textTransform: 'uppercase',
-        transform: 'rotate(-45deg)',
-        opacity: 0.1,
-      }}>
-        SNSGROUPS
-      </div>
-
-      {showWarningModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg text-center">
-            <p className="text-lg">
-              <span className="font-bold">Warning:{fullscreenWarnings}</span>: You have exited fullscreen mode. Please return to fullscreen to continue the test.
-            </p>
-            <button
-              className="mt-6 bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
-              onClick={handleFullscreenReEntry}
-            >
-              OK
-            </button>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-[1800px] max-h-[1540px] mx-auto p-7 sm:p-6">
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden mt-12">
+          <div className="border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
+            <Header duration={remainingTime} />
+          </div>
+          <div className="flex flex-col lg:flex-row gap-6 p-6 min-h-[750px] mt-7">
+            <div className="flex-grow">
+              <Question
+                question={questions[currentIndex]}
+                currentIndex={currentIndex}
+                totalQuestions={questions.length}
+                onNext={handleNext}
+                onPrevious={handlePrevious}
+                onFinish={() => setShowConfirmModal(true)}
+                onAnswerSelect={handleAnswerSelect}
+                selectedAnswers={selectedAnswers}
+                onReviewMark={handleReviewMark}
+                reviewStatus={reviewStatus}
+              />
+            </div>
+            <div className="lg:w-80">
+              <div className="sticky top-6">
+                <Sidebar
+                  totalQuestions={questions.length}
+                  currentIndex={currentIndex}
+                  selectedAnswers={selectedAnswers}
+                  reviewStatus={reviewStatus}
+                  onQuestionClick={(index) => setCurrentIndex(index)}
+                />
+              </div>
+            </div>
           </div>
         </div>
-      )}
+        <div className="fixed inset-0 pointer-events-none z-[5] flex items-center justify-center">
+          <div className="transform -rotate-45 text-gray-200 text-[72px] font-bold opacity-30">
+            SNSGROUPS
+          </div>
+        </div>
+        <div className="fixed inset-0 pointer-events-none z-[5] flex items-center justify-center">
+          <div className="transform rotate-45 text-gray-200 text-[72px] font-bold opacity-30">
+            SNSGROUPS
+          </div>
+        </div>
+        {showWarningModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
+              <div className="text-red-600 mb-4">
+                <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-center mb-4">
+                Warning #{fullscreenWarnings}
+              </h3>
+              <p className="text-gray-600 text-center mb-6">
+                You have exited fullscreen mode. Please return to fullscreen to continue the test.
+              </p>
+              <button
+                onClick={handleFullscreenReEntry}
+                className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Return to Fullscreen
+              </button>
+            </div>
+          </div>
+        )}
+        {showConfirmModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
+              <h3 className="text-xl font-semibold text-center mb-4">
+                Submit Assessment
+              </h3>
+              <p className="text-gray-600 text-center mb-6">
+                Are you sure you want to submit your assessment? This action cannot be undone.
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="flex-1 py-3 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    handleFinish();
+                  }}
+                  className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Submitting...' : 'Confirm Submit'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
