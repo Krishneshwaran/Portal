@@ -297,7 +297,7 @@ const TestInstructions = () => {
             </div>
 
             {/* Start Button */}
-            <div className="mt-10">
+            <div className="mt-10 flex justify-end">
               <button
                 onClick={handleStartTest}
                 disabled={loading}
