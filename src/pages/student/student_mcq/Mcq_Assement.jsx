@@ -204,17 +204,32 @@ export default function Mcq_Assessment() {
   };
 
   useEffect(() => {
-  if (remainingTime > 0) {
-    const interval = setInterval(() => {
-      setRemainingTime((prevTime) => Math.max(prevTime - 1, 0));
-    }, 1000);
+    if (remainingTime > 0) {
+      const interval = setInterval(() => {
+        setRemainingTime((prevTime) => Math.max(prevTime - 1, 0));
+      }, 1000);
 
-    return () => clearInterval(interval);
-  }
-}, [remainingTime]);
+      return () => clearInterval(interval);
+    }
+  }, [remainingTime]);
 
-  
+  useEffect(() => {
+    const disableRightClick = (e) => {
+      e.preventDefault();
+    };
 
+    const disableTextSelection = (e) => {
+      e.preventDefault();
+    };
+
+    document.addEventListener("contextmenu", disableRightClick);
+    document.addEventListener("selectstart", disableTextSelection);
+
+    return () => {
+      document.removeEventListener("contextmenu", disableRightClick);
+      document.removeEventListener("selectstart", disableTextSelection);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -244,7 +259,7 @@ export default function Mcq_Assessment() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" style={{ userSelect: "none" }}>
       <div className="max-w-[1800px] max-h-[1540px] mx-auto p-7 sm:p-6">
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden mt-12">
           <div className="border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
