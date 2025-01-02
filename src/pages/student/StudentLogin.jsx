@@ -86,7 +86,7 @@ const StudentLogin = ({ onLogin }) => {
           </button>
 
           <div className="mt-4 text-sm text-gray-600 text-center">
-            New student? <Link to="/StudentRegister" className="text-yellow-600 hover:text-yellow-700">Register here</Link>
+            New student? <Link to="/" className="text-yellow-600 hover:text-yellow-700">Register here</Link>
           </div>
         </form>
       </div>
