@@ -213,6 +213,8 @@ export default function Mcq_Assessment() {
   }
 }, [remainingTime]);
 
+  
+
 
   if (loading) {
     return (

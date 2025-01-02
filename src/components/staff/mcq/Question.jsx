@@ -7,15 +7,15 @@ export default function Question({
   onNext,
   onPrevious,
   onFinish,
-  onAnswerSelect, // Callback to update selected answers
-  selectedAnswers, // Current selected answers
-  onReviewMark, // Callback to mark a question for review
-  reviewStatus, // Current review status
+  onAnswerSelect,
+  selectedAnswers,
+  onReviewMark,
+  reviewStatus,
 }) {
   const [selectedOption, setSelectedOption] = useState(
     selectedAnswers[currentIndex] || null
   );
-  const [showPopup, setShowPopup] = useState(false); // State for showing the popup
+  const [showPopup, setShowPopup] = useState(false);
   const isMarkedForReview = reviewStatus[currentIndex] || false;
 
   useEffect(() => {
@@ -24,20 +24,20 @@ export default function Question({
 
   const handleOptionSelect = (option) => {
     setSelectedOption(option);
-    onAnswerSelect(currentIndex, option); // Update selected answers in the parent component
+    onAnswerSelect(currentIndex, option);
   };
 
   const handleFinishClick = () => {
-    setShowPopup(true); // Show the popup
+    setShowPopup(true);
   };
 
   const closePopup = () => {
-    setShowPopup(false); // Close the popup
+    setShowPopup(false);
   };
 
   const confirmFinish = () => {
     setShowPopup(false);
-    onFinish(); // Call the parent onFinish function
+    onFinish();
   };
 
   return (
@@ -50,27 +50,27 @@ export default function Question({
           className={`text-sm border rounded-full px-4 py-1 ${
             isMarkedForReview ? "text-white bg-green-500" : "text-red-500 border-red-500"
           }`}
-          onClick={() => onReviewMark(currentIndex)} // Call the review mark callback
+          onClick={() => onReviewMark(currentIndex)}
         >
           {isMarkedForReview ? "Marked for Review" : "Mark for Review"}
         </button>
       </div>
-<div className="border border-black/15 rounded-xl p-8">
-      <p className="text-lg">{question.text}</p>
+      <div className="border border-black/15 rounded-xl p-8">
+        <p className="text-lg font-bold">{question.text}</p>
 
-      <div className="space-y-4 mb-8 mt-5">
-        {question.options.map((option, idx) => (
-          <button
-            key={idx}
-            className={`w-full p-4 text-left border rounded-lg transition-colors ${
-              selectedOption === option ? "border-[#00296b] bg-[#fdc500]" : ""
-            }`}
-            onClick={() => handleOptionSelect(option)}
-          >
-            {option}
-          </button>
-        ))}
-      </div>
+        <div className="space-y-4 mb-8 mt-5">
+          {question.options.map((option, idx) => (
+            <button
+              key={idx}
+              className={`w-full p-4 text-left border rounded-lg transition-colors ${
+                selectedOption === option ? "border-[#00296b] bg-[#fdc500]" : ""
+              }`}
+              onClick={() => handleOptionSelect(option)}
+            >
+              {String.fromCharCode(97 + idx)}) {option}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex justify-between mt-6 mb-20">
