@@ -26,7 +26,7 @@ const Mcq_bulkUpload = () => {
       alert("Please select a valid CSV file.");
       return;
     }
-  
+
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
@@ -34,10 +34,10 @@ const Mcq_bulkUpload = () => {
         const rows = csvText.split("\n").map((row) => row.split(","));
         const headers = rows[0];
         const dataRows = rows.slice(1).filter((row) => row.length > 1);
-  
+
         console.log("Headers:", headers); // Debugging statement
         console.log("Data Rows:", dataRows); // Debugging statement
-  
+
         const formattedQuestions = dataRows.map((row) => ({
           question: row[0]?.replace(/["]/g, ""),
           options: [
@@ -54,9 +54,9 @@ const Mcq_bulkUpload = () => {
           level: "easy", // Default level if not provided
           tags: [], // Default tags if not provided
         }));
-  
+
         console.log("Formatted Questions:", formattedQuestions); // Debugging statement
-  
+
         setQuestions((prevQuestions) => [...prevQuestions, ...formattedQuestions]);
         alert("File uploaded successfully! Preview the questions below.");
       } catch (error) {
@@ -64,20 +64,29 @@ const Mcq_bulkUpload = () => {
         alert(`Error processing file: ${error.message}`);
       }
     };
-  
+
     reader.onerror = (error) => {
       console.error("File reading error:", error);
       alert("Error reading file");
     };
-  
+
     reader.readAsText(file);
   };
-    
-      // Handle Question Selection
+
+  // Handle Question Selection
   const handleSelectQuestion = (index) => {
     setSelectedQuestions((prev) =>
       prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
     );
+  };
+
+  // Handle Select All
+  const handleSelectAll = () => {
+    if (selectedQuestions.length === questions.length) {
+      setSelectedQuestions([]);
+    } else {
+      setSelectedQuestions(questions.map((_, index) => index));
+    }
   };
 
   // Submit Selected Questions
@@ -91,7 +100,7 @@ const Mcq_bulkUpload = () => {
 
     try {
       const response = await axios.post(
-        "https://vercel-1bge.onrender.com/api/mcq/save-questions/",
+        "http://localhost:8000/api/mcq/save-questions/",
         { questions: selected },
         {
           headers: {
@@ -188,6 +197,14 @@ const Mcq_bulkUpload = () => {
       {questions.length > 0 && (
         <div className="bg-white shadow-lg rounded-3xl p-6 mt-8 w-[90%] max-w-5xl">
           <h2 className="text-2xl font-semibold mb-4">Questions Preview</h2>
+          <div className="flex justify-between mb-4">
+            <button
+              onClick={handleSelectAll}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+            >
+              {selectedQuestions.length === questions.length ? "Deselect All" : "Select All"}
+            </button>
+          </div>
           <table className="table-auto w-full bg-white shadow-lg rounded-lg overflow-hidden">
             <thead className="bg-gray-200 text-gray-800">
               <tr>
