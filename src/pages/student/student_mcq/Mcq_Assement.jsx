@@ -28,7 +28,7 @@ export default function Mcq_Assessment() {
     const fetchQuestions = async () => {
       try {
         const response = await axios.get(
-          `https://vercel-1bge.onrender.com/api/mcq/get_mcqquestions/${contestId}`
+          `http://localhost:8000/api/mcq/get_mcqquestions/${contestId}`
         );
         setQuestions(response.data.questions);
         const { hours, minutes } = response.data.duration;
