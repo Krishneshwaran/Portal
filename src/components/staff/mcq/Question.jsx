@@ -10,11 +10,13 @@ export default function Question({
   onAnswerSelect, // Callback to update selected answers
   selectedAnswers, // Current selected answers
   onReviewMark, // Callback to mark a question for review
+  reviewStatus, // Current review status
 }) {
   const [selectedOption, setSelectedOption] = useState(
     selectedAnswers[currentIndex] || null
   );
   const [showPopup, setShowPopup] = useState(false); // State for showing the popup
+  const isMarkedForReview = reviewStatus[currentIndex] || false;
 
   useEffect(() => {
     setSelectedOption(selectedAnswers[currentIndex] || null);
@@ -45,16 +47,18 @@ export default function Question({
           Question {currentIndex + 1}/{totalQuestions}
         </h2>
         <button
-          className="text-red-500 text-sm border border-red-500 rounded-full px-4 py-1"
+          className={`text-sm border rounded-full px-4 py-1 ${
+            isMarkedForReview ? "text-white bg-green-500" : "text-red-500 border-red-500"
+          }`}
           onClick={() => onReviewMark(currentIndex)} // Call the review mark callback
         >
-          Mark for review
+          {isMarkedForReview ? "Marked for Review" : "Mark for Review"}
         </button>
       </div>
+<div className="border border-black/15 rounded-xl p-8">
+      <p className="text-lg">{question.text}</p>
 
-      <p className="text-lg mb-8">{question.text}</p>
-
-      <div className="space-y-4 mb-12">
+      <div className="space-y-4 mb-8 mt-5">
         {question.options.map((option, idx) => (
           <button
             key={idx}
@@ -67,8 +71,9 @@ export default function Question({
           </button>
         ))}
       </div>
+      </div>
 
-      <div className="flex justify-between mt-8">
+      <div className="flex justify-between mt-6 mb-20">
         <button
           className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full flex items-center gap-2"
           onClick={onPrevious}

@@ -25,17 +25,17 @@ export default function Header({ duration }) {
   };
 
   return (
-    <div className="flex justify-between items-center mb-8">
+    <div className="flex justify-between items-center mb-7">
       <div className="flex items-center gap-2">
-        <h1 className="text-[#00296b] text-xl font-medium">MCQ ASSEMENT</h1>
+        <h1 className="text-[#00296b] text-2xl ml-8 font-bold">MCQ ASSESSMENT</h1>
       </div>
-      <div className="flex items-center gap-2">
-        <span className="w-5 h-5 text-[#00296b]">⏰</span>
+      <div className="flex items-center mr-7 mt-4 gap-2">
+        <span className="w-8 h-8 text-bold text-4xl pr-4 flex items-center justify-center">⏰</span>
         <div>
-          <div className="text-[#00296b] font-medium">
+          <div className="text-[#00296b] text-xl font-bold">
             {formatTime(timeLeft)}
           </div>
-          <div className="text-[#00296b] text-xs">Time Left</div>
+          <div className="text-[#00296b] text-xl">Time Left</div>
         </div>
       </div>
     </div>

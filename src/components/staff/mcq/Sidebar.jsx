@@ -24,10 +24,6 @@ export default function Sidebar({
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[#00296b] font-medium">Sections Name</h3>
-          <div className="flex gap-2">
-            <span className="text-[#00296b] cursor-pointer">←</span>
-            <span className="text-[#00296b] cursor-pointer">→</span>
-          </div>
         </div>
         <Legend />
         <QuestionNumbers
