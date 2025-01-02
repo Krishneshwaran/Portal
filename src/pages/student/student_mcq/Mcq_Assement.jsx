@@ -28,7 +28,7 @@ export default function Mcq_Assessment() {
     const fetchQuestions = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:8000/api/mcq/get_mcqquestions/${contestId}`
+          `https://vercel-1bge.onrender.com/api/mcq/get_mcqquestions/${contestId}`
         );
         setQuestions(response.data.questions);
         const { hours, minutes } = response.data.duration;
@@ -204,20 +204,15 @@ export default function Mcq_Assessment() {
   };
 
   useEffect(() => {
+  if (remainingTime > 0) {
     const interval = setInterval(() => {
-      setRemainingTime((prevTime) => {
-        if (prevTime > 0) {
-          return prevTime - 1;
-        } else {
-          clearInterval(interval);
-          handleFinish();
-          return 0;
-        }
-      });
+      setRemainingTime((prevTime) => Math.max(prevTime - 1, 0));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [remainingTime]);
+  }
+}, [remainingTime]);
+
 
   if (loading) {
     return (
