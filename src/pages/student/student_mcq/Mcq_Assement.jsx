@@ -204,15 +204,20 @@ export default function Mcq_Assessment() {
   };
 
   useEffect(() => {
-    if (remainingTime > 0) {
-      const interval = setInterval(() => {
-        setRemainingTime((prevTime) => Math.max(prevTime - 1, 0));
-      }, 1000);
-  
-      return () => clearInterval(interval);
-    }
+    const interval = setInterval(() => {
+      setRemainingTime((prevTime) => {
+        if (prevTime > 0) {
+          return prevTime - 1;
+        } else {
+          clearInterval(interval);
+          handleFinish();
+          return 0;
+        }
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
   }, [remainingTime]);
-  
 
   if (loading) {
     return (
