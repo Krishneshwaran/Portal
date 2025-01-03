@@ -4,21 +4,39 @@ import { styled } from "@mui/system";
 import TestCard from "./TestCard";
 import axios from "axios";
 import NoExams from "../../assets/happy.png";
+import { Clock, BookOpen, Award } from 'lucide-react';
 
 const StyledTabs = styled(Tabs)({
-  "& .MuiTabs-indicator": {
-    backgroundColor: "#D97706",
+  backgroundColor: '#f8fafc',
+  borderRadius: '8px',
+  '& .MuiTabs-indicator': {
+    backgroundColor: '#2563eb',
+    height: '3px',
+    borderRadius: '3px',
   },
 });
 
 const StyledTab = styled(Tab)({
-  textTransform: "none",
-  fontSize: "16px",
-  fontWeight: "bold",
-  color: "#1E293B",
-  "&.Mui-selected": {
-    color: "#D97706",
+  textTransform: 'none',
+  fontSize: '16px',
+  fontWeight: '600',
+  color: '#64748b',
+  padding: '12px 24px',
+  '&.Mui-selected': {
+    color: '#2563eb',
   },
+  '&:hover': {
+    backgroundColor: '#f1f5f9',
+    borderRadius: '6px',
+  },
+});
+
+const DashboardHeader = styled(Box)({
+  background: 'linear-gradient(135deg, #rgb(139, 135, 251),rgb(95, 121, 214) 100%)',
+  borderRadius: '16px',
+  padding: '32px',
+  marginBottom: '32px',
+  color: 'blue',
 });
 
 const StudentDashboard = () => {
@@ -96,7 +114,7 @@ const StudentDashboard = () => {
           description: test.assessmentOverview?.description || "No description available.",
           starttime: test.assessmentOverview?.registrationStart || "No Time",
           endtime: test.assessmentOverview?.registrationEnd || "No Time",
-          problems: parseInt(test.testConfiguration?.questions, 10) || 0, // Parse questions as a number
+          problems: parseInt(test.testConfiguration?.questions, 10) || 0,
           assessment_type: "coding",
         };
       });
@@ -135,9 +153,9 @@ const StudentDashboard = () => {
           description: test.assessmentOverview?.description || "No description available.",
           starttime: test.assessmentOverview?.registrationStart || "No Time",
           endtime: test.assessmentOverview?.registrationEnd || "No Time",
-          questions: parseInt(test.testConfiguration?.questions || "0", 10), // Parse questions as a number
+          questions: parseInt(test.testConfiguration?.questions || "0", 10),
           assessment_type: "mcq",
-          status: test.status || "Unknown", // Add status field
+          status: test.status || "Unknown",
         };
       });
   
@@ -153,7 +171,6 @@ const StudentDashboard = () => {
       const response = await axios.get(`https://vercel-1bge.onrender.com/api/student/coding-reports/`, {
         withCredentials: true,
       });
-
       return response.data;
     } catch (error) {
       console.error("Error fetching coding reports:", error);
@@ -166,7 +183,6 @@ const StudentDashboard = () => {
       const response = await axios.get(`https://vercel-1bge.onrender.com/api/student/mcq-reports/`, {
         withCredentials: true,
       });
-
       return response.data;
     } catch (error) {
       console.error("Error fetching MCQ reports:", error);
@@ -183,18 +199,25 @@ const StudentDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
-      <Container maxWidth="8xl">
-        <AppBar position="static" color="transparent" elevation={0} className="mb-8">
-          <Typography variant="h4" className="font-bold text-gray-900">
-            Hi! {studentData.name}
-          </Typography>
-          <Typography variant="subtitle1" className="text-gray-600">
-            Registration Number: {studentData.regno}
-          </Typography>
-        </AppBar>
+    <div className="min-h-screen bg-gray-50">
+      <Container maxWidth="8xl" className="py-8">
+        <DashboardHeader>
+          <div className="flex items-center gap-6">
+            <div className="bg-blue p-4 rounded-full">
+              <Award className="h-14  w-14 bg-blue" />
+            </div>
+            <div>
+              <Typography variant="h4" className="font-bold text-sky-600">
+                Welcome back, {studentData.name}!
+              </Typography>
+              <Typography variant="subtitle1" className="text-blue-950 px-1">
+                Registration Number: {studentData.regno}
+              </Typography>
+            </div>
+          </div>
+        </DashboardHeader>
 
-        <Box className="bg-white p-6">
+        <Box className="bg-white rounded-xl shadow-sm p-6">
           <StyledTabs value={activeTab} onChange={handleTabChange}>
             <StyledTab label="Assigned to you" />
             <StyledTab label="Completed/Closed" />
@@ -203,10 +226,10 @@ const StudentDashboard = () => {
           <Box className="mt-8">
             {activeTab === 0 && (
               <>
-                <Typography variant="h6" className="font-bold text-gray-900 mb-4">
-                  Assessments
+                <Typography variant="h6" className="font-bold text-gray-900 mb-6">
+                  Active Assessments
                 </Typography>
-                <Grid container spacing={3}>
+                <Grid container spacing={4}>
                   {openTests.length > 0 &&
                     openTests.map((test) => (
                       <Grid item xs={12} sm={6} md={4} key={test.contestId}>
@@ -228,15 +251,14 @@ const StudentDashboard = () => {
                       </Grid>
                     ))}
                   {openTests.length === 0 && mcqTests.length === 0 && (
-                    <Box className="text-center" gridColumn="span 3">
+                    <Box className="col-span-3 text-center py-12">
                       <img
                         src={NoExams}
                         alt="No Exams"
-                        className="mx-auto mb-4"
-                        style={{ width: "300px", height: "300px" }}
+                        className="mx-auto mb-6 w-64 h-64"
                       />
                       <Typography variant="h6" className="font-medium text-gray-900">
-                        Any day is a good day when <br /> there are no exams!
+                        Enjoy your free time!
                       </Typography>
                     </Box>
                   )}
@@ -245,10 +267,10 @@ const StudentDashboard = () => {
             )}
             {activeTab === 1 && (
               <>
-                <Typography variant="h6" className="font-bold text-gray-900 mb-4">
+                <Typography variant="h6" className="font-bold text-gray-900 mb-6">
                   Completed Assessments
                 </Typography>
-                <Grid container spacing={3}>
+                <Grid container spacing={4}>
                   {completedTests.length > 0 ? (
                     completedTests.map((test) => (
                       <Grid item xs={12} sm={6} md={4} key={test.contestId || test.testId}>
@@ -262,15 +284,14 @@ const StudentDashboard = () => {
                       </Grid>
                     ))
                   ) : (
-                    <Box className="text-center" gridColumn="span 3">
+                    <Box className="col-span-3 text-center py-12">
                       <img
                         src={NoExams}
                         alt="No Exams"
-                        className="mx-auto mb-4"
-                        style={{ width: "300px", height: "300px" }}
+                        className="mx-auto mb-6 w-64 h-64"
                       />
                       <Typography variant="h6" className="font-medium text-gray-900">
-                        Any day is a good day when <br /> there are no exams!
+                        No completed assessments yet
                       </Typography>
                     </Box>
                   )}

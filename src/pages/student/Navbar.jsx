@@ -1,9 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from 'react-router-dom';
 import {
-  AppBar,
-  Toolbar,
-  Typography,
-  IconButton,
   Menu,
   MenuItem,
   Avatar,
@@ -15,14 +12,17 @@ import SearchIcon from "@mui/icons-material/Search";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LogoutIcon from "@mui/icons-material/Logout";
 import EmailIcon from '@mui/icons-material/Email';
-import { useNavigate, Link } from 'react-router-dom';
+import Cookies from "js-cookie"; // Add this import
+
+// Import your logo
+import logo from "../../assets/snsihub.png"; // Update the path to your logo
 
 const Search = styled("div")(({ theme }) => ({
   position: "relative",
   borderRadius: theme.shape.borderRadius,
-  backgroundColor: alpha("#F3F4F6", 1), // Light gray background for search
+  backgroundColor: alpha("#F3F4F6", 1),
   "&:hover": {
-    backgroundColor: alpha("#E5E7EB", 1), // Slightly darker on hover
+    backgroundColor: alpha("#E5E7EB", 1),
   },
   marginLeft: theme.spacing(1),
   width: "100%",
@@ -31,30 +31,18 @@ const Search = styled("div")(({ theme }) => ({
   },
 }));
 
-const SearchIconWrapper = styled("div")(({ theme }) => ({
-  padding: theme.spacing(0, 2),
-  height: "100%",
-  position: "absolute",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  color: "#6B7280", // Neutral gray for search icon
-}));
-
-const StyledInputBase = styled(InputBase)(({ theme }) => ({
-  color: "#1F2937", // Dark gray text
-  padding: theme.spacing(1, 1, 1, 0),
-  paddingLeft: `calc(1em + ${theme.spacing(4)})`,
-  width: "100%",
-}));
-
 const Navbar = () => {
+  const [username, setUsername] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
-  const [studentData, setStudentData] = useState({
-    name: "",
-    regno: "",
-  });
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Get username from cookies or localStorage
+    const storedUsername = Cookies.get("username");
+    if (storedUsername) {
+      setUsername(decodeURIComponent(storedUsername));
+    }
+  }, []);
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -66,21 +54,23 @@ const Navbar = () => {
 
   const handleLogout = () => {
     try {
-      // Clear all cookies by setting their expiry date to the past
+      // Clear cookies
       document.cookie.split(";").forEach((cookie) => {
         const name = cookie.split("=")[0].trim();
         document.cookie = `${name}=;expires=${new Date(0).toUTCString()};path=/`;
       });
-
-      // Clear all tokens from localStorage and sessionStorage
-      localStorage.removeItem("accessToken"); // JWT access token
-      localStorage.removeItem("refreshToken"); // JWT refresh token
-      sessionStorage.clear(); // Clear all session data
-
-      // Navigate to login page
+      
+      // Clear storage
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      sessionStorage.clear();
+      
+      // Remove specific cookies
+      Cookies.remove("username");
+      Cookies.remove("studentToken");
+      
       navigate("/studentlogin");
-
-      console.log("User successfully logged out");
+      handleMenuClose();
     } catch (error) {
       console.error("Error during logout:", error);
     }
@@ -92,63 +82,63 @@ const Navbar = () => {
   };
 
   return (
-    <AppBar position="static" className="bg-yellow-50" color="" elevation={0}>
-      <Toolbar className="flex justify-between px-6 bg-yellow-50 shadow-md">
-        {/* Left: Logo and Title */}
-        <Box className="flex items-center">
-          <Typography
-            variant="h6"
-            fontWeight="bold"
-            className="text-yellow-600 mr-4 cursor-pointer"
-          >
-            <Link to="/" className="text-yellow-600">
-              SNS Groups
+    <>
+      <div className={`flex bg-gradient-to-r from-[#00296B] to-[#0077B6] ${
+        window.location.pathname === '/student/dashboard' ? 'rounded-t-2xl' : 'rounded-2xl'
+      } p-4 mt-3 mx-3 justify-between items-center`}>
+        {/* Left section - Logo */}
+        <div className="flex items-center gap-8">
+          <img src={logo} alt="Logo" className="h-10" />
+        </div>
+
+        {/* Middle section - Navigation */}
+        {/* <div className="flex ml-40 items-center gap-8">
+          <nav className="flex gap-6 text-white">
+            <Link to="/student/dashboard" className="font-medium text-white hover:text-yellow-500">
+              Home
             </Link>
-          </Typography>
-        </Box>
+            <Link to="/student/profile" className="font-medium text-white hover:text-yellow-500">
+              Profile
+            </Link>
+            <Link to="/student/library" className="font-medium text-white hover:text-yellow-500">
+              Library
+            </Link>
+          </nav>
+        </div> */}
 
-        {/* Center: Search */}
+        {/* Right section - Actions and Profile */}
+        <div className="flex items-center gap-4 text-white">
+          <button className="p-2">
+            <SearchIcon />
+          </button>
+          <button className="p-2">
+            <EmailIcon />
+          </button>
+          <div className="flex items-center mr-2 gap-2">
+            <span>{username || "Student"}</span>
+            <button onClick={handleMenuOpen} className="p-2">
+              <Avatar>
+                {username ? username[0].toUpperCase() : "S"}
+              </Avatar>
+            </button>
+          </div>
+        </div>
+      </div>
 
-        {/* Right: Profile Menu */}
-        <Box display="flex" alignItems="center">
-          <IconButton>
-            <EmailIcon fontSize="medium" className="text-gray-700" />
-          </IconButton>
-
-          <IconButton onClick={handleMenuOpen}>
-            <Avatar
-              sx={{ bgcolor: "#F59E0B", width: 40, height: 40 }}
-              alt="Profile"
-              className="cursor-pointer"
-            >
-              {studentData.name}
-            </Avatar>
-          </IconButton>
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "right",
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "right",
-            }}
-          >
-            <MenuItem onClick={handleSettingsClick}>
-              <SettingsIcon fontSize="small" className="mr-2 text-gray-700" />
-              <Typography className="text-gray-900">Settings</Typography>
-            </MenuItem>
-            <MenuItem onClick={handleLogout}>
-              <LogoutIcon fontSize="small" className="mr-2 text-red-500" />
-              <Typography color="error">Logout</Typography>
-            </MenuItem>
-          </Menu>
-        </Box>
-      </Toolbar>
-    </AppBar>
+      {/* Profile Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={handleSettingsClick}>
+          <SettingsIcon className="mr-2" /> Settings
+        </MenuItem>
+        <MenuItem onClick={handleLogout}>
+          <LogoutIcon className="mr-2" /> Logout
+        </MenuItem>
+      </Menu>
+    </>
   );
 };
 

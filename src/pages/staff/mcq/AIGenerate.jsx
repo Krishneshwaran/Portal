@@ -40,7 +40,7 @@ const AIGenerate = () => {
       };
   
       const response = await axios.post(
-        "https://vercel-1bge.onrender.com//api/mcq/api/generate-questions/",
+        "https://vercel-1bge.onrender.com/api/mcq/api/generate-questions/",
         requestData,
         {
           headers: {

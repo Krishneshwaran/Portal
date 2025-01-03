@@ -45,7 +45,7 @@ const Mcq_CombinedDashboard = () => {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const response = await axios.get("https://vercel-1bge.onrender.com//api/student/");
+        const response = await axios.get("https://vercel-1bge.onrender.com/api/student/");
         setStudents(response.data);
         setFilteredStudents(response.data);
       } catch (error) {
