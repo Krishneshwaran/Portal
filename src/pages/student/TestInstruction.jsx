@@ -50,46 +50,52 @@ const TestInstructions = () => {
 
   const fetchMcqTests = async (regno) => {
     try {
-      const response = await axios.get(`https://vercel-1bge.onrender.com/api/student/mcq-tests?regno=${regno}`, {
-        withCredentials: true,
-      });
-
+      const response = await axios.get(
+        `https://vercel-1bge.onrender.com/api/student/mcq-tests?regno=${regno}`,
+        { withCredentials: true }
+      );
+  
       const formattedTests = response.data.map((test) => {
-        const { hours, minutes } = test.testConfiguration.duration;
-        const duration = (parseInt(hours) * 3600) + (parseInt(minutes) * 60);
-        const fullScreenMode = test.testConfiguration.fullScreenMode;
-        const faceDetection = test.testConfiguration.faceDetection;
-        const passPercentage = test.testConfiguration.passPercentage;
-
-        localStorage.setItem(`testDuration_${test._id}`, duration);
-        localStorage.setItem(`fullScreenMode_${test._id}`, fullScreenMode);
-        localStorage.setItem(`faceDetection_${test._id}`, faceDetection);
-
+        const hours = test?.testConfiguration?.duration?.hours || "0";
+        const minutes = test?.testConfiguration?.duration?.minutes || "0";
+        const duration = (parseInt(hours, 10) * 3600) + (parseInt(minutes, 10) * 60);
+        const fullScreenMode = test?.testConfiguration?.fullScreenMode || false;
+        const faceDetection = test?.testConfiguration?.faceDetection || false;
+        const passPercentage = test?.testConfiguration?.passPercentage || 0;
+  
+        // Safely save these values
+        if (test?._id) {
+          localStorage.setItem(`testDuration_${test._id}`, duration);
+          localStorage.setItem(`fullScreenMode_${test._id}`, fullScreenMode);
+          localStorage.setItem(`faceDetection_${test._id}`, faceDetection);
+        }
+  
         return {
-          testId: test._id,
-          name: test.assessmentOverview?.name || "Unknown Test",
-          description: test.assessmentOverview?.description || "No description available.",
-          starttime: test.assessmentOverview?.registrationStart || "No Time",
-          endtime: test.assessmentOverview?.registrationEnd || "No Time",
-          questions: parseInt(test.testConfiguration?.questions, 10) || 0,
+          testId: test?._id || "unknown",
+          name: test?.assessmentOverview?.name || "Unknown Test",
+          description: test?.assessmentOverview?.description || "No description available.",
+          starttime: test?.assessmentOverview?.registrationStart || "No Time",
+          endtime: test?.assessmentOverview?.registrationEnd || "No Time",
+          questions: parseInt(test?.testConfiguration?.questions, 10) || 0,
           duration: `${hours} hours ${minutes} minutes`,
           passPercentage: passPercentage,
           assessment_type: "mcq",
-          status: test.status,
-          fullScreenMode: test.testConfiguration.fullScreenMode,
-          faceDetection: test.testConfiguration.faceDetection,
-          deviceRestriction: test.testConfiguration.deviceRestriction,
-          noiseDetection: test.testConfiguration.noiseDetection,
-          guidelines: test.assessmentOverview?.guidelines || "No guidelines available.",
+          status: test?.status || "Unknown",
+          fullScreenMode: fullScreenMode,
+          faceDetection: faceDetection,
+          deviceRestriction: test?.testConfiguration?.deviceRestriction || false,
+          noiseDetection: test?.testConfiguration?.noiseDetection || false,
+          guidelines: test?.assessmentOverview?.guidelines || "No guidelines available.",
         };
       });
-
+  
       return formattedTests;
     } catch (error) {
       console.error("Error fetching MCQ tests:", error);
       return [];
     }
   };
+  
 
   useEffect(() => {
     const studentId = localStorage.getItem("studentId");
