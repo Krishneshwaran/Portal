@@ -285,7 +285,7 @@
                             min="0"
                             max="24"
                             placeholder="HH"
-                            value={formData.testConfiguration.duration.hours || ""}
+                            value={formData.testConfiguration.duration.hours || "0"}
                             onChange={(e) =>
                               handleChange(
                                 { target: { name: "duration", value: { ...formData.testConfiguration.duration, hours: e.target.value } } },
@@ -302,7 +302,7 @@
                             min="0"
                             max="59"
                             placeholder="MM"
-                            value={formData.testConfiguration.duration.minutes || ""}
+                            value={formData.testConfiguration.duration.minutes || "0"}
                             onChange={(e) =>
                               handleChange(
                                 { target: { name: "duration", value: { ...formData.testConfiguration.duration, minutes: e.target.value } } },
