@@ -32,11 +32,9 @@ const Mcq_CombinedDashboard = () => {
     totalDuration: "00:00",
     maximumMark: 0,
   });
-  const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sections, setSections] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [selectedStudents, setSelectedStudents] = useState([]);
@@ -47,7 +45,7 @@ const Mcq_CombinedDashboard = () => {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const response = await axios.get("https://vercel-1bge.onrender.com/api/student/");
+        const response = await axios.get("http://localhost:8000/api/student/");
         setStudents(response.data);
         setFilteredStudents(response.data);
       } catch (error) {
@@ -92,32 +90,6 @@ const Mcq_CombinedDashboard = () => {
     );
   };
 
-  const fetchQuestions = async () => {
-    try {
-      const token = localStorage.getItem("contestToken");
-      if (!token) {
-        alert("Unauthorized access. Please log in again.");
-        return;
-      }
-
-      const response = await axios.get("https://vercel-1bge.onrender.com/api/mcq/questions", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const fetchedQuestions = response.data.questions || [];
-      setQuestions(fetchedQuestions);
-      setDashboardStats((prev) => ({
-        ...prev,
-        totalQuestions: fetchedQuestions.length,
-      }));
-    } catch (error) {
-      console.error("Error fetching questions:", error.response?.data || error.message);
-      alert("Failed to load questions. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleAddSection = () => {
     const newSection = {
       id: sections.length + 1,
@@ -150,7 +122,6 @@ const Mcq_CombinedDashboard = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       alert("Sections submitted successfully!");
-      await fetchQuestions(); // Refresh the questions list
       navigate("/mcq/sectionDetails", { state: { requiredQuestions: formData.testConfiguration.questions } });
     } catch (error) {
       console.error("Error submitting sections:", error);
@@ -165,33 +136,6 @@ const Mcq_CombinedDashboard = () => {
     setSections(updatedSections);
   };
 
-  const handlePublish = async () => {
-    try {
-      const token = localStorage.getItem("contestToken");
-      if (!token) {
-        alert("Unauthorized access. Please log in again.");
-        return;
-      }
-
-      const response = await axios.post("https://vercel-1bge.onrender.com/api/mcq/publish/", {
-        students: selectedStudents,
-      },
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.status === 200) {
-        alert("Questions published successfully!");
-        sessionStorage.clear(selectedStudents)
-        navigate(`/staffdashboard`);
-      } else {
-        alert("Failed to publish questions.");
-      }
-    } catch (error) {
-      console.error("Error publishing questions:", error);
-      alert("An error occurred while publishing questions.");
-    }
-    setPublishDialogOpen(false);
-  };
 
   const formatDuration = (duration) => {
     const hours = duration.hours.toString().padStart(2, '0');
@@ -216,8 +160,6 @@ const Mcq_CombinedDashboard = () => {
           totalDuration: statsResponse.data.totalDuration,
           maximumMark: statsResponse.data.maximumMark,
         }));
-
-        await fetchQuestions();
       } catch (error) {
         console.error("Error fetching dashboard data:", error.message);
       } finally {
@@ -271,47 +213,6 @@ const Mcq_CombinedDashboard = () => {
           ))}
         </div>
 
-        {!isLoading && questions.length > 0 && (
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Loaded Questions
-            </h3>
-            <ul className="space-y-4">
-              {questions.map((question, index) => (
-                <li
-                  key={index}
-                  className="flex items-center justify-between bg-white shadow-md rounded-lg p-4 border border-gray-300"
-                >
-                  <div className="flex flex-col">
-                    <h4 className="text-gray-800 font-medium">{`Question ${index + 1}`}</h4>
-                    <p className="text-gray-600">{question.question}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">
-                      {question.correctAnswer
-                        ? `Answer: ${question.correctAnswer}`
-                        : "No Answer Provided"}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {isLoading && (
-          <div className="text-center mt-16">
-            <div className="spinner-border animate-spin inline-block w-8 h-8 border-4 rounded-full text-yellow-500" />
-            <p className="text-gray-600 mt-4">Loading questions...</p>
-          </div>
-        )}
-
-        {!isLoading && questions.length === 0 && (
-          <div className="text-center mt-16">
-            <p className="text-gray-600">No questions available in the database.</p>
-          </div>
-        )}
-
         <div className="bg-gray-50 p-6 rounded-lg shadow-md w-full max-w-4xl mt-6">
           <h3 className="text-2xl font-semibold text-gray-800 mb-4">
             Section Details
@@ -363,112 +264,13 @@ const Mcq_CombinedDashboard = () => {
             handleCreateManually={() => navigate('/mcq/CreateQuestion')}
             handleBulkUpload={() => navigate('/mcq/bulkUpload')}
             handleMcqlibrary={() => navigate('/mcq/McqLibrary')}
+            handleAi={() => navigate('/mcq/aigenerator')}
           />
         )}
 
-        {!isLoading && questions.length > 0 && (
-          <div className="flex justify-end mt-10">
-            <button
-              onClick={() => setPublishDialogOpen(true)}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
-            >
-              Publish
-            </button>
-          </div>
-        )}
 
-        <Dialog open={publishDialogOpen} onClose={() => setPublishDialogOpen(false)} fullWidth maxWidth="lg">
-          <DialogTitle>Select Students</DialogTitle>
-          <DialogContent>
-            <Box mb={3}>
-              <TextField
-                label="Filter by College Name"
-                name="collegename"
-                variant="outlined"
-                fullWidth
-                margin="dense"
-                value={filters.collegename}
-                onChange={handleFilterChange}
-              />
-              <TextField
-                label="Filter by Department"
-                name="dept"
-                variant="outlined"
-                fullWidth
-                margin="dense"
-                value={filters.dept}
-                onChange={handleFilterChange}
-              />
-            </Box>
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        indeterminate={
-                          selectedStudents.length > 0 &&
-                          selectedStudents.length < filteredStudents.length
-                        }
-                        checked={
-                          filteredStudents.length > 0 &&
-                          selectedStudents.length === filteredStudents.length
-                        }
-                        onChange={handleSelectAll}
-                      />
-                    </TableCell>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Registration Number</TableCell>
-                    <TableCell>Department</TableCell>
-                    <TableCell>College Name</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredStudents
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((student) => (
-                      <TableRow key={student.regno} hover>
-                        <TableCell padding="checkbox">
-                          <Checkbox
-                            checked={selectedStudents.includes(student.regno)}
-                            onChange={() => handleStudentSelect(student.regno)}
-                          />
-                        </TableCell>
-                        <TableCell>{student.name}</TableCell>
-                        <TableCell>{student.regno}</TableCell>
-                        <TableCell>{student.dept}</TableCell>
-                        <TableCell>{student.collegename}</TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-            <TablePagination
-              rowsPerPageOptions={[10, 25, 50]}
-              component="div"
-              count={filteredStudents.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={(event, newPage) => setPage(newPage)}
-              onRowsPerPageChange={(event) => {
-                setRowsPerPage(parseInt(event.target.value, 10));
-                setPage(0);
-              }}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button
-              onClick={() => setPublishDialogOpen(false)}
-              color="primary"
-              variant="outlined"
-            >
-              Cancel
-            </Button>
-            <Button onClick={handlePublish} color="primary" variant="contained">
-              Confirm
-            </Button>
-          </DialogActions>
-        </Dialog>
+
+        
       </div>
     </div>
   );

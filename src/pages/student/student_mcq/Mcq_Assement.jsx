@@ -224,6 +224,13 @@ export default function Mcq_Assessment() {
           addWarning('tabSwitch');
           return false;
         }
+
+        // Prevent Ctrl+Shift+I
+        if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+          e.preventDefault();
+          addWarning('tabSwitch');
+          return false;
+        }
       }
     };
 
