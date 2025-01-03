@@ -31,7 +31,7 @@ const QuestionsDisplay = () => {
       const token = localStorage.getItem("contestToken");
       const selected = selectedQuestions.map((index) => editedQuestions[index]);
 
-      const response = await axios.post("http://localhost:8000/api/mcq/save-questions/", {
+      const response = await axios.post("https://vercel-1bge.onrender.com//api/mcq/save-questions/", {
         questions: selected,
       }, {
         headers: {
