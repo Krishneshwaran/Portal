@@ -39,7 +39,7 @@
       }
       if (currentStep === 2) {
         const { totalMarks, questions, duration, passPercentage } = formData.testConfiguration;
-        return totalMarks && questions && duration && passPercentage;
+        return totalMarks && questions && (duration.hours || duration.minutes) && passPercentage;
       }
       if (currentStep === 3) {
         const { sectionTitles } = formData.sectionDetails;
