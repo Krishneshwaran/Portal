@@ -10,19 +10,36 @@ export default function Mcq_Assessment() {
   const studentId = sessionStorage.getItem("studentId");
   const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
-  const [selectedAnswers, setSelectedAnswers] = useState({});
-  const [reviewStatus, setReviewStatus] = useState({});
+  const [selectedAnswers, setSelectedAnswers] = useState(() => {
+    const storedAnswers = sessionStorage.getItem(`selectedAnswers_${contestId}`);
+    return storedAnswers ? JSON.parse(storedAnswers) : {};
+  });
+  const [reviewStatus, setReviewStatus] = useState(() => {
+    const storedReviewStatus = sessionStorage.getItem(`reviewStatus_${contestId}`);
+    return storedReviewStatus ? JSON.parse(storedReviewStatus) : {};
+  });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [duration, setDuration] = useState(0);
-  const [fullScreenMode, setFullScreenMode] = useState(false);
-  const [fullscreenWarnings, setFullscreenWarnings] = useState(0);
+  const [fullScreenMode, setFullScreenMode] = useState(() => {
+    const storedFullScreenMode = sessionStorage.getItem(`fullScreenMode_${contestId}`);
+    return storedFullScreenMode === "true";
+  });
+  const [fullscreenWarnings, setFullscreenWarnings] = useState(() => {
+    return Number(sessionStorage.getItem(`fullscreenWarnings_${contestId}`)) || 0;
+  });
+  const [tabSwitchWarnings, setTabSwitchWarnings] = useState(() => {
+    return Number(sessionStorage.getItem(`tabSwitchWarnings_${contestId}`)) || 0;
+  });
   const [isTestFinished, setIsTestFinished] = useState(false);
   const [showWarningModal, setShowWarningModal] = useState(false);
   const mediaStreamRef = useRef(null);
   const [remainingTime, setRemainingTime] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [hasFocus, setHasFocus] = useState(true);
+  const lastActiveTime = useRef(Date.now());
+  const lastWarningTime = useRef(Date.now());
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -34,13 +51,6 @@ export default function Mcq_Assessment() {
         const { hours, minutes } = response.data.duration;
         const totalDuration = parseInt(hours) * 3600 + parseInt(minutes) * 60;
         setDuration(totalDuration);
-
-        const storedFullScreenMode = JSON.parse(sessionStorage.getItem(`fullScreenMode_${contestId}`));
-        setFullScreenMode(storedFullScreenMode !== null ? storedFullScreenMode : true);
-
-        setFullscreenWarnings(
-          Number(sessionStorage.getItem(`fullscreenWarnings_${studentId}`)) || 0
-        );
 
         const startTime = sessionStorage.getItem(`startTime_${contestId}`);
         if (startTime) {
@@ -61,6 +71,11 @@ export default function Mcq_Assessment() {
     fetchQuestions();
   }, [contestId, studentId]);
 
+  useEffect(() => {
+    sessionStorage.setItem(`selectedAnswers_${contestId}`, JSON.stringify(selectedAnswers));
+    sessionStorage.setItem(`reviewStatus_${contestId}`, JSON.stringify(reviewStatus));
+  }, [selectedAnswers, reviewStatus, contestId]);
+
   const handleAnswerSelect = (index, answer) => {
     setSelectedAnswers((prev) => ({ ...prev, [index]: answer }));
   };
@@ -72,92 +87,205 @@ export default function Mcq_Assessment() {
     }));
   };
 
+  const addWarning = (type) => {
+    const currentTime = Date.now();
+    if (currentTime - lastWarningTime.current < 1000) {
+      return; // Debounce warnings
+    }
+    lastWarningTime.current = currentTime;
+
+    if (type === 'fullscreen') {
+      setFullscreenWarnings((prevWarnings) => {
+        const newWarnings = prevWarnings + 1;
+        sessionStorage.setItem(`fullscreenWarnings_${contestId}`, newWarnings);
+        return newWarnings;
+      });
+    } else if (type === 'tabSwitch') {
+      setTabSwitchWarnings((prevWarnings) => {
+        const newWarnings = prevWarnings + 1;
+        sessionStorage.setItem(`tabSwitchWarnings_${contestId}`, newWarnings);
+        return newWarnings;
+      });
+    }
+    setShowWarningModal(true);
+  };
+
   useEffect(() => {
-    const goFullScreen = async () => {
+    const enforceFullScreen = async () => {
       try {
-        if (fullScreenMode && !isTestFinished) {
-          if (document.documentElement.requestFullscreen) {
-            await document.documentElement.requestFullscreen();
-          } else if (document.documentElement.webkitRequestFullscreen) {
-            await document.documentElement.webkitRequestFullscreen();
-          } else if (document.documentElement.mozRequestFullScreen) {
-            await document.documentElement.mozRequestFullScreen();
-          } else if (document.documentElement.msRequestFullscreen) {
-            await document.documentElement.msRequestFullscreen();
+        const element = document.documentElement;
+        if (!document.fullscreenElement &&
+            !document.webkitFullscreenElement &&
+            !document.mozFullScreenElement &&
+            !document.msFullscreenElement) {
+          if (element.requestFullscreen) {
+            await element.requestFullscreen();
+          } else if (element.webkitRequestFullscreen) {
+            await element.webkitRequestFullscreen();
+          } else if (element.mozRequestFullScreen) {
+            await element.mozRequestFullScreen();
+          } else if (element.msRequestFullscreen) {
+            await element.msRequestFullscreen();
           }
         }
       } catch (error) {
-        console.error("Error entering fullscreen mode:", error);
+        console.error("Error enforcing fullscreen mode:", error);
       }
     };
 
-    const addWarning = () => {
-      let warnings = fullscreenWarnings + 1;
-      setFullscreenWarnings(warnings);
-      sessionStorage.setItem(`fullscreenWarnings_${studentId}`, warnings);
-      setShowWarningModal(true);
-    };
+    // Check fullscreen on component mount and after any reload
+    enforceFullScreen();
 
-    const onFullscreenChange = () => {
+    const onFullscreenChange = async () => {
       const isFullscreen =
         document.fullscreenElement ||
         document.webkitFullscreenElement ||
         document.mozFullScreenElement ||
         document.msFullscreenElement;
+
+      if (!isFullscreen && !isTestFinished) {
+        addWarning('fullscreen');
+        // Immediately try to re-enter fullscreen
+        await enforceFullScreen();
+      }
+
       setFullScreenMode(isFullscreen);
       sessionStorage.setItem(
         `fullScreenMode_${contestId}`,
         isFullscreen ? "true" : "false"
       );
+    };
 
-      if (!isFullscreen && !isTestFinished) {
-        addWarning();
+    const preventReload = (e) => {
+      if (!isTestFinished) {
+        e.preventDefault();
+        e.returnValue = '';
+        enforceFullScreen();
+        return e.returnValue;
       }
     };
 
-    const handleVisibilityChange = () => {
-      if (document.hidden && !isTestFinished) {
-        addWarning();
+    const handleKeyDown = async (e) => {
+      if (!isTestFinished) {
+        // Prevent ESC key
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          await enforceFullScreen();
+          return false;
+        }
+
+        // Prevent F5 and Ctrl+R
+        if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+          e.preventDefault();
+          e.stopPropagation();
+          addWarning('tabSwitch');
+          return false;
+        }
+
+        // Prevent Alt+Tab
+        if (e.altKey && e.key === 'Tab') {
+          e.preventDefault();
+          addWarning('tabSwitch');
+          return false;
+        }
+
+        // Prevent Ctrl+W and Cmd+W
+        if ((e.ctrlKey || e.metaKey) && e.key === 'w') {
+          e.preventDefault();
+          addWarning('tabSwitch');
+          return false;
+        }
+
+        // Prevent Ctrl+Shift+W and Cmd+Shift+W
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'W') {
+          e.preventDefault();
+          addWarning('tabSwitch');
+          return false;
+        }
+
+        // Prevent Alt+F4
+        if (e.altKey && e.key === 'F4') {
+          e.preventDefault();
+          addWarning('tabSwitch');
+          return false;
+        }
+
+        // Prevent Ctrl+Alt+Delete
+        if (e.ctrlKey && e.altKey && e.key === 'Delete') {
+          e.preventDefault();
+          addWarning('tabSwitch');
+          return false;
+        }
+
+        // Prevent Windows key
+        if (e.key === 'Meta' || e.key === 'OS') {
+          e.preventDefault();
+          addWarning('tabSwitch');
+          return false;
+        }
       }
     };
 
+    // Add event listeners
+    window.addEventListener('beforeunload', preventReload);
+    document.addEventListener('keydown', handleKeyDown, true);
     document.addEventListener("fullscreenchange", onFullscreenChange);
-    document.addEventListener("mozfullscreenchange", onFullscreenChange);
     document.addEventListener("webkitfullscreenchange", onFullscreenChange);
-    document.addEventListener("msfullscreenchange", onFullscreenChange);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener("mozfullscreenchange", onFullscreenChange);
+    document.addEventListener("MSFullscreenChange", onFullscreenChange);
 
-    goFullScreen();
+    // Check fullscreen status periodically
+    const fullscreenCheck = setInterval(() => {
+      if (!isTestFinished && !document.fullscreenElement) {
+        enforceFullScreen();
+      }
+    }, 1000);
 
     return () => {
+      window.removeEventListener('beforeunload', preventReload);
+      document.removeEventListener('keydown', handleKeyDown, true);
       document.removeEventListener("fullscreenchange", onFullscreenChange);
-      document.removeEventListener("mozfullscreenchange", onFullscreenChange);
       document.removeEventListener("webkitfullscreenchange", onFullscreenChange);
-      document.removeEventListener("msfullscreenchange", onFullscreenChange);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-      }
+      document.removeEventListener("mozfullscreenchange", onFullscreenChange);
+      document.removeEventListener("MSFullscreenChange", onFullscreenChange);
+      clearInterval(fullscreenCheck);
     };
-  }, [fullScreenMode, studentId, contestId, isTestFinished]);
+  }, [isTestFinished, contestId]);
 
   const handleFullscreenReEntry = async () => {
     setShowWarningModal(false);
+    const element = document.documentElement;
     try {
-      if (document.documentElement.requestFullscreen) {
-        await document.documentElement.requestFullscreen();
-      } else if (document.documentElement.webkitRequestFullscreen) {
-        await document.documentElement.webkitRequestFullscreen();
-      } else if (document.documentElement.mozRequestFullScreen) {
-        await document.documentElement.mozRequestFullScreen();
-      } else if (document.documentElement.msRequestFullscreen) {
-        await document.documentElement.msRequestFullscreen();
+      if (element.requestFullscreen) {
+        await element.requestFullscreen();
+      } else if (element.webkitRequestFullscreen) {
+        await element.webkitRequestFullscreen();
+      } else if (element.mozRequestFullScreen) {
+        await element.mozRequestFullScreen();
+      } else if (element.msRequestFullscreen) {
+        await element.msRequestFullscreen();
       }
     } catch (error) {
       console.error("Error entering fullscreen mode:", error);
+      // Retry after a short delay
+      setTimeout(handleFullscreenReEntry, 500);
     }
   };
+
+  useEffect(() => {
+    const initializeFullScreen = async () => {
+      if (!isTestFinished) {
+        try {
+          await handleFullscreenReEntry();
+        } catch (error) {
+          console.error("Error initializing fullscreen:", error);
+        }
+      }
+    };
+
+    initializeFullScreen();
+  }, []); // Empty dependency array for initial load only
 
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
@@ -176,7 +304,7 @@ export default function Mcq_Assessment() {
       const payload = {
         contestId,
         answers: selectedAnswers,
-        warnings: fullscreenWarnings,
+        warnings: fullscreenWarnings + tabSwitchWarnings,
       };
 
       const response = await axios.post(
@@ -231,6 +359,59 @@ export default function Mcq_Assessment() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (!isTestFinished) {
+        e.preventDefault();
+        e.returnValue = '';
+        addWarning('tabSwitch');
+        return '';
+      }
+    };
+
+    const handleBlur = () => {
+      if (!isTestFinished) {
+        setHasFocus(false);
+        addWarning('tabSwitch');
+      }
+    };
+
+    const handleFocus = () => {
+      setHasFocus(true);
+    };
+
+    const handleVisibilityChange = () => {
+      if (!isTestFinished) {
+        if (document.hidden) {
+          const currentTime = Date.now();
+          if (currentTime - lastActiveTime.current > 500) {
+            addWarning('tabSwitch');
+          }
+        }
+        lastActiveTime.current = Date.now();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    const focusCheckInterval = setInterval(() => {
+      if (!isTestFinished && !document.hasFocus()) {
+        addWarning('tabSwitch');
+      }
+    }, 1000);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(focusCheckInterval);
+    };
+  }, [isTestFinished]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
@@ -259,7 +440,22 @@ export default function Mcq_Assessment() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ userSelect: "none" }}>
+    <div
+      className="min-h-screen bg-gray-50"
+      style={{
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        MozUserSelect: "none",
+        msUserSelect: "none",
+        pointerEvents: !hasFocus ? "none" : "auto",
+        filter: !hasFocus ? "blur(5px)" : "none",
+      }}
+      onCopy={(e) => e.preventDefault()}
+      onCut={(e) => e.preventDefault()}
+      onPaste={(e) => e.preventDefault()}
+      onKeyDown={(e) => e.preventDefault()}
+    >
+      <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none'"></meta>
       <div className="max-w-[1800px] max-h-[1540px] mx-auto p-7 sm:p-6">
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden mt-12">
           <div className="border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
@@ -293,16 +489,18 @@ export default function Mcq_Assessment() {
             </div>
           </div>
         </div>
-        <div className="fixed inset-0 pointer-events-none z-[5] flex items-center justify-center">
-          <div className="transform -rotate-45 text-gray-200 text-[72px] font-bold opacity-30">
+        <div className="fixed inset-0 pointer-events-none z-[5] flex items-center justify-start opacity-[0.08]">
+          <div className="transform rotate-45 text-black text-[120px] ml-8 font-extrabold select-none">
             SNSGROUPS
           </div>
         </div>
-        <div className="fixed inset-0 pointer-events-none z-[5] flex items-center justify-center">
-          <div className="transform rotate-45 text-gray-200 text-[72px] font-bold opacity-30">
+
+        <div className="fixed inset-0 pointer-events-none z-[5] flex items-center justify-center opacity-[0.08]">
+          <div className="transform rotate-45 text-black text-[120px] font-extrabold select-none">
             SNSGROUPS
           </div>
         </div>
+
         {showWarningModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
@@ -312,10 +510,12 @@ export default function Mcq_Assessment() {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold text-center mb-4">
-                Warning #{fullscreenWarnings}
+                Warning #{fullscreenWarnings + tabSwitchWarnings}
               </h3>
               <p className="text-gray-600 text-center mb-6">
-                You have exited fullscreen mode. Please return to fullscreen to continue the test.
+                {tabSwitchWarnings > 0
+                  ? "You have switched tabs. Please return to the test tab to continue."
+                  : "You have exited fullscreen mode. Please return to fullscreen to continue the test."}
               </p>
               <button
                 onClick={handleFullscreenReEntry}
