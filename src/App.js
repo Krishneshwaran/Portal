@@ -36,7 +36,8 @@ import Viewtest from './pages/staff/coding/Viewtest';
 import StaffProfile from './pages/staff/Staffprofile';
 import Mcq_Assesment from './pages/staff/mcq/Mcq_Assesment';
 import Mcq_CombinedDashboard from './pages/staff/mcq/Mcq_CombinedDashboard';
-
+import AIGenerate from "./pages/staff/mcq/AIGenerate";
+import QuestionsDisplay from './pages/staff/mcq/QuestionsDisplay';
 import Mcq_section from './pages/staff/mcq/Mcq_section';
 import Mcq_createQuestion from './components/staff/mcq/Mcq_createQuestion';
 import Mcq_bulkUpload from './components/staff/mcq/Mcq_bulkUpload';
@@ -104,6 +105,8 @@ function App() {
           <Route path="/studentstats/:regno" element={<StudentStats />} /> 
           <Route path="/viewcontest/:contestId" element={<ViewContest />} />
           <Route path="/:contestId/question-preview" element={<QuestionPreview />} />
+          <Route path="mcq/aigenerator" element={<AIGenerate />} />
+          <Route path="mcq/airesponse" element={<QuestionsDisplay />} />
 
 
           {/* <Route path="/coding" element={<ContestDashboard />} /> */}

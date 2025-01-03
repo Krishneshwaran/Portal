@@ -111,6 +111,7 @@ const Mcq_section = ({ formData, setFormData }) => {
     handleCreateManually={() => navigate('/mcq/CreateQuestion')}
     handleBulkUpload={() => navigate('/mcq/bulkUpload')}
     handleMcqlibrary={() => navigate('/mcq/McqLibrary')}
+    handleAi={() => navigate('/mcq/aigenerator')}
   />
 )}
 
