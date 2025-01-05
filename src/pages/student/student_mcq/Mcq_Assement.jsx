@@ -41,6 +41,24 @@ export default function Mcq_Assessment() {
   const lastActiveTime = useRef(Date.now());
   const lastWarningTime = useRef(Date.now());
 
+  // ADDED: State to track mobile sidebar open/close and current screen width
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false); // ADDED
+  const [screenWidth, setScreenWidth] = useState(window.innerWidth);     // ADDED
+
+  // ADDED: A flag to ALLOW auto-fullscreen (set to false previously). Now TRUE => auto FS
+  const disableAutoFullscreen = false; // CHANGED to false so it goes fullscreen on load
+
+  // ADDED: Keep track of screen resizing so we can display the sidebar if width ≥ 1024
+  useEffect(() => {                                                     
+    const handleResize = () => {                                        
+      setScreenWidth(window.innerWidth);                                
+    };                                                                  
+    window.addEventListener("resize", handleResize);                    
+    return () => {                                                      
+      window.removeEventListener("resize", handleResize);               
+    };                                                                  
+  }, []);                                                               
+
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
@@ -110,31 +128,51 @@ export default function Mcq_Assessment() {
     setShowWarningModal(true);
   };
 
-  useEffect(() => {
-    const enforceFullScreen = async () => {
-      try {
-        const element = document.documentElement;
-        if (!document.fullscreenElement &&
-            !document.webkitFullscreenElement &&
-            !document.mozFullScreenElement &&
-            !document.msFullscreenElement) {
-          if (element.requestFullscreen) {
-            await element.requestFullscreen();
-          } else if (element.webkitRequestFullscreen) {
-            await element.webkitRequestFullscreen();
-          } else if (element.mozRequestFullScreen) {
-            await element.mozRequestFullScreen();
-          } else if (element.msRequestFullscreen) {
-            await element.msRequestFullscreen();
-          }
-        }
-      } catch (error) {
-        console.error("Error enforcing fullscreen mode:", error);
+  // Original "enforceFullScreen" code
+  const enforceFullScreen = async () => {
+    try {
+      if (!disableAutoFullscreen === false) {
+        // Not needed. We'll just check "if (!disableAutoFullscreen)" below
       }
-    };
+      if (!disableAutoFullscreen) {
+        return;
+      }
+    } catch (err) {
+      console.error("Error ignoring fullscreen:", err);
+    }
+  };
 
-    // Check fullscreen on component mount and after any reload
-    enforceFullScreen();
+  // ADJUSTED: This version DOES force FS, because disableAutoFullscreen = false
+  const actuallyEnforceFullScreen = async () => {
+    // This is a new helper method to actually request fullscreen.
+    try {
+      const element = document.documentElement;
+      if (
+        !document.fullscreenElement &&
+        !document.webkitFullscreenElement &&
+        !document.mozFullScreenElement &&
+        !document.msFullscreenElement
+      ) {
+        if (element.requestFullscreen) {
+          await element.requestFullscreen();
+        } else if (element.webkitRequestFullscreen) {
+          await element.webkitRequestFullscreen();
+        } else if (element.mozRequestFullScreen) {
+          await element.mozRequestFullScreen();
+        } else if (element.msRequestFullscreen) {
+          await element.msRequestFullscreen();
+        }
+      }
+    } catch (error) {
+      console.error("Error requesting fullscreen mode:", error);
+    }
+  };
+
+  useEffect(() => {
+    // On mount: If autoFullscreen is allowed => actuallyEnforceFullScreen
+    if (!isTestFinished && !disableAutoFullscreen) {
+      actuallyEnforceFullScreen();
+    }
 
     const onFullscreenChange = async () => {
       const isFullscreen =
@@ -143,12 +181,11 @@ export default function Mcq_Assessment() {
         document.mozFullScreenElement ||
         document.msFullscreenElement;
 
-      if (!isFullscreen && !isTestFinished) {
-        addWarning('fullscreen');
-        // Immediately try to re-enter fullscreen
-        await enforceFullScreen();
+      // If user exits fullscreen in the middle of the test, we show a warning
+      if (!isFullscreen && !isTestFinished && !disableAutoFullscreen) {
+        addWarning("fullscreen");
+        await actuallyEnforceFullScreen();
       }
-
       setFullScreenMode(isFullscreen);
       sessionStorage.setItem(
         `fullScreenMode_${contestId}`,
@@ -159,140 +196,113 @@ export default function Mcq_Assessment() {
     const preventReload = (e) => {
       if (!isTestFinished) {
         e.preventDefault();
-        e.returnValue = '';
-        enforceFullScreen();
+        e.returnValue = "";
         return e.returnValue;
       }
     };
 
     const handleKeyDown = async (e) => {
       if (!isTestFinished) {
-        // Prevent ESC key
-        if (e.key === 'Escape') {
+        // Prevent ESC
+        if (e.key === "Escape") {
           e.preventDefault();
           e.stopPropagation();
-          await enforceFullScreen();
           return false;
         }
-
-        // Prevent F5 and Ctrl+R
-        if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+        // Prevent F5 & Ctrl+R
+        if (e.key === "F5" || (e.ctrlKey && e.key === "r")) {
           e.preventDefault();
           e.stopPropagation();
-          addWarning('tabSwitch');
+          addWarning("tabSwitch");
           return false;
         }
-
         // Prevent Alt+Tab
-        if (e.altKey && e.key === 'Tab') {
+        if (e.altKey && e.key === "Tab") {
           e.preventDefault();
-          addWarning('tabSwitch');
+          addWarning("tabSwitch");
           return false;
         }
-
-        // Prevent Ctrl+W and Cmd+W
-        if ((e.ctrlKey || e.metaKey) && e.key === 'w') {
+        // Prevent Ctrl+W / Cmd+W
+        if ((e.ctrlKey || e.metaKey) && e.key === "w") {
           e.preventDefault();
-          addWarning('tabSwitch');
+          addWarning("tabSwitch");
           return false;
         }
-
-        // Prevent Ctrl+Shift+W and Cmd+Shift+W
-        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'W') {
+        // Prevent Ctrl+Shift+W, Cmd+Shift+W
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "W") {
           e.preventDefault();
-          addWarning('tabSwitch');
+          addWarning("tabSwitch");
           return false;
         }
-
         // Prevent Alt+F4
-        if (e.altKey && e.key === 'F4') {
+        if (e.altKey && e.key === "F4") {
           e.preventDefault();
-          addWarning('tabSwitch');
+          addWarning("tabSwitch");
           return false;
         }
-
         // Prevent Ctrl+Alt+Delete
-        if (e.ctrlKey && e.altKey && e.key === 'Delete') {
+        if (e.ctrlKey && e.altKey && e.key === "Delete") {
           e.preventDefault();
-          addWarning('tabSwitch');
+          addWarning("tabSwitch");
           return false;
         }
-
         // Prevent Windows key
-        if (e.key === 'Meta' || e.key === 'OS') {
+        if (e.key === "Meta" || e.key === "OS") {
           e.preventDefault();
-          addWarning('tabSwitch');
+          addWarning("tabSwitch");
           return false;
         }
-
         // Prevent Ctrl+Shift+I
-        if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+        if (e.ctrlKey && e.shiftKey && e.key === "I") {
           e.preventDefault();
-          addWarning('tabSwitch');
+          addWarning("tabSwitch");
           return false;
         }
       }
     };
 
-    // Add event listeners
-    window.addEventListener('beforeunload', preventReload);
-    document.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener("beforeunload", preventReload);
+    document.addEventListener("keydown", handleKeyDown, true);
     document.addEventListener("fullscreenchange", onFullscreenChange);
     document.addEventListener("webkitfullscreenchange", onFullscreenChange);
     document.addEventListener("mozfullscreenchange", onFullscreenChange);
     document.addEventListener("MSFullscreenChange", onFullscreenChange);
 
-    // Check fullscreen status periodically
-    const fullscreenCheck = setInterval(() => {
-      if (!isTestFinished && !document.fullscreenElement) {
-        enforceFullScreen();
-      }
-    }, 1000);
-
     return () => {
-      window.removeEventListener('beforeunload', preventReload);
-      document.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener("beforeunload", preventReload);
+      document.removeEventListener("keydown", handleKeyDown, true);
       document.removeEventListener("fullscreenchange", onFullscreenChange);
       document.removeEventListener("webkitfullscreenchange", onFullscreenChange);
       document.removeEventListener("mozfullscreenchange", onFullscreenChange);
       document.removeEventListener("MSFullscreenChange", onFullscreenChange);
-      clearInterval(fullscreenCheck);
     };
   }, [isTestFinished, contestId]);
 
   const handleFullscreenReEntry = async () => {
     setShowWarningModal(false);
-    const element = document.documentElement;
-    try {
-      if (element.requestFullscreen) {
-        await element.requestFullscreen();
-      } else if (element.webkitRequestFullscreen) {
-        await element.webkitRequestFullscreen();
-      } else if (element.mozRequestFullScreen) {
-        await element.mozRequestFullScreen();
-      } else if (element.msRequestFullscreen) {
-        await element.msRequestFullscreen();
+    // Return to FS if user left it
+    if (!disableAutoFullscreen && !fullScreenMode) {
+      try {
+        await actuallyEnforceFullScreen();
+      } catch (error) {
+        console.error("Error returning to fullscreen:", error);
+        setTimeout(handleFullscreenReEntry, 500);
       }
-    } catch (error) {
-      console.error("Error entering fullscreen mode:", error);
-      // Retry after a short delay
-      setTimeout(handleFullscreenReEntry, 500);
     }
   };
 
   useEffect(() => {
-    const initializeFullScreen = async () => {
-      if (!isTestFinished) {
+    // If not finished, try to do fullscreen on load
+    if (!disableAutoFullscreen && !isTestFinished) {
+      (async () => {
         try {
-          await handleFullscreenReEntry();
+          await actuallyEnforceFullScreen();
         } catch (error) {
           console.error("Error initializing fullscreen:", error);
         }
-      }
-    };
-
-    initializeFullScreen();
-  }, []); // Empty dependency array for initial load only
+      })();
+    }
+  }, []); // no lines removed
 
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
@@ -343,7 +353,6 @@ export default function Mcq_Assessment() {
       const interval = setInterval(() => {
         setRemainingTime((prevTime) => Math.max(prevTime - 1, 0));
       }, 1000);
-
       return () => clearInterval(interval);
     }
   }, [remainingTime]);
@@ -352,14 +361,11 @@ export default function Mcq_Assessment() {
     const disableRightClick = (e) => {
       e.preventDefault();
     };
-
     const disableTextSelection = (e) => {
       e.preventDefault();
     };
-
     document.addEventListener("contextmenu", disableRightClick);
     document.addEventListener("selectstart", disableTextSelection);
-
     return () => {
       document.removeEventListener("contextmenu", disableRightClick);
       document.removeEventListener("selectstart", disableTextSelection);
@@ -370,51 +376,48 @@ export default function Mcq_Assessment() {
     const handleBeforeUnload = (e) => {
       if (!isTestFinished) {
         e.preventDefault();
-        e.returnValue = '';
-        addWarning('tabSwitch');
-        return '';
+        e.returnValue = "";
+        addWarning("tabSwitch");
+        return "";
       }
     };
-
     const handleBlur = () => {
       if (!isTestFinished) {
         setHasFocus(false);
-        addWarning('tabSwitch');
+        addWarning("tabSwitch");
       }
     };
-
     const handleFocus = () => {
       setHasFocus(true);
     };
-
     const handleVisibilityChange = () => {
       if (!isTestFinished) {
         if (document.hidden) {
           const currentTime = Date.now();
           if (currentTime - lastActiveTime.current > 500) {
-            addWarning('tabSwitch');
+            addWarning("tabSwitch");
           }
         }
         lastActiveTime.current = Date.now();
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('blur', handleBlur);
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("blur", handleBlur);
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     const focusCheckInterval = setInterval(() => {
       if (!isTestFinished && !document.hasFocus()) {
-        addWarning('tabSwitch');
+        addWarning("tabSwitch");
       }
     }, 1000);
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('blur', handleBlur);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("blur", handleBlur);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       clearInterval(focusCheckInterval);
     };
   }, [isTestFinished]);
@@ -446,9 +449,10 @@ export default function Mcq_Assessment() {
     );
   }
 
+  // TEXT NOW EVEN SMALLER ON MOBILE => text-xs on phones, sm => text-sm, md => text-base
   return (
     <div
-      className="min-h-screen bg-gray-50"
+      className="min-h-screen bg-gray-50 text-xs sm:text-sm md:text-base"
       style={{
         userSelect: "none",
         WebkitUserSelect: "none",
@@ -462,15 +466,43 @@ export default function Mcq_Assessment() {
       onPaste={(e) => e.preventDefault()}
       onKeyDown={(e) => e.preventDefault()}
     >
-      <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none'"></meta>
-      <div className="max-w-[1800px] max-h-[1540px] mx-auto p-7 sm:p-6">
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden mt-12">
+      <meta
+        httpEquiv="Content-Security-Policy"
+        content="frame-ancestors 'none'"
+      ></meta>
+      <div className="max-w-[1800px] max-h-[1540px] mx-auto p-3 sm:p-6">
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden mt-4 sm:mt-12">
           <div className="border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
             <Header duration={remainingTime} />
           </div>
-          <div className="flex flex-col lg:flex-row gap-6 p-6 min-h-[750px] mt-7">
+
+          {/* Hamburger button for mobile */}
+          <div className="absolute top-4 right-4 lg:hidden z-50">
+            <button
+              onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+              className="p-2 text-gray-700 bg-gray-200 rounded-md"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div className="flex flex-col lg:flex-row gap-6 p-4 sm:p-6 min-h-[600px] sm:min-h-[750px] mt-2 sm:mt-7">
             <div className="flex-grow">
               <Question
+                // If you have direct control of how "Previous / Next / Finish" are laid out
+                // you might add special classes for them so we can apply custom logic in CSS
                 question={questions[currentIndex]}
                 currentIndex={currentIndex}
                 totalQuestions={questions.length}
@@ -483,8 +515,29 @@ export default function Mcq_Assessment() {
                 reviewStatus={reviewStatus}
               />
             </div>
-            <div className="lg:w-80">
-              <div className="sticky top-6">
+
+            {/*
+              SIDEBAR: now "slides in" from the right side on mobile
+              We comment out the old style prop with display, and use a transform approach.
+            */}
+            {/* style={{
+                display:
+                  screenWidth >= 1024 || isMobileSidebarOpen ? "block" : "none"
+              }} */}
+            <div
+              className={`lg:w-80 bg-white z-40 lg:z-auto 
+              fixed lg:static top-0 bottom-0 right-0 transition-transform
+              transform
+              ${
+                // If large screen => sidebar is always visible
+                screenWidth >= 1024
+                  ? "translate-x-0"
+                  : isMobileSidebarOpen
+                  ? "translate-x-0"
+                  : "translate-x-full"
+              }`}
+            >
+              <div className="sticky top-6 p-4 sm:p-0">
                 <Sidebar
                   totalQuestions={questions.length}
                   currentIndex={currentIndex}
@@ -496,12 +549,12 @@ export default function Mcq_Assessment() {
             </div>
           </div>
         </div>
+
         <div className="fixed inset-0 pointer-events-none z-[5] flex items-center justify-start opacity-[0.08]">
           <div className="transform rotate-45 text-black text-[120px] ml-8 font-extrabold select-none">
             SNSGROUPS
           </div>
         </div>
-
         <div className="fixed inset-0 pointer-events-none z-[5] flex items-center justify-center opacity-[0.08]">
           <div className="transform rotate-45 text-black text-[120px] font-extrabold select-none">
             SNSGROUPS
@@ -512,8 +565,18 @@ export default function Mcq_Assessment() {
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
               <div className="text-red-600 mb-4">
-                <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                <svg
+                  className="w-12 h-12 mx-auto"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
                 </svg>
               </div>
               <h3 className="text-xl font-semibold text-center mb-4">
@@ -533,6 +596,7 @@ export default function Mcq_Assessment() {
             </div>
           </div>
         )}
+
         {showConfirmModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
@@ -540,7 +604,8 @@ export default function Mcq_Assessment() {
                 Submit Assessment
               </h3>
               <p className="text-gray-600 text-center mb-6">
-                Are you sure you want to submit your assessment? This action cannot be undone.
+                Are you sure you want to submit your assessment? This action
+                cannot be undone.
               </p>
               <div className="flex gap-4">
                 <button
@@ -557,13 +622,48 @@ export default function Mcq_Assessment() {
                   className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Submitting...' : 'Confirm Submit'}
+                  {isSubmitting ? "Submitting..." : "Confirm Submit"}
                 </button>
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {/*
+        ADDED: Some global CSS override to place "Finish" below "Previous/Next" on mobile
+        (assuming inside <Question> you have a container with .button-row or .question-nav, etc.)
+        If not, you might have to adjust these class names accordingly.
+      */}
+      <style>
+        {`
+          @media (max-width: 640px) {
+            /* On phone: Put "Previous" and "Next" side by side, "Finish" below */
+            .question-nav {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 0.5rem;
+            }
+            .question-nav .prev-button,
+            .question-nav .next-button {
+              order: 1;
+            }
+            .question-nav .finish-button {
+              order: 3;
+              margin-top: 0.5rem;
+            }
+          }
+          @media (min-width: 641px) {
+            /* Desktop: all three horizontally */
+            .question-nav {
+              display: flex;
+              flex-direction: row;
+              gap: 1rem;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 }
