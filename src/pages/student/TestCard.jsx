@@ -1,99 +1,235 @@
-import React, { useState } from "react";
-import { Card, CardContent, Typography, Box, Button, Avatar } from "@mui/material";
-import { useNavigate, Link } from "react-router-dom";
-import codingIcon from "../../assets/coding.png"; // Replace with the actual path
-import aptitudeIcon from "../../assets/Skillimage.png"; // Replace with the actual path
+import React, { useMemo } from 'react';
+import {
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  Button,
+  Avatar,
+  useTheme,
+  useMediaQuery,
+  styled
+} from '@mui/material';
+import { useNavigate, Link } from 'react-router-dom';
+import PropTypes from 'prop-types';
+import codingIcon from "../../assets/coding.png";
+import aptitudeIcon from "../../assets/Skillimage.png";
 
-const TestCard = ({ test, assessment_type, isCompleted, studentId, isPublished }) => {
+// Styled components for better organization and reusability
+const StyledCard = styled(Card)(({ theme, iscompleted }) => ({
+  width: '100%',
+  height: 'auto',
+  minHeight: '200px',
+  borderRadius: theme.spacing(2),
+  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+  marginBottom: theme.spacing(2),
+  cursor: iscompleted === 'true' ? 'not-allowed' : 'pointer',
+  backgroundColor: theme.palette.background.paper,
+  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+  border: `1px solid ${theme.palette.divider}`,
+  '&:hover': {
+    transform: 'translateY(-4px)',
+    boxShadow: '0 6px 12px rgba(0, 0, 0, 0.15)',
+  },
+  [theme.breakpoints.down('sm')]: {
+    minHeight: '250px',
+  },
+}));
+
+const StyledAvatar = styled(Avatar)(({ theme }) => ({
+  width: theme.spacing(6),
+  height: theme.spacing(6),
+  marginRight: theme.spacing(2),
+  backgroundColor: theme.palette.grey[100],
+  [theme.breakpoints.down('sm')]: {
+    width: theme.spacing(5),
+    height: theme.spacing(5),
+  },
+}));
+
+const TestCard = ({
+  test = {},
+  assessment_type = 'unknown',
+  isCompleted = false,
+  studentId = '',
+  isPublished = false
+}) => {
   const navigate = useNavigate();
-  const [expanded, setExpanded] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const handleCardClick = () => {
+  // Get the correct icon based on assessment type
+  const icon = useMemo(() =>
+    assessment_type === "coding" ? codingIcon : aptitudeIcon,
+  [assessment_type]);
+
+  // Memoized values to prevent unnecessary recalculations
+  const statusConfig = useMemo(() => ({
+    color: isCompleted ? theme.palette.success.main : theme.palette.error.main,
+    text: isCompleted ? 'Completed' : 'Ongoing',
+    buttonText: isCompleted ? 'View Test' : 'Take Test'
+  }), [isCompleted]);
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not specified';
+    try {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('en-US', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      }).format(date);
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return 'Invalid date';
+    }
+  };
+
+  const handleCardClick = (e) => {
+    e.preventDefault();
     if (!isCompleted) {
-      navigate(`/testinstructions/${test?.contestId || test?.testId || "unknown"}`, {
-        state: { test, assessment_type },
+      const testId = test?.contestId || test?.testId || 'unknown';
+      navigate(`/testinstructions/${testId}`, {
+        state: { test, assessment_type }
       });
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "Not specified";
-    const date = new Date(dateString);
-    return date.toLocaleString();
-  };
-
-  const icon = assessment_type === "coding" ? codingIcon : aptitudeIcon;
-  const statusColor = isCompleted ? "green" : "red";
-  const statusText = isCompleted ? "Completed" : "Ongoing";
-  const buttonText = isCompleted ? "View Test" : "Take Test";
-
   return (
-    <Card
+    <StyledCard
       variant="outlined"
-      style={{
-        height: "200px",
-        borderRadius: "10px",
-        boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
-        marginBottom: "16px",
-        cursor: isCompleted ? "not-allowed" : "pointer",
-        backgroundColor: "white",
-        transition: "transform 0.2s",
-        "&:hover": {
-          transform: "scale(1.02)",
-        },
-      }}
+      iscompleted={isCompleted.toString()}
       onClick={handleCardClick}
     >
-      <CardContent style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%" }}>
-        <Box>
-          <Box display="flex" alignItems="center" mb={1}>
-            <Avatar src={icon} alt={assessment_type} style={{ marginRight: "16px", backgroundColor: "#f0f0f0" }} />
-            <Box flexGrow={1}>
-              <Typography variant="h5" style={{ fontWeight: "bold", color: "#1E293B" }}>
-                {test?.name || "Unknown Test"}
-              </Typography>
-              <Typography variant="body2" style={{ color: "#6B7280" }}>
-                {test?.assessment_type?.toUpperCase() || "Unknown Type"}
-              </Typography>
-            </Box>
-            <Box>
-              
-              <Typography variant="body2" style={{ color: statusColor }}>
-                {statusText}
-              </Typography>
-            </Box>
+      <CardContent sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        height: '100%',
+        padding: isMobile ? theme.spacing(2) : theme.spacing(3),
+      }}>
+        <Box sx={{
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          alignItems: isMobile ? 'flex-start' : 'center',
+          gap: 2
+        }}>
+          <StyledAvatar
+            src={icon}
+            alt={assessment_type}
+          />
+          <Box sx={{ flexGrow: 1 }}>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 600,
+                color: theme.palette.text.primary,
+                mb: 0.5,
+                fontSize: isMobile ? '1.2rem' : '1.5rem',
+              }}
+            >
+              {test?.name || 'Unknown Test'}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: theme.palette.text.secondary, fontSize: isMobile ? '0.875rem' : '1rem' }}
+            >
+              {assessment_type?.toUpperCase() || 'Unknown Type'}
+            </Typography>
           </Box>
+          <Typography
+            variant="body2"
+            sx={{
+              color: statusConfig.color,
+              fontWeight: 500,
+              fontSize: isMobile ? '0.875rem' : '1rem',
+            }}
+          >
+            {statusConfig.text}
+          </Typography>
         </Box>
-        <Typography variant="body2" style={{ color: "#6B7280" }}>
-              Take this test with proper preparation.... All The Best !
-            </Typography>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mt={1}>
+
+        <Typography
+          variant="body2"
+          sx={{
+            color: theme.palette.text.secondary,
+            fontStyle: 'italic',
+            fontSize: isMobile ? '0.875rem' : '1rem',
+          }}
+        >
+          Take this test with proper preparation. All The Best!
+        </Typography>
+
+        <Box sx={{
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          justifyContent: 'space-between',
+          alignItems: isMobile ? 'flex-start' : 'center',
+          gap: 2,
+          mt: 'auto'
+        }}>
           <Box>
-            <Typography variant="body2" style={{ color: "#374151" }}>
-              <strong>Start Time:</strong> {formatDate(test?.starttime)}
-            </Typography>
-            <Typography variant="body2" style={{ color: "#374151" }}>
-              <strong>End Time:</strong> {formatDate(test?.endtime)}
-            </Typography>
+            {['starttime', 'endtime'].map((timeType) => (
+              <Typography
+                key={timeType}
+                variant="body2"
+                sx={{
+                  color: theme.palette.text.primary,
+                  mb: 0.5,
+                  fontSize: isMobile ? '0.875rem' : '1rem',
+                }}
+              >
+                <strong>{timeType === 'starttime' ? 'Start' : 'End'} Time:</strong>{' '}
+                {formatDate(test?.[timeType])}
+              </Typography>
+            ))}
           </Box>
+
           <Box>
-            {isCompleted && isPublished && (
-              <Link to={`/result/${test?.contestId || test?.testId || "unknown"}/${studentId}`} style={{ textDecoration: "none" }}>
-                <Button variant="contained" color="primary">
+            {isCompleted && isPublished ? (
+              <Link
+                to={`/result/${test?.contestId || test?.testId || 'unknown'}/${studentId}`}
+                style={{ textDecoration: 'none' }}
+              >
+                <Button
+                  variant="contained"
+                  color="primary"
+                  fullWidth={isMobile}
+                  sx={{ fontSize: isMobile ? '0.875rem' : '1rem' }}
+                >
                   View Result
                 </Button>
               </Link>
-            )}
-            {!isCompleted && (
-              <Button variant="contained" color="primary" onClick={handleCardClick}>
-                {buttonText}
+            ) : (
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleCardClick}
+                fullWidth={isMobile}
+                sx={{ fontSize: isMobile ? '0.875rem' : '1rem' }}
+              >
+                {statusConfig.buttonText}
               </Button>
             )}
           </Box>
         </Box>
       </CardContent>
-    </Card>
+    </StyledCard>
   );
 };
 
-export default TestCard;
+TestCard.propTypes = {
+  test: PropTypes.shape({
+    name: PropTypes.string,
+    contestId: PropTypes.string,
+    testId: PropTypes.string,
+    starttime: PropTypes.string,
+    endtime: PropTypes.string,
+    assessment_type: PropTypes.string,
+  }),
+  assessment_type: PropTypes.string,
+  isCompleted: PropTypes.bool,
+  studentId: PropTypes.string,
+  isPublished: PropTypes.bool,
+};
+
+export default React.memo(TestCard);

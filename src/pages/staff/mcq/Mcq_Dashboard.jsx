@@ -162,9 +162,15 @@ const Mcq_Dashboard = () => {
       // Eliminate duplicates
       const uniqueQuestions = Array.from(new Set(questions.map(JSON.stringify))).map(JSON.parse);
 
+      // Get the email addresses of the selected students
+      const selectedStudentEmails = students
+        .filter((student) => selectedStudents.includes(student.regno))
+        .map((student) => student.email);
+
       const response = await axios.post("https://vercel-1bge.onrender.com/api/mcq/publish/", {
         questions: uniqueQuestions,
         students: selectedStudents,
+        studentEmails: selectedStudentEmails,  // Include student emails in the request
       },
       {
         headers: { Authorization: `Bearer ${token}` },
@@ -334,7 +340,6 @@ const Mcq_Dashboard = () => {
             handleCreateManually={() => navigate('/mcq/CreateQuestion')}
             handleBulkUpload={() => navigate('/mcq/bulkUpload')}
             handleMcqlibrary={() => navigate('/mcq/McqLibrary')}
-            handleAi={() => navigate('/mcq/aigenerator')}
           />
         )}
 
@@ -382,6 +387,7 @@ const Mcq_Dashboard = () => {
                     <TableCell>Registration Number</TableCell>
                     <TableCell>Department</TableCell>
                     <TableCell>College Name</TableCell>
+                    <TableCell>Email</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -399,6 +405,7 @@ const Mcq_Dashboard = () => {
                         <TableCell>{student.regno}</TableCell>
                         <TableCell>{student.dept}</TableCell>
                         <TableCell>{student.collegename}</TableCell>
+                        <TableCell>{student.email}</TableCell>
                       </TableRow>
                     ))}
                 </TableBody>

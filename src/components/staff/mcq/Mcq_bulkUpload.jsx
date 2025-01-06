@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import GroupImage from "../../../assets/bulk.png";
@@ -8,9 +8,23 @@ const Mcq_bulkUpload = () => {
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [activeTab, setActiveTab] = useState("My Device"); // Default tab
   const [highlightStep, setHighlightStep] = useState(1); // Step highlight state
+  const [currentPage, setCurrentPage] = useState(1); // Current page for pagination
+  const [questionsPerPage] = useState(10); // Number of questions per page
+  const [showImage, setShowImage] = useState(true); // Control visibility of the image
   const navigate = useNavigate();
   const location = useLocation();
   const requiredQuestions = location.state?.requiredQuestions || 0;
+
+  useEffect(() => {
+    // Load questions from local storage on component mount
+    const storedQuestions = JSON.parse(localStorage.getItem("uploadedQuestions")) || [];
+    setQuestions(storedQuestions);
+  }, []);
+
+  useEffect(() => {
+    // Save questions to local storage whenever questions state changes
+    localStorage.setItem("uploadedQuestions", JSON.stringify(questions));
+  }, [questions]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -58,6 +72,7 @@ const Mcq_bulkUpload = () => {
         console.log("Formatted Questions:", formattedQuestions); // Debugging statement
 
         setQuestions((prevQuestions) => [...prevQuestions, ...formattedQuestions]);
+        setShowImage(false); // Hide the image after upload
         alert("File uploaded successfully! Preview the questions below.");
       } catch (error) {
         console.error("Error processing file:", error);
@@ -100,7 +115,7 @@ const Mcq_bulkUpload = () => {
 
     try {
       const response = await axios.post(
-        "https://vercel-1bge.onrender.com/api/mcq/save-questions/",
+        "http://localhost:8000/api/mcq/save-questions/",
         { questions: selected },
         {
           headers: {
@@ -122,6 +137,13 @@ const Mcq_bulkUpload = () => {
       alert("Failed to submit questions. Please try again.");
     }
   };
+
+  // Pagination Logic
+  const indexOfLastQuestion = currentPage * questionsPerPage;
+  const indexOfFirstQuestion = indexOfLastQuestion - questionsPerPage;
+  const currentQuestions = questions.slice(indexOfFirstQuestion, indexOfLastQuestion);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
@@ -172,16 +194,18 @@ const Mcq_bulkUpload = () => {
 
         {/* Upload Section */}
         <div className="flex flex-col items-center justify-center mb-6">
-          <img
-            src={GroupImage}
-            alt="Upload Illustration"
-            className="w-48 h-48 object-contain mb-4"
-          />
+          {showImage && (
+            <img
+              src={GroupImage}
+              alt="Upload Illustration"
+              className="w-48 h-48 object-contain mb-4"
+            />
+          )}
           <label
             htmlFor="fileInput"
             className="bg-yellow-400 text-black px-6 py-3 rounded-full shadow hover:bg-yellow-500 cursor-pointer transition"
           >
-            Upload CSV
+            {showImage ? "Upload CSV" : "Add Question"}
           </label>
           <input
             type="file"
@@ -217,7 +241,7 @@ const Mcq_bulkUpload = () => {
               </tr>
             </thead>
             <tbody>
-              {questions.map((q, index) => (
+              {currentQuestions.map((q, index) => (
                 <tr
                   key={index}
                   className={`${
@@ -227,8 +251,8 @@ const Mcq_bulkUpload = () => {
                   <td className="px-4 py-2 text-center">
                     <input
                       type="checkbox"
-                      checked={selectedQuestions.includes(index)}
-                      onChange={() => handleSelectQuestion(index)}
+                      checked={selectedQuestions.includes(indexOfFirstQuestion + index)}
+                      onChange={() => handleSelectQuestion(indexOfFirstQuestion + index)}
                     />
                   </td>
                   <td className="px-4 py-2">{q.question}</td>
@@ -240,6 +264,27 @@ const Mcq_bulkUpload = () => {
               ))}
             </tbody>
           </table>
+
+          {/* Pagination Controls */}
+          <div className="flex justify-between mt-4">
+            <button
+              onClick={() => paginate(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="text-gray-600">
+              Page {currentPage} of {Math.ceil(questions.length / questionsPerPage)}
+            </span>
+            <button
+              onClick={() => paginate(currentPage + 1)}
+              disabled={currentPage === Math.ceil(questions.length / questionsPerPage)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
 
           {/* Submit Button */}
           <div className="flex justify-end mt-6">

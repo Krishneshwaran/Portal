@@ -1,7 +1,7 @@
 // QuestionModal.js (New Component)
 import React from 'react';
 
-const QuestionModal = ({ onClose, handleCreateManually, handleBulkUpload, handleMcqlibrary, handleAi }) => {
+const QuestionModal = ({ onClose, handleCreateManually, handleBulkUpload, handleMcqlibrary, handleAi}) => {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
         <div className="p-8 max-w-4xl mx-auto bg-white rounded-lg shadow-lg relative">

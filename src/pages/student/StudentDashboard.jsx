@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Tabs, Tab, AppBar, Typography, Box, Container, Grid } from "@mui/material";
-import { styled } from "@mui/system";
+import { Tabs, Tab, Typography, Box, Container, Grid } from "@mui/material";
+import { styled, useTheme, useMediaQuery } from "@mui/material";
 import TestCard from "./TestCard";
 import axios from "axios";
 import NoExams from "../../assets/happy.png";
@@ -31,13 +31,17 @@ const StyledTab = styled(Tab)({
   },
 });
 
-const DashboardHeader = styled(Box)({
-  background: 'linear-gradient(135deg, #rgb(139, 135, 251),rgb(95, 121, 214) 100%)',
+const DashboardHeader = styled(Box)(({ theme }) => ({
+  background: 'linear-gradient(135deg, rgb(139, 135, 251), rgb(95, 121, 214) 2%%)',
   borderRadius: '16px',
   padding: '32px',
   marginBottom: '32px',
   color: 'blue',
-});
+  [theme.breakpoints.down('sm')]: {
+    padding: '16px',
+    marginBottom: '16px',
+  },
+}));
 
 const StudentDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -48,6 +52,9 @@ const StudentDashboard = () => {
     name: "",
     regno: "",
   });
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const fetchStudentData = async () => {
     try {
@@ -131,22 +138,22 @@ const StudentDashboard = () => {
       const response = await axios.get(`https://vercel-1bge.onrender.com/api/student/mcq-tests?regno=${regno}`, {
         withCredentials: true,
       });
-  
+
       const formattedTests = response.data.map((test) => {
         const durationConfig = test.testConfiguration?.duration;
         const hours = parseInt(durationConfig?.hours || "0", 10);
         const minutes = parseInt(durationConfig?.minutes || "0", 10);
         const duration = (hours * 3600) + (minutes * 60);
-  
+
         const fullScreenMode = test.testConfiguration?.fullScreenMode || false;
         const faceDetection = test.testConfiguration?.faceDetection || false;
-  
+
         if (test.testConfiguration) {
           localStorage.setItem(`testDuration_${test._id}`, duration);
           localStorage.setItem(`fullScreenMode_${test._id}`, fullScreenMode);
           localStorage.setItem(`faceDetection_${test._id}`, faceDetection);
         }
-  
+
         return {
           testId: test._id,
           name: test.assessmentOverview?.name || "Unknown Test",
@@ -158,14 +165,14 @@ const StudentDashboard = () => {
           status: test.status || "Unknown",
         };
       });
-  
+
       return formattedTests;
     } catch (error) {
       console.error("Error fetching MCQ tests:", error);
       return [];
     }
   };
-  
+
   const fetchCodingReports = async () => {
     try {
       const response = await axios.get(`https://vercel-1bge.onrender.com/api/student/coding-reports/`, {
@@ -200,14 +207,14 @@ const StudentDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Container maxWidth="8xl" className="py-8">
+      <Container maxWidth="xl" className="py-4 px-2 sm:px-4">
         <DashboardHeader>
-          <div className="flex items-center gap-6">
-            <div className="bg-blue p-4 rounded-full">
-              <Award className="h-14  w-14 bg-blue" />
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="bg-blue p-2 rounded-full">
+              <Award className="h-10 w-10 bg-blue" />
             </div>
             <div>
-              <Typography variant="h4" className="font-bold text-sky-600">
+              <Typography variant="h5" className="font-bold text-sky-600">
                 Welcome back, {studentData.name}!
               </Typography>
               <Typography variant="subtitle1" className="text-blue-950 px-1">
@@ -217,19 +224,19 @@ const StudentDashboard = () => {
           </div>
         </DashboardHeader>
 
-        <Box className="bg-white rounded-xl shadow-sm p-6">
+        <Box className="bg-white rounded-xl shadow-sm p-4">
           <StyledTabs value={activeTab} onChange={handleTabChange}>
             <StyledTab label="Assigned to you" />
             <StyledTab label="Completed/Closed" />
           </StyledTabs>
 
-          <Box className="mt-8">
+          <Box className="mt-6">
             {activeTab === 0 && (
               <>
-                <Typography variant="h6" className="font-bold text-gray-900 mb-6">
+                <Typography variant="h6" className="font-bold text-gray-900 mb-4">
                   Active Assessments
                 </Typography>
-                <Grid container spacing={4}>
+                <Grid container spacing={2}>
                   {openTests.length > 0 &&
                     openTests.map((test) => (
                       <Grid item xs={12} sm={6} md={4} key={test.contestId}>
@@ -255,7 +262,7 @@ const StudentDashboard = () => {
                       <img
                         src={NoExams}
                         alt="No Exams"
-                        className="mx-auto mb-6 w-64 h-64"
+                        className="mx-auto mb-6 w-48 h-48"
                       />
                       <Typography variant="h6" className="font-medium text-gray-900">
                         Enjoy your free time!
@@ -267,10 +274,10 @@ const StudentDashboard = () => {
             )}
             {activeTab === 1 && (
               <>
-                <Typography variant="h6" className="font-bold text-gray-900 mb-6">
+                <Typography variant="h6" className="font-bold text-gray-900 mb-4">
                   Completed Assessments
                 </Typography>
-                <Grid container spacing={4}>
+                <Grid container spacing={2}>
                   {completedTests.length > 0 ? (
                     completedTests.map((test) => (
                       <Grid item xs={12} sm={6} md={4} key={test.contestId || test.testId}>
@@ -288,7 +295,7 @@ const StudentDashboard = () => {
                       <img
                         src={NoExams}
                         alt="No Exams"
-                        className="mx-auto mb-6 w-64 h-64"
+                        className="mx-auto mb-6 w-48 h-48"
                       />
                       <Typography variant="h6" className="font-medium text-gray-900">
                         No completed assessments yet

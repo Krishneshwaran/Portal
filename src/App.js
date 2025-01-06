@@ -45,7 +45,7 @@ import Mcq_Dashboard from './pages/staff/mcq/Mcq_Dashboard';
 import McqLibrary from './pages/staff/mcq/McqQuestionLibrary'
 import Student_report from './pages/staff/Student_report';
 import StudentResult from './pages/student/StudentResult';
-
+import StudentPasswordReset from './pages/student/StudentPasswordReset';
 
 
 // Layout component for wrapping student routes 
@@ -77,6 +77,7 @@ function App() {
         {/* Student Routes */}
         {/* <Route path="/StudentRegister" element={<StudentRegister />} /> */}
         <Route path="/StudentLogin" element={<StudentLogin onLogin={setStudentId} />} />
+        <Route path="/StudentPasswordReset" element={<StudentPasswordReset />} />
         <Route element={<StudentLayout />}>
           <Route path="/studentdashboard" element={<StudentDashboard />} />
           <Route path="/studentprofile" element={<StudentProfile studentId={studentId} />} />
