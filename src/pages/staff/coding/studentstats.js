@@ -35,7 +35,7 @@ const EnhancedStudentDashboard = () => {
     const fetchStudentData = async () => {
       try {
         const response = await axios.get(
-          `http://127.0.0.1:8000/staff/studentstats/${regno}/`
+          `https://vercel-1bge.onrender.com/staff/studentstats/${regno}/`
         );
         if (response.status === 200) {
           setStudentData(response.data);

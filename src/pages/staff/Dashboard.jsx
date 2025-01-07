@@ -153,8 +153,8 @@ const Dashboard = () => {
                 category={test.category || 'Uncategorized'}
                 stats={{
                   Assigned: test.assignedCount || 0,
-                  Register: test.register || 0,
-                  Completed: test.complete || 0,
+                  YetToStart: test.yetToStartCount || 0,
+                  Completed: test.completedCount || 0,
                 }}
                 status={test.status || 'Upcoming'}
               />
