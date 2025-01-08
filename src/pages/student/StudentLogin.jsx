@@ -108,9 +108,13 @@ const StudentLogin = ({ onLogin }) => {
       >
         <div className="w-full p-12">
           <motion.div variants={itemVariants} className="mb-10 text-center">
-            <h2 className="text-4xl font-bold text-gray-800">
+          <h1 className="text-4xl font-bold text-gray-800">
+          SNS INSTITUTION
+          ASSESMENT-PORTAL
+            </h1>
+            <p className="text-xl font-sm text-gray-800">
               Login to Your Account
-            </h2>
+            </p>
             {/* <p className="mt-3 text-sm text-gray-600">
               Don’t have an account?{' '}
               <Link
@@ -152,7 +156,7 @@ const StudentLogin = ({ onLogin }) => {
                   value={formData.email}
                   onChange={handleChange}
                   className="block w-full rounded-xl border border-gray-200 bg-white py-3.5 pl-10 pr-3 text-gray-800 placeholder:text-gray-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
-                  placeholder="jane@example.com"
+                  placeholder="test@example.com"
                 />
               </div>
             </div>
