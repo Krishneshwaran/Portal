@@ -1,18 +1,10 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
 import ContestPage from './pages/staff/coding/ContestPage';
-import StartContest from './pages/staff/coding/StartContest';
 import SelectTestOption from './pages/staff/coding/SelectTestOption';
-import FileUpload from './pages/staff/coding/FileUpload';
-import ManualSelectUI from './pages/staff/coding/ManualSelectUI';
-import HrUpload from './pages/staff/coding/HrUploadPage';
-import OnebyOne from './pages/staff/coding/OnebyOne';
-import ManualPage from './pages/staff/coding/ManualPage';
-import ContestDashboard from './pages/staff/coding/ContestDashboard';
 import Login from './pages/staff/Login';
 // import Signup from './pages/staff/Signup';
 import Dashboard from './pages/staff/Dashboard';
-import GeneralHome from './pages/GeneralHome';
 // import StudentRegister from './pages/student/StudentRegister';
 import StudentLogin from './pages/student/StudentLogin';
 import StudentDashboard from './pages/student/StudentDashboard';

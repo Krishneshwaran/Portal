@@ -56,16 +56,16 @@ const TestInstructions = () => {
       });
 
       const formattedTests = response.data.map((test) => {
-        const { hours, minutes } = test.testConfiguration.duration;
+        const { hours = 0, minutes = 0 } = test.testConfiguration?.duration || {};
         const duration = (parseInt(hours) * 3600) + (parseInt(minutes) * 60);
-        const fullScreenMode = test.testConfiguration.fullScreenMode;
-        const faceDetection = test.testConfiguration.faceDetection;
-        const passPercentage = test.testConfiguration.passPercentage;
-
+        const fullScreenMode = test.testConfiguration?.fullScreenMode || false;
+        const faceDetection = test.testConfiguration?.faceDetection || false;
+        const passPercentage = test.testConfiguration?.passPercentage || 0;
+      
         localStorage.setItem(`testDuration_${test._id}`, duration);
         localStorage.setItem(`fullScreenMode_${test._id}`, fullScreenMode);
         localStorage.setItem(`faceDetection_${test._id}`, faceDetection);
-
+      
         return {
           testId: test._id,
           name: test.assessmentOverview?.name || "Unknown Test",
@@ -77,16 +77,17 @@ const TestInstructions = () => {
           passPercentage: passPercentage,
           assessment_type: "mcq",
           status: test.status,
-          fullScreenMode: test.testConfiguration.fullScreenMode,
-          faceDetection: test.testConfiguration.faceDetection,
-          deviceRestriction: test.testConfiguration.deviceRestriction,
-          noiseDetection: test.testConfiguration.noiseDetection,
+          fullScreenMode,
+          faceDetection,
+          deviceRestriction: test.testConfiguration?.deviceRestriction || false,
+          noiseDetection: test.testConfiguration?.noiseDetection || false,
           guidelines: test.assessmentOverview?.guidelines || "No guidelines available.",
-          resultVisibility: test.testConfiguration.resultVisibility,
-          shuffleQuestions: test.testConfiguration.shuffleQuestions,
-          shuffleOptions: test.testConfiguration.shuffleOptions,
+          resultVisibility: test.testConfiguration?.resultVisibility || "Host Control",
+          shuffleQuestions: test.testConfiguration?.shuffleQuestions || false,
+          shuffleOptions: test.testConfiguration?.shuffleOptions || false,
         };
       });
+      
 
       return formattedTests;
     } catch (error) {
@@ -148,7 +149,7 @@ const TestInstructions = () => {
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-[1920px] mx-auto">
         <div className="space-y-6">
-          <div className="bg-white rounded-lg p-10 shadow-lg">
+          <div className="bg-white rounded-lg p-6 md:p-10 shadow-lg">
             <div className="flex flex-col lg:flex-row lg:items-start lg:gap-12 mb-10">
               {/* Left Column - Image */}
               <div className="lg:w-1/4 mb-6 lg:mb-0 pt-4">
@@ -164,7 +165,7 @@ const TestInstructions = () => {
               <div className="lg:flex-1 pt-4 h-fit overflow-y-auto">
                 {/* Test Title and Description */}
                 <div className="mb-8">
-                  <h1 className="text-4xl font-bold text-gray-900 mb-6">
+                  <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-6">
                     {currentTest?.name || "Test Name"}
                   </h1>
                   <p className="text-gray-600 text-lg mb-6">
@@ -173,7 +174,7 @@ const TestInstructions = () => {
                   </p>
 
                   {/* Test Details Title */}
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">
                     Test Details
                   </h2>
                 </div>
@@ -221,8 +222,8 @@ const TestInstructions = () => {
           </div>
 
           {/* Registration Dates */}
-          <div className="bg-white rounded-lg p-10 shadow-lg">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8">Registration Period</h2>
+          <div className="bg-white rounded-lg p-6 md:p-10 shadow-lg">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Registration Period</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
               <div className="p-6 bg-gray-100 rounded-lg">
                 <h3 className="text-gray-600 mb-3 text-lg">Start Date</h3>
@@ -236,11 +237,11 @@ const TestInstructions = () => {
           </div>
 
           {/* Test Settings */}
-          <div className="bg-white rounded-lg p-10 shadow-lg">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8">Test Settings</h2>
+          <div className="bg-white rounded-lg p-6 md:p-10 shadow-lg">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Test Settings</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
               <div>
-                <h3 className="text-2xl font-semibold mb-6">Proctoring Features</h3>
+                <h3 className="text-xl md:text-2xl font-semibold mb-6">Proctoring Features</h3>
                 <div className="space-y-6">
                   <div className="flex items-center justify-between p-4 bg-gray-100 rounded-lg">
                     <span className="text-lg">Face Detection</span>
@@ -261,7 +262,7 @@ const TestInstructions = () => {
                 </div>
               </div>
               <div>
-                <h3 className="text-2xl font-semibold mb-6">Test Rules</h3>
+                <h3 className="text-xl md:text-2xl font-semibold mb-6">Test Rules</h3>
                 <div className="space-y-4">
                   <p className="flex items-center gap-3 p-4 bg-gray-100 rounded-lg text-lg">
                     <span className="text-gray-700 text-2xl">•</span>
@@ -286,8 +287,8 @@ const TestInstructions = () => {
           </div>
 
           {/* Instructions */}
-          <div className="bg-white rounded-lg p-10 shadow-lg">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8">Test Instructions</h2>
+          <div className="bg-white rounded-lg p-6 md:p-10 shadow-lg">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Test Instructions</h2>
             <div className="space-y-6">
               <p className="text-gray-600 text-lg">Please read the following instructions carefully before starting the test:</p>
               <ul className="list-disc pl-8 space-y-3 text-gray-700 text-lg">
