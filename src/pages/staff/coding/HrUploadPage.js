@@ -48,11 +48,12 @@ const HrUpload = () => {
   const [filters, setFilters] = useState({ collegename: "", dept: "" });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const response = await axios.get("https://vercel-1bge.onrender.com/manualProblems/");
+        const response = await axios.get(`${API_BASE_URL}/manualProblems/`);
         setQuestions(response.data.problems);
       } catch (error) {
         console.error("Failed to fetch questions:", error);
@@ -61,7 +62,7 @@ const HrUpload = () => {
 
     const fetchStudents = async () => {
       try {
-        const response = await axios.get("https://vercel-1bge.onrender.com/api/student/");
+        const response = await axios.get(`${API_BASE_URL}/api/student/`);
         setStudents(response.data);
         setFilteredStudents(response.data); // Initialize filtered list
       } catch (error) {
@@ -113,7 +114,7 @@ const HrUpload = () => {
 
   const handleDelete = async (questionId) => {
     try {
-      await axios.delete("https://vercel-1bge.onrender.com/manualProblems/", {
+      await axios.delete(`${API_BASE_URL}/manualProblems/`, {
         data: { id: questionId },
       });
       setQuestions(questions.filter((q) => q.id !== questionId));
@@ -147,7 +148,7 @@ const HrUpload = () => {
       const csrfToken = Cookies.get("csrftoken");
 
       try {
-        const response = await axios.post("https://vercel-1bge.onrender.com/userinput/", formData, {
+        const response = await axios.post(`${API_BASE_URL}/userinput/`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
             "X-CSRFToken": csrfToken,
@@ -171,7 +172,7 @@ const HrUpload = () => {
 
   const handlePublish = async () => {
     try {
-      const response = await axios.post("https://vercel-1bge.onrender.com/publish/", {
+      const response = await axios.post(`${API_BASE_URL}/publish/`, {
         contestId,
         students: selectedStudents,
       });

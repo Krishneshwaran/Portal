@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -26,54 +28,51 @@ export default function Login() {
       [name]: value
     }));
   };
-  
+
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     try {
       const response = await axios.post(
-        'https://vercel-1bge.onrender.com/api/staff/login/',
+        `${API_BASE_URL}/api/staff/login/`, 
         {
           email: formData.email,
           password: formData.password,
         },
         {
-          withCredentials: true, // Allow sending and storing cookies if needed for server
+          withCredentials: true,
         }
       );
-  
+
       // Store response in cookies
-      Cookies.set('staffToken', response.data.tokens.access_token, { expires: 7 }); // Expires in 7 days
+      Cookies.set('staffToken', response.data.tokens.access_token, { expires: 7 });
       Cookies.set('username', response.data.name, { expires: 7 });
-  
+
       navigate('/staffdashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid email or password');
+      const errorMessage = err.response?.data?.message || 'Invalid email or password';
+      setError(errorMessage);
+      toast.error(errorMessage); // Show toast notification for error
     }
   };
 
   const fetchStaffData = async () => {
     try {
-      // Retrieve the JWT token from cookies
-      const token = Cookies.get('staffToken'); 
-  
-      // Check if the token exists
+      const token = Cookies.get('staffToken');
       if (!token) {
         console.error("No token found! Please login again.");
         return;
       }
 
-      // API call to fetch staff data
-      const response = await axios.get('https://vercel-1bge.onrender.com/api/staff/profile/', {
-        withCredentials: true, // Include cookies if needed
+      const response = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/staff/profile/`, {  
+        withCredentials: true,
         headers: {
-          Authorization: `Bearer ${token}`, // Add JWT token to headers
+          Authorization: `Bearer ${token}`,
         },
-        
       });
 
-      // Set the staff data
       const { full_name, email, department, collegename } = response.data;
       setStaffData({
         full_name,
@@ -86,21 +85,21 @@ export default function Login() {
     }
   };
 
-  // Fetch staff data on component mount
   useEffect(() => {
     fetchStaffData();
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-yellow-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-2xl border border-yellow-200">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <ToastContainer /> {/* Toast container for notifications */}
+      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-2xl border border-gray-200">
         <div>
-          <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-2 text-center text-3xl font-extrabold text-[#000975]">
             Staff Login
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Don't have an account?{' '}
-            <Link to="/staffsignup" className="font-medium text-yellow-600 hover:text-yellow-500 transition-colors duration-200">
+            <Link to="/staffsignup" className="font-medium text-[#000975] hover:text-[#000975]/80 transition-colors duration-200">
               Sign up here
             </Link>
           </p>
@@ -121,7 +120,7 @@ export default function Login() {
                 name="email"
                 type="email"
                 required
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm"
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#000975] focus:border-[#000975] focus:z-10 sm:text-sm"
                 placeholder="Enter your email"
                 value={formData.email}
                 onChange={handleChange}
@@ -136,7 +135,7 @@ export default function Login() {
                 name="password"
                 type={showPassword ? "password" : "text"}
                 required
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm"
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#000975] focus:border-[#000975] focus:z-10 sm:text-sm"
                 placeholder="Enter your password"
                 value={formData.password}
                 onChange={handleChange}
@@ -158,7 +157,7 @@ export default function Login() {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors duration-200"
+              className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-[#000975] hover:bg-[#000975]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#000975] transition-colors duration-200"
             >
               Sign in
             </button>

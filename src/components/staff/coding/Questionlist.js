@@ -5,12 +5,13 @@ function QuestionList() {
   const [questions, setQuestions] = useState([]);
   const [difficulty, setDifficulty] = useState('');
   const [filteredQuestions, setFilteredQuestions] = useState([]);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
   
   useEffect(() => {
     // Fetch the data from the API
     const fetchQuestions = async () => {
       try {
-        const response = await fetch('https://vercel-1bge.onrender.com/questions/');
+        const response = await fetch(`${API_BASE_URL}/questions/`);
         const data = await response.json();
         setQuestions(data.problems);
         setFilteredQuestions(data.problems);

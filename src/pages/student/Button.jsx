@@ -5,7 +5,7 @@ const Button = ({
   className = "",
   children,
   disabled = false,
-  color = "rgba(255, 255, 255, 0.8)",  // Gold-like shimmer
+  color = "rgba(81, 83, 237, 0.8)",  // Gold-like shimmer
   speed = "6s",
   ...rest
 }) => {
@@ -35,7 +35,7 @@ const Button = ({
       ></div>
 
       {/* Main Button */}
-      <div className="relative z-10 bg-gradient-to-r from-amber-500 to-amber-600 border border-amber-400 text-white text-center py-[16px] px-[26px] rounded-[20px]">
+      <div className="relative z-10 bg-gradient-to-r from-blue-600 to-blue-400 text-white text-center py-[16px] px-[26px] rounded-[20px]">
         {children}
       </div>
     </button>

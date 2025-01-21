@@ -20,6 +20,8 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import QuestionModal from "../../../components/staff/mcq/QuestionModal";
+import {jwtDecode} from "jwt-decode";
+import ShareModal from "../../../components/staff/mcq/ShareModal";
 
 const Mcq_Dashboard = () => {
   const navigate = useNavigate();
@@ -44,11 +46,15 @@ const Mcq_Dashboard = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [sharingLink, setSharingLink] = useState("");
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const response = await axios.get("https://vercel-1bge.onrender.com/api/student/");
+        const response = await axios.get(`${API_BASE_URL}/api/student/`);
         setStudents(response.data);
         setFilteredStudents(response.data);
       } catch (error) {
@@ -101,7 +107,7 @@ const Mcq_Dashboard = () => {
         return;
       }
 
-      const response = await axios.get("https://vercel-1bge.onrender.com/api/mcq/questions", {
+      const response = await axios.get(`${API_BASE_URL}/api/mcq/questions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -128,7 +134,7 @@ const Mcq_Dashboard = () => {
       }
 
       const response = await axios.post(
-        "https://vercel-1bge.onrender.com/api/finish-contest",
+        `${API_BASE_URL}/api/finish-contest`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -153,40 +159,73 @@ const Mcq_Dashboard = () => {
 
   const handlePublish = async () => {
     try {
+      // Retrieve the contest token from localStorage
       const token = localStorage.getItem("contestToken");
       if (!token) {
         alert("Unauthorized access. Please log in again.");
         return;
       }
-
-      // Eliminate duplicates
+  
+      // Decode the contestId from the token
+      const decodedToken = jwtDecode(token); // Use jwt-decode library
+      const contestId = decodedToken?.contestId;
+      if (!contestId) {
+        alert("Invalid contest token. Please log in again.");
+        return;
+      }
+  
+      // Remove duplicates from questions
       const uniqueQuestions = Array.from(new Set(questions.map(JSON.stringify))).map(JSON.parse);
 
-      // Get the email addresses of the selected students
-      const selectedStudentEmails = students
-        .filter((student) => selectedStudents.includes(student.regno))
-        .map((student) => student.email);
-
-      const response = await axios.post("https://vercel-1bge.onrender.com/api/mcq/publish/", {
+  
+      // Get email addresses of selected students
+      const selectedStudentDetails = students.filter((student) => selectedStudents.includes(student.regno));
+      const selectedStudentEmails = selectedStudentDetails.map((student) => student.email);
+  
+      // Prepare the payload for the request
+      const payload = {
+        contestId, // Include contestId in the payload
         questions: uniqueQuestions,
         students: selectedStudents,
-        studentEmails: selectedStudentEmails,  // Include student emails in the request
-      },
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        studentEmails: selectedStudentEmails,
+      };
+  
+      // Make the API call to publish questions
+      const response = await axios.post(
+        `${API_BASE_URL}/api/mcq/publish/`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+  
       if (response.status === 200) {
-        alert("Questions published successfully!");
-        sessionStorage.clear(selectedStudents)
-        navigate(`/staffdashboard`);
+        setSharingLink(`${process.env.REACT_APP_FRONTEND_LINK}/testinstructions/${contestId}`);
+        setShareModalOpen(true); // Open the share modal
       } else {
-        alert("Failed to publish questions.");
+        alert(`Failed to publish questions: ${response.data.message || "Unknown error."}`);
       }
     } catch (error) {
       console.error("Error publishing questions:", error);
-      alert("An error occurred while publishing questions.");
+  
+      // Handle specific errors
+      if (error.response) {
+        // Server responded with a status other than 2xx
+        alert(`Error: ${error.response.data.message || error.response.statusText}`);
+      } else if (error.request) {
+        // Request made but no response received
+        alert("No response from the server. Please try again later.");
+      } else {
+        // Other errors
+        alert("An error occurred while publishing questions. Please try again.");
+      }
+    } finally {
+      // Close the publish dialog regardless of success or failure
+      setPublishDialogOpen(false);
     }
-    setPublishDialogOpen(false);
   };
 
   useEffect(() => {
@@ -214,6 +253,11 @@ const Mcq_Dashboard = () => {
     fetchDashboardData();
   }, [formData, sections]);
 
+  const handleShareModalClose = () => {
+    setShareModalOpen(false); // Close the modal
+    navigate(`/staffdashboard`); // Navigate to the dashboard
+  };
+  
   const handleAddQuestion = () => {
     setIsModalOpen(true);
   };
@@ -340,6 +384,7 @@ const Mcq_Dashboard = () => {
             handleCreateManually={() => navigate('/mcq/CreateQuestion')}
             handleBulkUpload={() => navigate('/mcq/bulkUpload')}
             handleMcqlibrary={() => navigate('/mcq/McqLibrary')}
+            handleAi={() => navigate('/mcq/aigenerator')}
           />
         )}
 
@@ -437,6 +482,12 @@ const Mcq_Dashboard = () => {
             </Button>
           </DialogActions>
         </Dialog>
+       <ShareModal
+           open={shareModalOpen}
+          onClose={handleShareModalClose} 
+          shareLink={sharingLink}
+        />
+
       </div>
     </div>
   );

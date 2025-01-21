@@ -16,6 +16,7 @@ const ResetPassword = () => {
   const [otpSent, setOtpSent] = useState(false); // Track if OTP has been sent
   const [otpTimer, setOtpTimer] = useState(60); // OTP timer in seconds (60 seconds)
   const navigate = useNavigate();
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
   const otpInputs = useRef([]);
 
   useEffect(() => {
@@ -52,7 +53,7 @@ const ResetPassword = () => {
     setSuccessMessage(''); // Reset success message
 
     try {
-      const response = await axios.post('https://vercel-1bge.onrender.com/api/student/request-otp/', {
+      const response = await axios.post(`${API_BASE_URL}/api/student/request-otp/`, {
         email: formData.email,
       }, {
         headers: { 'Content-Type': 'application/json' },
@@ -78,7 +79,7 @@ const ResetPassword = () => {
     setSuccessMessage(''); // Reset success message
 
     try {
-      const response = await axios.post('https://vercel-1bge.onrender.com/api/student/request-otp/', {
+      const response = await axios.post(`${API_BASE_URL}/api/student/request-otp/`, {
         email: formData.email,
       }, {
         headers: { 'Content-Type': 'application/json' },
@@ -103,7 +104,7 @@ const ResetPassword = () => {
     setSuccessMessage(''); // Reset success message
 
     try {
-      const response = await axios.post('https://vercel-1bge.onrender.com/api/student/verify-otp/', {
+      const response = await axios.post(`${API_BASE_URL}/api/student/verify-otp/`, {
         email: formData.email,
         otp: formData.otp,
       }, {
@@ -129,7 +130,7 @@ const ResetPassword = () => {
     setSuccessMessage(''); // Reset success message
 
     try {
-      const response = await axios.post('https://vercel-1bge.onrender.com/api/student/student-reset-password/', {
+      const response = await axios.post(`${API_BASE_URL}/api/student/student-reset-password/`, {
         email: formData.email,
         new_password: formData.newPassword
       }, {

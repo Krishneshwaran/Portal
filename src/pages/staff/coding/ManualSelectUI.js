@@ -7,6 +7,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 // Define available roles (can be customized or fetched from an API if needed)
 const availableRoles = ["Junior Software Developer", "Senior Software Developer", "AI Developer", "Project Manager"];
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
 const ManualSelectUI = () => {
   const location = useLocation();
@@ -46,7 +47,7 @@ const ManualSelectUI = () => {
         samples: testCases,
         hidden_samples: hiddenTestCases,
       };
-      await axios.put('https://vercel-1bge.onrender.com/manualProblems/', { problems: [updatedQuestion] });
+      await axios.put(`${API_BASE_URL}/manualProblems/`, { problems: [updatedQuestion] });
       navigate('/hrUpload');
     } catch (error) {
       console.error("Failed to save question:", error);

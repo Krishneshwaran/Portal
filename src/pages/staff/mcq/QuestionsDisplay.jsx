@@ -1,4 +1,109 @@
+// import React, { useState } from "react";
+// import { useLocation } from "react-router-dom";
+// import axios from "axios";
 
+// const QuestionsDisplay = () => {
+//   const { state } = useLocation();
+//   const { questions, contestId, staffId } = state || {}; // Extract questions, contestId, and staffId from the location state
+
+//   const [selectedQuestions, setSelectedQuestions] = useState([]);
+
+//   const handleSelectQuestion = (question) => {
+//     setSelectedQuestions((prevSelected) =>
+//       prevSelected.includes(question)
+//         ? prevSelected.filter((q) => q !== question)
+//         : [...prevSelected, question]
+//     );
+//   };
+
+//   const handleSaveQuestions = async () => {
+//     try {
+//       const response = await axios.post("${API_BASE_URL}/api/mcq/api/save-questions/", {
+//         contestId,
+//         staffId,
+//         questions: selectedQuestions,
+//       });
+//       console.log("Questions saved:", response.data);
+//       alert("Questions saved successfully!");
+//     } catch (error) {
+//       console.error("Error saving questions:", error);
+//       alert("Failed to save questions.");
+//     }
+//   };
+
+//   if (!questions || questions.length === 0) {
+//     return <p>No questions to display.</p>;
+//   }
+
+//   return (
+//     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-8">
+//       <div className="max-w-7xl mx-auto bg-white p-8 shadow-lg rounded-lg">
+//         <h1 className="text-4xl font-bold mb-6 text-center">Generated Questions</h1>
+
+//         <table className="w-full table-auto border-collapse">
+//           <thead>
+//             <tr className="bg-gray-100">
+//               <th className="px-4 py-3 border text-left">S.No</th>
+//               <th className="px-4 py-3 border text-left">Select</th>
+//               <th className="px-4 py-3 border text-left">Topic</th>
+//               <th className="px-4 py-3 border text-left">Subtopic</th>
+//               <th className="px-4 py-3 border text-left">Level</th>
+//               <th className="px-4 py-3 border text-left">Question Type</th>
+//               <th className="px-4 py-3 border text-left">Question</th>
+//               <th className="px-4 py-3 border text-left">Options</th>
+//               <th className="px-4 py-3 border text-left">Answer</th>
+//             </tr>
+//           </thead>
+//           <tbody>
+//             {questions.map((question, index) => (
+//               <tr key={index} className="hover:bg-gray-50">
+//                 <td className="px-4 py-3 border text-center">{index + 1}</td>
+//                 <td className="px-4 py-3 border text-center">
+//                   <input
+//                     type="checkbox"
+//                     onChange={() => handleSelectQuestion(question)}
+//                   />
+//                 </td>
+//                 <td className="px-4 py-3 border whitespace-normal break-words">
+//                   {question.topic}
+//                 </td>
+//                 <td className="px-4 py-3 border whitespace-normal break-words">
+//                   {question.subtopic}
+//                 </td>
+//                 <td className="px-4 py-3 border text-center">{question.level}</td>
+//                 <td className="px-4 py-3 border text-center">{question.question_type}</td>
+//                 <td className="px-4 py-3 border whitespace-normal break-words max-w-xl">
+//                   {question.question}
+//                 </td>
+//                 <td className="px-4 py-3 border whitespace-normal break-words max-w-lg">
+//                   <ul className="list-disc pl-5">
+//                     {question.options.map((option, idx) => (
+//                       <li key={idx} className="text-gray-700 text-sm">
+//                         {option}
+//                       </li>
+//                     ))}
+//                   </ul>
+//                 </td>
+//                 <td className="px-4 py-3 border whitespace-normal break-words text-gray-700 text-base font-medium max-w-lg">
+//                   {question.answer}
+//                 </td>
+//               </tr>
+//             ))}
+//           </tbody>
+//         </table>
+
+//         <button
+//           className="mt-8 px-8 py-3 bg-blue-600 text-white font-semibold text-lg rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300"
+//           onClick={handleSaveQuestions}
+//         >
+//           Save Selected Questions
+//         </button>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default QuestionsDisplay;
 
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -12,6 +117,7 @@ const QuestionsDisplay = () => {
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [editedQuestions, setEditedQuestions] = useState(questions || []);
   const [isEditing, setIsEditing] = useState(null);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   const handleSelectQuestion = (index) => {
     setSelectedQuestions((prev) =>
@@ -31,7 +137,7 @@ const QuestionsDisplay = () => {
       const token = localStorage.getItem("contestToken");
       const selected = selectedQuestions.map((index) => editedQuestions[index]);
 
-      const response = await axios.post("https://vercel-1bge.onrender.com/api/mcq/save-questions/", {
+      const response = await axios.post(`${API_BASE_URL}/api/mcq/save-questions/`, {
         questions: selected,
       }, {
         headers: {

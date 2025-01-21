@@ -1,18 +1,28 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { Popover, Transition } from "@headlessui/react";
+import { FaClipboard, FaCog, FaCalendarAlt, FaEdit, FaList, FaCheckCircle, FaRandom, FaEye, FaClock, FaPercentage, FaQuestionCircle, FaDesktop, FaUser, FaMobile, FaVolumeUp } from "react-icons/fa";
 
-const Mcq_Assesment = () => {
+const McqAssessment = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [contestid, setContestId] = useState(null);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
   const [formData, setFormData] = useState({
     assessmentOverview: {
       name: "",
       description: "",
       registrationStart: "",
       registrationEnd: "",
-      guidelines: "",
+      guidelines: `1. Students must join 15 minutes before the test starts.
+2. Ensure a stable internet connection during the test.
+3. Follow the test rules strictly.
+4. Use only approved devices to attempt the test.
+5. Maintain silence and avoid distractions.`,
+      sectionDetails: "No", // Default value
     },
     testConfiguration: {
       totalMarks: "",
@@ -30,17 +40,40 @@ const Mcq_Assesment = () => {
     },
   });
 
+  const steps = [
+    { label: "Assessment Overview", icon: <FaClipboard /> },
+    { label: "Test Configuration", icon: <FaCog /> },
+  ];
+
   const validateStep = () => {
     if (currentStep === 1) {
-      const { name, description, registrationStart, registrationEnd, guidelines } = formData.assessmentOverview;
-      return name && description && registrationStart && registrationEnd && guidelines;
+      const { name, description, registrationStart, registrationEnd, guidelines, sectionDetails } = formData.assessmentOverview;
+      return name && description && registrationStart && registrationEnd && guidelines && sectionDetails;
     }
+  
     if (currentStep === 2) {
       const { totalMarks, questions, duration, passPercentage, sectionDetails } = formData.testConfiguration;
-      return totalMarks && questions && (duration.hours || duration.minutes) && passPercentage && sectionDetails;
+  
+      // When "Section Based" is "Yes"
+      if (formData.assessmentOverview.sectionDetails === "Yes") {
+        return (
+          (duration.hours || duration.minutes) && // Duration is required
+          passPercentage // Pass percentage is required
+        );
+      }
+  
+      // When "Section Based" is "No"
+      return (
+        totalMarks && // Total marks is required
+        questions && // Number of questions is required
+        (duration.hours || duration.minutes) && // Duration is required
+        passPercentage // Pass percentage is required
+      );
     }
+  
     return true;
   };
+  
 
   const handleInputChange = (e, step) => {
     const { name, type, checked } = e.target;
@@ -85,7 +118,7 @@ const Mcq_Assesment = () => {
           }
 
           const response = await axios.post(
-            "https://vercel-1bge.onrender.com/api/mcq/start-contest/",
+            `${API_BASE_URL}/api/mcq/start-contest/`,
             { contestId: generatedContestId },
             {
               headers: {
@@ -100,21 +133,22 @@ const Mcq_Assesment = () => {
           localStorage.setItem("duration", JSON.stringify(formData.testConfiguration.duration));
           localStorage.setItem("passPercentage", formData.testConfiguration.passPercentage);
           navigate("/mcq/combinedDashboard", { state: { formData, sectionDetails: formData.testConfiguration.sectionDetails } });
+          toast.success("Contest started successfully!");
         } catch (error) {
           console.error("Error starting contest:", {
             message: error.message,
             data: error.response?.data,
             status: error.response?.status,
           });
-          alert("Failed to start the contest. Please try again.");
+          toast.error("Failed to start the contest. Please try again.");
         }
         return;
       }
-      if (currentStep < 3) {
+      if (currentStep < steps.length) {
         setCurrentStep((prev) => prev + 1);
       }
     } else {
-      alert("Please fill in all required fields before proceeding.");
+      toast.warning("Please fill in all required fields before proceeding.");
     }
   };
 
@@ -136,7 +170,7 @@ const Mcq_Assesment = () => {
     };
 
     try {
-      const response = await fetch("https://vercel-1bge.onrender.com/api/mcq/save-data/", {
+      const response = await fetch(`${API_BASE_URL}/api/mcq/save-data/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -169,7 +203,7 @@ const Mcq_Assesment = () => {
     };
 
     try {
-      const response = await fetch("https://vercel-1bge.onrender.com/api/mcq/save-section-data/", {
+      const response = await fetch(`${API_BASE_URL}/api/mcq/save-section-data/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -189,106 +223,191 @@ const Mcq_Assesment = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center py-10">
+    <div className="min-h-screen bg-gradient-to-r from-blue-50 to-purple-50 flex flex-col items-center py-10">
+      <ToastContainer position="top-right" autoClose={3000} />
+
       {/* Stepper */}
       <div className="flex justify-between items-center w-full max-w-4xl mb-8">
-        {["Assessment Overview", "Test Configuration"].map((step, index) => (
+        {steps.map((step, index) => (
           <div key={index} className="flex flex-col items-center w-1/3">
             <div
-              className={`w-10 h-10 flex items-center justify-center rounded-full font-bold ${
+              className={`w-12 h-12 flex items-center justify-center rounded-full font-bold text-lg transition-all duration-300 ${
                 currentStep === index + 1
-                  ? "bg-yellow-500 text-white"
-                  : "bg-gray-300 text-gray-700"
+                  ? "bg-[#000975] text-white shadow-lg"
+                  : "bg-gray-200 text-gray-700"
               }`}
             >
               {index + 1}
             </div>
             <p
-              className={`mt-2 text-sm ${
+              className={`mt-2 text-sm font-medium ${
                 currentStep === index + 1
-                  ? "font-bold text-yellow-500"
+                  ? "text-blue-600"
                   : "text-gray-500"
               }`}
             >
-              {step}
+              {step.label}
             </p>
           </div>
         ))}
       </div>
 
       {/* Step Content */}
-      <div className="w-full max-w-4xl bg-white shadow-lg rounded-lg p-8">
+      <div className="w-full max-w-4xl bg-white shadow-xl rounded-lg p-8 transition-all duration-500">
         {/* Step 1: Assessment Overview */}
         {currentStep === 1 && (
           <div className="px-6">
-            <h2 className="text-2xl font-semibold mb-5 text-center text-indigo-950">
+            <h2 className="text-3xl font-bold mb-5 text-center text-blue-900">
               Assessment Overview
             </h2>
-            <p className="text-sm font-normal mb-4 text-center text-slate-500">
+            <p className="text-sm font-normal mb-4 text-center text-gray-600">
               This section captures essential information about the test. Ensure clarity and completeness.
             </p>
-            <hr className="mb-6" />
+            <hr className="mb-6 border-gray-200" />
 
             <form onSubmit={handleChange} className="space-y-6 text-start">
-              {[
-                { label: "Assessment Name *", name: "name", type: "text", placeholder: "Enter the name of the assessment" },
-                { label: "Description *", name: "description", type: "textarea", placeholder: "Provide a brief overview of the assessment", description: "Provide a brief overview of the assessment, including its purpose and topics covered.", rows: 4 },
-                { label: "Registration Start Date & Time *", name: "registrationStart", type: "datetime-local" },
-                { label: "Registration End Date & Time *", name: "registrationEnd", type: "datetime-local" },
-                { label: "Guidelines and Rules *", name: "guidelines", type: "textarea", placeholder: "Outline the rules students must follow during the test", description: "Outline the rules students must follow during the test, including dress code, behavior expectations, and device policies.", rows: 6 }
-              ].map((field) => (
-                <div key={field.name}>
-                  <label className="block text-lg font-medium text-indigo-950 mb-2">
-                    {field.label}
-                    {field.description && (
-                      <p className="text-sm font-normal text-slate-500 mb-2">
-                        {field.description}
-                      </p>
-                    )}
-                  </label>
-                  {field.type === 'textarea' ? (
-                    <textarea
-                      name={field.name}
-                      value={formData.assessmentOverview[field.name]}
-                      onChange={(e) => handleChange(e, "assessmentOverview")}
-                      rows={field.rows}
-                      className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      placeholder={field.placeholder}
-                    />
-                  ) : field.type === 'datetime-local' ? (
-                    <input
-                      type={field.type}
-                      name={field.name}
-                      value={formData.assessmentOverview[field.name]}
-                      min={new Date().toISOString().slice(0, 16)} // Prevent selection of past dates
-                      onChange={(e) => {
-                        const startTime = formData.assessmentOverview.registrationStart;
-                        const endTime = formData.assessmentOverview.registrationEnd;
-                        const selectedTime = e.target.value;
-
-                        if (field.name === 'registrationEnd' && startTime && selectedTime <= startTime) {
-                          // Ensure end time is after start time
-                          alert("The end time must be after the start time.");
-                          return;
-                        }
-
-                        handleChange(e, "assessmentOverview");
-                      }}
-                      className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      placeholder={field.placeholder}
-                    />
-                  ) : (
-                    <input
-                      type={field.type}
-                      name={field.name}
-                      value={formData.assessmentOverview[field.name]}
-                      onChange={(e) => handleChange(e, "assessmentOverview")}
-                      className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      placeholder={field.placeholder}
-                    />
-                  )}
+              {/* Assessment Name */}
+              <div>
+                <label className="text-lg font-semibold text-blue-900 mb-2 flex items-center">
+                  <FaEdit className="mr-2" /> Assessment Name *
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="name"
+                    maxLength="25"
+                    value={formData.assessmentOverview.name}
+                    onChange={(e) => handleChange(e, "assessmentOverview")}
+                    className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                    placeholder="Enter the name of the assessment"
+                  />
+                  <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                    {formData.assessmentOverview.name.length}/25
+                  </span>
                 </div>
-              ))}
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="text-lg font-semibold text-blue-900 mb-2 flex items-center">
+                  <FaList className="mr-2" /> Description *
+                </label>
+                <div className="relative">
+                  <textarea
+                    name="description"
+                    maxLength="150"
+                    value={formData.assessmentOverview.description}
+                    onChange={(e) => handleChange(e, "assessmentOverview")}
+                    rows={4}
+                    className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                    placeholder="Provide a brief overview of the assessment"
+                  />
+                  <span className="absolute right-2 bottom-2 text-gray-500 text-sm">
+                    {formData.assessmentOverview.description.length}/150
+                  </span>
+                </div>
+              </div>
+
+              {/* Registration Dates */}
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className=" text-lg font-semibold text-blue-900 mb-2 flex items-center">
+                    <FaCalendarAlt className="mr-2" /> Registration Start Date & Time *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="registrationStart"
+                    value={formData.assessmentOverview.registrationStart}
+                    min={new Date().toISOString().slice(0, 16)}
+                    onChange={(e) => handleChange(e, "assessmentOverview")}
+                    className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                  />
+                </div>
+                <div>
+                  <label className=" text-lg font-semibold text-blue-900 mb-2 flex items-center">
+                    <FaCalendarAlt className="mr-2" /> Registration End Date & Time *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="registrationEnd"
+                    value={formData.assessmentOverview.registrationEnd}
+                    min={formData.assessmentOverview.registrationStart || new Date().toISOString().slice(0, 16)}
+                    onChange={(e) => {
+                      if (e.target.value <= formData.assessmentOverview.registrationStart) {
+                        toast.warning("The end time must be after the start time.");
+                        return;
+                      }
+                      handleChange(e, "assessmentOverview");
+                    }}
+                    className=" w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                  />
+                </div>
+              </div>
+
+              {/* Guidelines and Rules */}
+              <div>
+                <label className=" text-lg font-semibold text-blue-900 mb-2 flex items-center">
+                  <FaCheckCircle className="mr-2" /> Guidelines and Rules *
+                </label>
+                <textarea
+                  name="guidelines"
+                  value={formData.assessmentOverview.guidelines}
+                  onChange={(e) => handleChange(e, "assessmentOverview")}
+                  rows={6}
+                  className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                />
+              </div>
+
+              {/* Section Based */}
+              <div>
+                <label className="text-lg font-semibold text-blue-900 mb-4 mt-3 text-start flex items-center">
+                  <FaList className="mr-2" /> Section Based *
+                </label>
+                <p className="text-sm text-gray-500 font-normal">
+                  (Does this contest contain multiple sections?)
+                </p>
+                <div className="flex space-x-6">
+                  {["Yes", "No"].map((option) => (
+                    <label
+                      key={option}
+                      className={`flex items-center justify-start w-[250px] px-4 py-3 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
+                        formData.assessmentOverview.sectionDetails === option
+                          ? "border-blue-400 bg-blue-50"
+                          : "border-gray-300 hover:border-blue-200"
+                      }`}
+                    >
+                      <div
+                        className={`w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-300 ${
+                          formData.assessmentOverview.sectionDetails === option
+                            ? "bg-blue-400"
+                            : "border-gray-400"
+                        }`}
+                      >
+                        <div
+                          className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                            formData.assessmentOverview.sectionDetails === option
+                              ? "bg-white"
+                              : ""
+                          }`}
+                        ></div>
+                      </div>
+                      <input
+                        type="radio"
+                        name="sectionDetails"
+                        value={option}
+                        checked={
+                          formData.assessmentOverview.sectionDetails === option
+                        }
+                        onChange={(e) => handleChange(e, "assessmentOverview")}
+                        className="hidden"
+                      />
+                      <span className="ml-2 text-blue-900 font-medium text-sm">
+                        {option}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </form>
           </div>
         )}
@@ -296,100 +415,184 @@ const Mcq_Assesment = () => {
         {/* Step 2: Test Configuration */}
         {currentStep === 2 && (
           <div>
-            <h2 className="text-2xl font-semibold mb-5 text-center text-indigo-950">
+            <h2 className="text-3xl font-bold mb-5 text-center text-blue-900">
               Test Configuration
             </h2>
-            <p className="text-sm font-normal mb-5 text-center text-slate-500">
-              This section captures essential information about the test. Ensure
-              clarity and completeness.
+            <p className="text-sm font-normal mb-5 text-center text-gray-600">
+              This section captures essential information about the test. Ensure clarity and completeness.
             </p>
-            <hr />
+            <hr className="mb-6 border-gray-200" />
             <form onSubmit={handleChange} className="space-y-8 text-start">
-              {[
-                { label: "Total Marks *", name: "totalMarks", type: "number", placeholder: "Specify the total marks for the test" },
-                { label: "Number of Questions *", name: "questions", type: "number", placeholder: "Enter total number of questions" },
-                { label: "Duration of the Test *", name: "duration", type: "custom" }
-              ].map((field) => (
-                <div key={field.name}>
-                  <label className="block text-lg font-medium text-indigo-950 mb-1 text-start">
-                    {field.label}
-                  </label>
-                  {field.name === 'duration' ? (
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">Duration</label>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="number"
-                          name="hours"
-                          min="0"
-                          max="24"
-                          placeholder="HH"
-                          value={formData.testConfiguration.duration.hours || ""}
-                          onChange={(e) =>
-                            handleChange(
-                              { target: { name: "duration", value: { ...formData.testConfiguration.duration, hours: e.target.value || 0 } } },
-                              "testConfiguration"
-                            )
-                          }
-                          className="w-16 p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-yellow-500 focus:border-yellow-500 text-center"
-                          required
-                        />
-                        <span>:</span>
-                        <input
-                          type="number"
-                          name="minutes"
-                          min="0"
-                          max="59"
-                          placeholder="MM"
-                          value={formData.testConfiguration.duration.minutes || ""}
-                          onChange={(e) =>
-                            handleChange(
-                              { target: { name: "duration", value: { ...formData.testConfiguration.duration, minutes: e.target.value || 0 } } },
-                              "testConfiguration"
-                            )
-                          }
-                          className="w-16 p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-yellow-500 focus:border-yellow-500 text-center"
-                          required
-                        />
-                        <span className="text-gray-500 text-sm">HH:MM</span>
-                      </div>
-                    </div>
-                  ) : (
+              {/* Total Marks and Questions */}
+              {formData.assessmentOverview.sectionDetails === "No" && (
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className=" text-lg font-semibold text-blue-900 mb-2 flex items-center">
+                      <FaPercentage className="mr-2" /> Total Marks *
+                    </label>
                     <input
-                      type={field.type}
-                      name={field.name}
-                      value={formData.testConfiguration[field.name]}
+                      type="number"
+                      name="totalMarks"
+                      value={formData.testConfiguration.totalMarks}
                       onChange={(e) => handleChange(e, "testConfiguration")}
-                      className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-yellow-500 focus:border-yellow-500"
-                      placeholder={field.placeholder}
+                      className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                      placeholder="Specify the total marks for the test"
                     />
-                  )}
+                  </div>
+                  <div>
+                    <label className=" text-lg font-semibold text-blue-900 mb-2 flex items-center">
+                      <FaQuestionCircle className="mr-2" /> Number of Questions *
+                    </label>
+                    <input
+                      type="number"
+                      name="questions"
+                      value={formData.testConfiguration.questions}
+                      onChange={(e) => handleChange(e, "testConfiguration")}
+                      className=" w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                      placeholder="Enter total number of questions"
+                    />
+                  </div>
                 </div>
-              ))}
+              )}
+
+              {/* Duration */}
+              <div>
+                <label className=" text-lg font-semibold text-blue-900 mb-2 flex items-center">
+                  <FaClock className="mr-2" /> Duration of the Test *
+                </label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="number"
+                    name="hours"
+                    min="0"
+                    max="24"
+                    placeholder="HH"
+                    value={formData.testConfiguration.duration.hours || ""}
+                    onChange={(e) =>
+                      handleChange(
+                        { target: { name: "duration", value: { ...formData.testConfiguration.duration, hours: e.target.value || 0 } } },
+                        "testConfiguration"
+                      )
+                    }
+                    className="w-16 p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center transition-all duration-300"
+                    required
+                  />
+                  <span>:</span>
+                  <input
+                    type="number"
+                    name="minutes"
+                    min="0"
+                    max="59"
+                    placeholder="MM"
+                    value={formData.testConfiguration.duration.minutes || ""}
+                    onChange={(e) =>
+                      handleChange(
+                        { target: { name: "duration", value: { ...formData.testConfiguration.duration, minutes: e.target.value || 0 } } },
+                        "testConfiguration"
+                      )
+                    }
+                    className="w-16 p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center transition-all duration-300"
+                    required
+                  />
+                  <span className="text-gray-500 text-sm">HH:MM</span>
+                </div>
+              </div>
 
               {/* Proctoring Enablement */}
-              <div className="mt-8">
-                <h2 className="text-lg font-medium text-indigo-950 mb-1 text-start">
-                  Proctoring Enablement
-                </h2>
-                <p className="text-sm text-gray-500 font-normal mb-6 text-start">
-                  (Select the types of proctoring to enforce during the test)
-                </p>
+                <div className="mt-8">
+                  <h2 className="text-lg font-semibold text-blue-900 mb-2 flex items-center">
+                    <FaEye className="mr-2" /> Proctoring Enablement
+                  </h2>
+                  <p className="text-sm text-gray-500 font-normal mb-6">
+                    (Select the types of proctoring to enforce during the test)
+                  </p>
 
-                <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+                    {[
+                      { label: "Full Screen Mode", name: "fullScreenMode", icon: <FaDesktop className="mr-2" /> },
+                      { label: "Face Detection", name: "faceDetection", icon: <FaUser className="mr-2" /> },
+                      { label: "Device Restriction", name: "deviceRestriction", icon: <FaMobile className="mr-2" /> },
+                      { label: "Noise Detection", name: "noiseDetection", icon: <FaVolumeUp className="mr-2" /> },
+                    ].map((item) => (
+                      <div key={item.name} className="flex flex-col">
+                        <div className="flex justify-between items-center px-6 py-3 border border-gray-300 rounded-full bg-white shadow-sm hover:shadow-md transition-shadow duration-300">
+                          <span className="text-blue-900 font-semibold text-sm flex items-center">
+                            {item.icon} {item.label}
+                          </span>
+
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              name={item.name}
+                              checked={formData.testConfiguration[item.name]}
+                              onChange={(e) => {
+                                handleInputChange(e, "testConfiguration");
+                                if (!e.target.checked) {
+                                  // Reset count if the restriction is turned off
+                                  handleChange(
+                                    { target: { name: `${item.name}Count`, value: "" } },
+                                    "testConfiguration"
+                                  );
+                                }
+                              }}
+                              className="sr-only peer"
+                            />
+                            <div className="w-10 h-5 bg-gray-200 rounded-full peer-focus:ring-2 peer-focus:ring-blue-500 peer-checked:bg-blue-400 transition-all duration-300">
+                              <div
+                                className={`absolute left-0.5 top-0.5 h-4 w-4 bg-white rounded-full shadow-md transition-transform duration-300 ${
+                                  formData.testConfiguration[item.name]
+                                    ? "translate-x-5"
+                                    : "translate-x-0"
+                                }`}
+                              ></div>
+                            </div>
+                          </label>
+                        </div>
+
+                        {/* Input field for count when restriction is enabled */}
+                        {formData.testConfiguration[item.name] && (
+                          <div className="mt-3">
+                            <label className="text-sm font-medium text-blue-900 flex items-center">
+                              {item.icon} Number of Restrictions *
+                            </label>
+                            <input
+                              type="number"
+                              name={`${item.name}Count`}
+                              value={formData.testConfiguration[`${item.name}Count`] || ""}
+                              onChange={(e) =>
+                                handleChange(e, "testConfiguration")
+                              }
+                              className="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center transition-all duration-300"
+                              placeholder="Specify the count"
+                              min="1"
+                              required
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+
+              {/* Additional Options */}
+              <div className="mt-8">
+                <div className="grid grid-cols-2 gap-y-6 gap-x-8">
                   {[
-                    { label: "Full Screen Mode", name: "fullScreenMode" },
-                    { label: "Face Detection", name: "faceDetection" },
-                    { label: "Device Restriction", name: "deviceRestriction" },
-                    { label: "Noise Detection", name: "noiseDetection" },
+                    { label: "Shuffle Questions", name: "shuffleQuestions", description: "(Randomize question order for each attempt)", icon: <FaRandom className="mr-2" /> },
                   ].map((item) => (
                     <div
                       key={item.name}
-                      className="flex justify-between items-center px-6 py-3 border border-gray-300 rounded-full bg-white shadow-sm"
+                      className="flex justify-between items-center col-span-1"
                     >
-                      <span className="text-indigo-950 font-semibold text-sm">
-                        {item.label}
-                      </span>
+                      <div>
+                        <span className=" justify text-blue-900 font-semibold text-lg flex items-center">
+                          {item.icon} {item.label}
+                        </span>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {item.description}
+                        </p>
+                      </div>
 
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
@@ -399,7 +602,7 @@ const Mcq_Assesment = () => {
                           onChange={(e) => handleInputChange(e, "testConfiguration")}
                           className="sr-only peer"
                         />
-                        <div className="w-10 h-5 bg-gray-200 rounded-full peer-focus:ring-2 peer-focus:ring-yellow-500 peer-checked:bg-yellow-400">
+                        <div className="w-10 h-5 bg-gray-200 rounded-full peer-focus:ring-2 peer-focus:ring-blue-500 peer-checked:bg-blue-400 transition-all duration-300">
                           <div
                             className={`absolute left-0.5 top-0.5 h-4 w-4 bg-white rounded-full shadow-md transition-transform duration-300 ${
                               formData.testConfiguration[item.name]
@@ -412,75 +615,28 @@ const Mcq_Assesment = () => {
                     </div>
                   ))}
                 </div>
-
-                {/* Additional Options */}
-                <div className="mt-8">
-                  <div className="grid grid-cols-2 gap-y-6 gap-x-8">
-                    {[
-                      { label: "Shuffle Questions", name: "shuffleQuestions", description: "(Randomize question order for each attempt)" },
-                      { label: "Shuffle Options", name: "shuffleOptions", description: "(Rearrange answer choices for added fairness)" },
-                    ].map((item) => (
-                      <div
-                        key={item.name}
-                        className="flex justify-between items-center col-span-1"
-                      >
-                        <div>
-                          <span className="flex justify text-indigo-950 font-semibold text-lg">
-                            {item.label}
-                          </span>
-                          <p className="text-sm text-gray-500 mt-1">
-                            {item.description}
-                          </p>
-                        </div>
-
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            name={item.name}
-                            checked={formData.testConfiguration[item.name]}
-                            onChange={(e) => handleInputChange(e, "testConfiguration")}
-                            className="sr-only peer"
-                          />
-                          <div className="w-10 h-5 bg-gray-200 rounded-full peer-focus:ring-2 peer-focus:ring-yellow-500 peer-checked:bg-yellow-400">
-                            <div
-                              className={`absolute left-0.5 top-0.5 h-4 w-4 bg-white rounded-full shadow-md transition-transform duration-300 ${
-                                formData.testConfiguration[item.name]
-                                  ? "translate-x-5"
-                                  : "translate-x-0"
-                              }`}
-                            ></div>
-                          </div>
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               {/* Scoring & Result Preferences */}
               <div>
-                <h2 className="text-lg font-medium text-indigo-950 mb-2 text-center">
+                <h2 className="text-lg font-semibold text-blue-900 mb-2 text-center">
                   Scoring & Result Preferences
                 </h2>
                 <p className="text-sm text-gray-500 font-normal text-center mb-4">
-                  Set the pass criteria and how and when
-                  results are released to students.
+                  Set the pass criteria and how and when results are released to students.
                 </p>
 
                 {/* Pass Percentage */}
                 <div className="mb-6">
-                  <label className="block text-lg font-medium text-indigo-950 mb-1 text-start">
-                    Pass Percentage *
+                  <label className=" text-lg font-semibold text-blue-900 mb-2 flex items-center">
+                    <FaPercentage className="mr-2" /> Pass Percentage *
                   </label>
-                  <p className="text-sm text-gray-500 font-normal mb-2 text-start">
-                    (Enter the minimum percentage required to pass the test.)
-                  </p>
                   <input
                     type="number"
                     name="passPercentage"
                     value={formData.testConfiguration.passPercentage}
                     onChange={(e) => handleChange(e, "testConfiguration")}
-                    className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-yellow-500 focus:border-yellow-500"
+                    className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
                     placeholder="Enter the pass percentage"
                     required
                   />
@@ -488,32 +644,31 @@ const Mcq_Assesment = () => {
 
                 {/* Result Visibility */}
                 <div>
-                  <label className="block text-lg font-medium text-indigo-950 mb-4 text-start">
-                    Result Visibility
-                    <p className="text-sm text-gray-500 font-normal">
-                      (Clarifies when and how students can see their results and
-                      answer keys)
-                    </p>
+                  <label className=" text-lg font-semibold text-blue-900 mb-4 text-start flex items-center">
+                    <FaEye className="mr-2" /> Result Visibility
                   </label>
+                  <p className="text-sm text-gray-500 font-normal">
+                    (Clarifies when and how students can see their results and answer keys)
+                  </p>
                   <div className="flex space-x-6">
                     {["Immediate release", "Host Control"].map((option) => (
                       <label
                         key={option}
-                        className={`flex items-center justify-start w-[250px] px-4 py-3 rounded-2xl border-2 cursor-pointer ${
+                        className={`flex items-center justify-start w-[250px] px-4 py-3 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
                           formData.testConfiguration.resultVisibility === option
-                            ? "border-yellow-400 bg-yellow-50"
-                            : "border-gray-300"
+                            ? "border-blue-400 bg-blue-50"
+                            : "border-gray-300 hover:border-blue-200"
                         }`}
                       >
                         <div
-                          className={`w-5 h-5 flex items-center justify-center rounded-full border ${
+                          className={`w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-300 ${
                             formData.testConfiguration.resultVisibility === option
-                              ? "bg-yellow-400"
+                              ? "bg-blue-400"
                               : "border-gray-400"
                           }`}
                         >
                           <div
-                            className={`w-2 h-2 rounded-full ${
+                            className={`w-2 h-2 rounded-full transition-all duration-300 ${
                               formData.testConfiguration.resultVisibility === option
                                 ? "bg-white"
                                 : ""
@@ -530,61 +685,11 @@ const Mcq_Assesment = () => {
                           onChange={(e) => handleChange(e, "testConfiguration")}
                           className="hidden"
                         />
-                        <span className="ml-2 text-indigo-950 font-medium text-sm">
+                        <span className="ml-2 text-blue-900 font-medium text-sm">
                           {option}
                         </span>
                       </label>
                     ))}
-                  </div>
-
-                  <div>
-                    <label className="block text-lg font-medium text-indigo-950 mb-4 mt-3 text-start">
-                      Section Based *
-                      <p className="text-sm text-gray-500 font-normal">
-                        (Does this contest contain multiple sections?)
-                      </p>
-                    </label>
-                    <div className="flex space-x-6">
-                      {["Yes", "No"].map((option) => (
-                        <label
-                          key={option}
-                          className={`flex items-center justify-start w-[250px] px-4 py-3 rounded-2xl border-2 cursor-pointer ${
-                            formData.testConfiguration.sectionDetails === option
-                              ? "border-yellow-400 bg-yellow-50"
-                              : "border-gray-300"
-                          }`}
-                        >
-                          <div
-                            className={`w-5 h-5 flex items-center justify-center rounded-full border ${
-                              formData.testConfiguration.sectionDetails === option
-                                ? "bg-yellow-400"
-                              : "border-gray-400"
-                            }`}
-                          >
-                            <div
-                              className={`w-2 h-2 rounded-full ${
-                                formData.testConfiguration.sectionDetails === option
-                                  ? "bg-white"
-                                  : ""
-                              }`}
-                            ></div>
-                          </div>
-                          <input
-                            type="radio"
-                            name="sectionDetails"
-                            value={option}
-                            checked={
-                              formData.testConfiguration.sectionDetails === option
-                            }
-                            onChange={(e) => handleChange(e, "testConfiguration")}
-                            className="hidden"
-                          />
-                          <span className="ml-2 text-indigo-950 font-medium text-sm">
-                            {option}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -592,22 +697,23 @@ const Mcq_Assesment = () => {
           </div>
         )}
       </div>
+
       {/* Navigation Buttons */}
       <div className="flex justify-between w-full max-w-4xl mt-8">
         {currentStep > 1 && (
           <button
             onClick={previousStep}
-            className="px-6 py-2 bg-gray-200 text-gray-700 font-semibold rounded-md shadow hover:bg-gray-300"
+            className="px-6 py-2 bg-gray-200 text-gray-700 font-semibold rounded-md shadow hover:bg-gray-300 transition-all duration-300 flex items-center"
           >
-            Previous
+            <FaCog className="mr-2" /> Previous
           </button>
         )}
         {currentStep < 3 && (
           <button
             onClick={nextStep}
-            className="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow hover:bg-indigo-700"
+            className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-600 text-white font-semibold rounded-md shadow hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center"
           >
-            Next
+            Next <FaClipboard className="ml-2" />
           </button>
         )}
       </div>
@@ -615,4 +721,4 @@ const Mcq_Assesment = () => {
   );
 };
 
-export default Mcq_Assesment;
+export default McqAssessment;

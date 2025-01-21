@@ -41,11 +41,12 @@ const Mcq_CombinedDashboard = () => {
   const [filters, setFilters] = useState({ collegename: "", dept: "" });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const response = await axios.get("https://vercel-1bge.onrender.com/api/student/");
+        const response = await axios.get(`${API_BASE_URL }/api/student/`);
         setStudents(response.data);
         setFilteredStudents(response.data);
       } catch (error) {
@@ -60,6 +61,18 @@ const Mcq_CombinedDashboard = () => {
     const { name, value } = e.target;
     setFilters((prevFilters) => ({ ...prevFilters, [name]: value }));
   };
+
+  useEffect(() => {
+    if (formData.assessmentOverview.sectionDetails === "Yes" && sections.length === 0) {
+      const defaultSection = {
+        id: 1,
+        sectionName: "Section 1",
+        numQuestions: 10,
+        sectionDuration: 10,
+      };
+      setSections([defaultSection]); // Add a default section
+    }
+  }, [formData.assessmentOverview.sectionDetails, sections.length]);
 
   useEffect(() => {
     const applyFilters = () => {
@@ -136,7 +149,6 @@ const Mcq_CombinedDashboard = () => {
     setSections(updatedSections);
   };
 
-
   const formatDuration = (duration) => {
     const hours = duration.hours.toString().padStart(2, '0');
     const minutes = duration.minutes.toString().padStart(2, '0');
@@ -200,7 +212,7 @@ const Mcq_CombinedDashboard = () => {
               key={index}
               className="flex items-center justify-between p-4 bg-white shadow-md rounded-lg border-l-4 border-yellow-400"
             >
-              <div className="text-yellow-500 text-4xl">{item.icon}</div>
+              <div className="text-yellow-500 text-7xl">{item.icon}</div>
               <div className="text-right">
                 <h3 className="text-gray-500 text-sm font-medium">
                   {item.label}
@@ -213,48 +225,45 @@ const Mcq_CombinedDashboard = () => {
           ))}
         </div>
 
-        <div className="bg-gray-50 p-6 rounded-lg shadow-md w-full max-w-4xl mt-6">
-          <h3 className="text-2xl font-semibold text-gray-800 mb-4">
-            Section Details
-          </h3>
-          <p className="text-lg text-gray-600 mb-8">
-            Organize your test with sections or add questions directly for a
-            tailored organization.
-          </p>
-          <div className="flex justify-between">
-            <button
-              className="w-48 py-3 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 active:bg-blue-800 transition-all duration-300"
-              onClick={handleAddSection}
-            >
-              Add Section
-            </button>
-            <button
-              className="w-48 py-3 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 active:bg-blue-800 transition-all duration-300"
-              onClick={handleAddQuestion}
-            >
-              Add Question
-            </button>
+        {formData.assessmentOverview.sectionDetails === "No" && (
+          <div className="bg-gray-50 p-6 rounded-lg shadow-md w-full max-w-4xl mt-6">
+            <h3 className="text-2xl font-semibold text-gray-800 mb-4">
+              Contest Details
+            </h3>
+            <p className="text-lg text-gray-600 mb-8">
+              Organize your test with sections or add questions directly for a
+              tailored organization.
+            </p>
+            <div className="flex justify-end">
+              <button
+                className="w-48 py-3 bg-blue-600 text-white justify-end font-semibold rounded-md shadow-md hover:bg-blue-700 active:bg-blue-800 transition-all duration-300"
+                onClick={handleAddQuestion}
+              >
+                Add Question
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Render Sections */}
-        <div className="w-full max-w-4xl mt-6">
-          {sections.map((section) => (
-            <Mcq_sectionDetails
-              key={section.id}
-              section={section}
-              onUpdate={(updatedSection) => updateSection(section.id, updatedSection)}
-            />
-          ))}
-        </div>
-
-        <div className="mt-8">
-          <button
-            onClick={handleFinalSubmit}
-            className="px-6 py-2 bg-green-600 text-white font-semibold rounded-md shadow hover:bg-green-700"
-          >
-            Submit
-          </button>
+        <div className="w-full max-w-7xl mt-6">
+          {formData.assessmentOverview.sectionDetails === "Yes" ? (
+            sections.length > 0 ? (
+              sections.map((section) => (
+                <Mcq_sectionDetails
+                  key={section.id}
+                  section={section}
+                  onUpdate={(updatedSection) => updateSection(section.id, updatedSection)}
+                />
+              ))
+            ) : (
+              <p className="text-gray-500 text-sm mt-4">No sections added yet. Use the "Add Section" button to create one.</p>
+            )
+          ) : (
+            <p className="text-gray-500 text-sm mt-4">
+              {/* Add any additional information or instructions here if needed */}
+            </p>
+          )}
         </div>
 
         {isModalOpen && (
@@ -267,10 +276,6 @@ const Mcq_CombinedDashboard = () => {
             handleAi={() => navigate('/mcq/aigenerator')}
           />
         )}
-
-
-
-        
       </div>
     </div>
   );

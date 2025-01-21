@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 function CreateProfile() {
   const navigate = useNavigate();
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   const [formData, setFormData] = useState({
     name: '',
@@ -48,7 +49,7 @@ function CreateProfile() {
 
     try {
       // Step 1: Call the Contest API
-      const contestResponse = await axios.post('https://vercel-1bge.onrender.com/autocontest/', {
+      const contestResponse = await axios.post(`${API_BASE_URL}/autocontest/`, {
         role: formData.role,
         contest_id: formData.contest_id,
       });
@@ -58,7 +59,7 @@ function CreateProfile() {
       // Proceed only if the Contest API is successful
       if (contestResponse.status === 200) {
         // Step 2: Call the User Info API
-        const userResponse = await axios.post('https://vercel-1bge.onrender.com/userinfo/', {
+        const userResponse = await axios.post(`${API_BASE_URL}/userinfo/`, {
           name: formData.name,
           role: formData.role,
           skills: formData.skills,

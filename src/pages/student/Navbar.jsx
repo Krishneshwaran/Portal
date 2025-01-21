@@ -60,14 +60,11 @@ const Navbar = () => {
         document.cookie = `${name}=;expires=${new Date(0).toUTCString()};path=/`;
       });
       
-      // Clear storage
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
+      // Clear all localStorage keys
+      localStorage.clear();
+
+      // Clear all sessionStorage keys
       sessionStorage.clear();
-      
-      // Remove specific cookies
-      Cookies.remove("username");
-      Cookies.remove("studentToken");
       
       navigate("/studentlogin");
       handleMenuClose();
@@ -108,12 +105,12 @@ const Navbar = () => {
 
         {/* Right section - Actions and Profile */}
         <div className="flex items-center gap-4 text-white">
-          <button className="p-2">
+          {/* <button className="p-2">
             <SearchIcon />
           </button>
           <button className="p-2">
             <EmailIcon />
-          </button>
+          </button> */}
           <div className="flex items-center mr-2 gap-2">
             <span>{username || "Student"}</span>
             <button onClick={handleMenuOpen} className="p-2">

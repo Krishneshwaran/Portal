@@ -12,6 +12,7 @@ const ManualPage = () => {
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   const handleUploadClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -36,7 +37,7 @@ const ManualPage = () => {
 
       const csrfToken = Cookies.get('csrftoken');
 
-      axios.post('https://vercel-1bge.onrender.com/userinput/', formData, {
+      axios.post(`${API_BASE_URL}/userinput/`, formData, {
           headers: {
               'Content-Type': 'multipart/form-data',
               'X-CSRFToken': csrfToken
@@ -64,7 +65,7 @@ const ManualPage = () => {
 
   const handlePublish = async () => {
     try {
-      const response = await axios.post('https://vercel-1bge.onrender.com/publish/');
+      const response = await axios.post(`${API_BASE_URL}/publish/`);
       if (response.status === 200) {
         alert('Questions published successfully!');
       } else {

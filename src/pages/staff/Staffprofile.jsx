@@ -10,7 +10,6 @@ import {
   Alert,
 } from '@mui/material';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 
 const StaffProfile = () => {
   const [profile, setProfile] = useState({
@@ -25,14 +24,14 @@ const StaffProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
-  const navigate = useNavigate(); // For navigation
 
   // Fetch profile data from backend
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await axios.get('https://vercel-1bge.onrender.com/api/staff/profile/', {
+        const response = await axios.get(`${API_BASE_URL}/api/staff/profile/`, {
           withCredentials: true, // Include cookies for authentication
         });
         setProfile(response.data);
@@ -58,18 +57,13 @@ const StaffProfile = () => {
     setSuccessMessage('');
     setError('');
     try {
-      await axios.put('https://vercel-1bge.onrender.com/api/staff/profile/', profile, {
+      await axios.put(`${API_BASE_URL}/api/staff/profile/`, profile, {
         withCredentials: true,
       });
       setSuccessMessage('Profile updated successfully!');
     } catch (err) {
       setError('Failed to save staff profile data.');
     }
-  };
-
-  // Handle "Go Back" button click
-  const handleGoBack = () => {
-    navigate(-1); // Navigate to the previous page
   };
 
   if (loading) {
@@ -187,27 +181,6 @@ const StaffProfile = () => {
               }}
             >
               Save Changes
-            </Button>
-          </Grid>
-
-          {/* Go Back Button */}
-          <Grid item xs={12}>
-            <Button
-              variant="outlined"
-              onClick={handleGoBack}
-              sx={{
-                color: '#00296B',
-                borderColor: '#00296B',
-                textTransform: 'none',
-                fontWeight: 'bold',
-                width: '100%',
-                '&:hover': {
-                  borderColor: '#FDC500',
-                  color: '#FDC500',
-                },
-              }}
-            >
-              Go Back
             </Button>
           </Grid>
         </Grid>

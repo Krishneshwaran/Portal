@@ -3,24 +3,27 @@ import { Link } from 'react-router-dom';
 
 const GeneralHome = () => {
   return (
-    <div className="min-h-screen bg-yellow-50 flex items-center justify-center px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white shadow-xl rounded-2xl p-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6 text-center">Welcome to Our Portal</h1>
-        <p className="text-gray-600 mb-8 text-center">
-          Select your role to access the services tailored for you.
+    <div className="min-h-screen bg-gradient-to-br from-[#000975] to-[#000975]/90 text-white">
+      {/* Hero Section */}
+      <div className="flex flex-col items-center justify-center min-h-screen text-center px-4 sm:px-6 lg:px-8">
+        <h1 className="text-5xl sm:text-6xl font-extrabold mb-6 animate-fade-in">
+          Discover Endless Possibilities
+        </h1>
+        <p className="text-lg sm:text-xl text-gray-100 mb-8 max-w-2xl animate-fade-in">
+          Unlock the potential to achieve your dreams. Whether you're a student or staff, our platform offers tools and resources to help you succeed.
         </p>
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-md animate-fade-in-up">
           <Link
             to="/StudentLogin"
-            className="w-full py-3 text-center text-white bg-yellow-600 hover:bg-yellow-700 rounded-md text-lg font-medium focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
+            className="w-full py-3 px-6 text-center text-blue-500 bg-white hover:bg-gray-100 rounded-lg text-lg font-semibold transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2"
           >
-            I am a Student
+            Student Portal
           </Link>
           <Link
             to="/stafflogin"
-            className="w-full py-3 text-center text-white bg-yellow-600 hover:bg-yellow-700 rounded-md text-lg font-medium focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
+            className="w-full py-3 px-6 text-center text-blue-500 bg-white hover:bg-gray-100 rounded-lg text-lg font-semibold transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2"
           >
-            I am a Staff
+            Staff Portal
           </Link>
         </div>
       </div>

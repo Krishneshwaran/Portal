@@ -12,6 +12,7 @@ const Mcq_createQuestion = () => {
   const [questionList, setQuestionList] = useState([]);
   const [isNewQuestion, setIsNewQuestion] = useState(false);
   const navigate = useNavigate();
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -22,7 +23,7 @@ const Mcq_createQuestion = () => {
           return;
         }
 
-        const response = await axios.get("https://vercel-1bge.onrender.com/api/mcq/questions", {
+        const response = await axios.get(`${API_BASE_URL}/api/mcq/questions`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -110,7 +111,7 @@ const Mcq_createQuestion = () => {
 
       if (isNewQuestion) {
         await axios.post(
-          "https://vercel-1bge.onrender.com/api/mcq/save-questions/",
+          `${API_BASE_URL}/api/mcq/save-questions/`,
           { questions: [newQuestion] },
           {
             headers: { Authorization: `Bearer ${token} `},
@@ -119,7 +120,7 @@ const Mcq_createQuestion = () => {
         alert("New question saved successfully!");
       } else {
         await axios.put(
-          `https://vercel-1bge.onrender.com/api/mcq/questions/${questionList[currentQuestionIndex]._id}`,
+          `${API_BASE_URL}/api/mcq/questions/${questionList[currentQuestionIndex]._id}`,
           newQuestion,
           {
             headers: { Authorization: `Bearer ${token} `},
@@ -128,7 +129,7 @@ const Mcq_createQuestion = () => {
         alert("Question updated successfully!");
       }
 
-      const response = await axios.get("https://vercel-1bge.onrender.com/api/mcq/questions", {
+      const response = await axios.get(`${API_BASE_URL}/api/mcq/questions`, {
         headers: { Authorization: `Bearer ${token} `},
       });
 

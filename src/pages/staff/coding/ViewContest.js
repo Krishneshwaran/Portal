@@ -27,6 +27,7 @@ const ViewContest = () => {
   const [searchName, setSearchName] = useState("");
   const [loading, setLoading] = useState(true);
   const [filterCollege, setFilterCollege] = useState("");
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
     fetchStudents();
@@ -36,7 +37,7 @@ const ViewContest = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        `https://vercel-1bge.onrender.com/api/contests/${contestId}/students/`
+        `${API_BASE_URL}/api/contests/${contestId}/students/`
       );
       setStudents(response.data);
     } catch (error) {

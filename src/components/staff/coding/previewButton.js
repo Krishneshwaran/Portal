@@ -6,10 +6,11 @@ import axios from 'axios';
 const PreviewButton = ({ onEditProblem }) => {
   const [openPreview, setOpenPreview] = useState(false);
   const [previewData, setPreviewData] = useState({ easy: [], medium: [], hard: [] });
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   const handlePreview = async () => {
     try {
-      const response = await axios.get('https://vercel-1bge.onrender.com/manualProblems/');
+      const response = await axios.get(`${API_BASE_URL}/manualProblems/`);
       const questions = response.data.problems;
 
       setPreviewData({
@@ -34,7 +35,7 @@ const PreviewButton = ({ onEditProblem }) => {
 
   const handleDelete = async (problemId) => {
     try {
-      await axios.delete(`https://vercel-1bge.onrender.com/manualProblems/`, { data: { id: problemId } });
+      await axios.delete(`${API_BASE_URL}/manualProblems/`, { data: { id: problemId } });
       // Refresh the preview data after deletion
       handlePreview();
     } catch (error) {

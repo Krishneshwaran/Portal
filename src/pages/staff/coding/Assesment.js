@@ -5,6 +5,7 @@ const SinglePageStepper = () => {
     const [currentStep, setCurrentStep] = useState(1);
     const [activeTab, setActiveTab] = useState(1);
     const navigate = useNavigate();
+    const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
     const [formData, setFormData] = useState({
         assessmentOverview: {
             name: "",
@@ -96,7 +97,7 @@ const SinglePageStepper = () => {
             };
 
             try {
-                const response = await fetch("https://vercel-1bge.onrender.com/api/create-assessment/", {
+                const response = await fetch(`${API_BASE_URL}/api/create-assessment/`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",

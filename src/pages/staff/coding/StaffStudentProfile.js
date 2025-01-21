@@ -1,19 +1,45 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
-import Loader from '../../../layout/Loader';
+import { useNavigate } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Menu,
+  MenuItem,
+  IconButton,
+  Box,
+  Grid,
+} from "@mui/material";
+import {
+  Visibility as VisibilityIcon,
+  Sort as SortIcon,
+  Search as SearchIcon,
+  School as SchoolIcon,
+} from "@mui/icons-material";
 
 const App = () => {
-  const navigate = useNavigate(); // Initialize navigate function
+  const navigate = useNavigate();
   const [students, setStudents] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [studentsPerPage] = useState(10);
-  const [selectedStudent, setSelectedStudent] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [anchorEl, setAnchorEl] = useState(null);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
 
   useEffect(() => {
     setIsLoading(true);
-    // Fetch student data (replace with your API endpoint)
-    fetch("https://vercel-1bge.onrender.com/studentprofile/")
+    fetch(`${API_BASE_URL}/studentprofile/`)
       .then((response) => response.json())
       .then((data) => {
         setStudents(data.students);
@@ -25,190 +51,188 @@ const App = () => {
       });
   }, []);
 
-  // Get current students for pagination
+  const filteredStudents = students.filter((student) =>
+    Object.values(student).some((value) =>
+      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
+
+  const sortedStudents = React.useMemo(() => {
+    let sortableStudents = [...filteredStudents];
+    if (sortConfig.key) {
+      sortableStudents.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === "asc" ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === "asc" ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableStudents;
+  }, [filteredStudents, sortConfig]);
+
+  const requestSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+    setAnchorEl(null);
+  };
+
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const yearCounts = ["I", "II", "III", "IV"].reduce((acc, year) => {
+    acc[year] = students.filter(student => student.year === year).length;
+    return acc;
+  }, {});
+
   const indexOfLastStudent = currentPage * studentsPerPage;
   const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
-  const currentStudents = students.slice(indexOfFirstStudent, indexOfLastStudent);
+  const totalPages = Math.ceil(sortedStudents.length / studentsPerPage);
 
-  // Change page
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
-  const viewStudent = (student) => {
-    setSelectedStudent(student);
-  };
-
-  const closeDetails = () => {
-    setSelectedStudent(null);
-  };
-
-  // New function to handle redirecting to student stats
-  const viewStudentStats = (regno) => {
-    navigate(`/studentstats/${regno}`); // Navigate to student stats page
-  };
-
-  const styles = {
-    container: {
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-      margin: "20px auto",
-      maxWidth: "90%",
-    },
-    header: {
-      textAlign: "center",
-      fontSize: "2rem",
-      marginBottom: "20px",
-      color: "#333",
-    },
-    table: {
-      width: "100%",
-      borderCollapse: "collapse",
-      marginTop: "20px",
-      boxShadow: "0 0 10px rgba(0, 0, 0, 0.1)",
-    },
-    tableHeader: {
-      backgroundColor: "#4CAF50",
-      color: "white",
-      padding: "15px",
-      textAlign: "center",
-      borderBottom: "2px solid #ddd",
-      fontSize: "1.1rem",
-    },
-    tableCell: {
-      padding: "12px 15px",
-      textAlign: "center",
-      borderBottom: "1px solid #ddd",
-    },
-    row: {
-      backgroundColor: "#f9f9f9",
-    },
-    pagination: {
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      marginTop: "20px",
-      gap: "10px",
-    },
-    pageButton: {
-      padding: "10px 15px",
-      backgroundColor: "#4CAF50",
-      color: "white",
-      border: "none",
-      borderRadius: "5px",
-      cursor: "pointer",
-    },
-    pageInfo: {
-      fontSize: "1rem",
-      fontWeight: "bold",
-    },
-    viewButton: {
-      backgroundColor: "#4CAF50",
-      color: "white",
-      padding: "5px 15px",
-      border: "none",
-      borderRadius: "5px",
-      cursor: "pointer",
-      textAlign: "center",
-    },
-    detailView: {
-      border: "1px solid #ddd",
-      padding: "20px",
-      borderRadius: "10px",
-      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-      marginTop: "20px",
-    },
-    closeButton: {
-      padding: "10px 15px",
-      backgroundColor: "#f44336",
-      color: "white",
-      border: "none",
-      borderRadius: "5px",
-      cursor: "pointer",
-      marginTop: "20px",
-    },
-  };
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      </Box>
+    );
+  }
 
   return (
-    <div style={styles.container}>
-      {isLoading ? (
-        <Loader />
-      ) : (
-        <>
-          <h1 style={styles.header}>Student Profile Management</h1>
+    <Box sx={{ p: 6, bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+      <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>
+        Student Profile Management
+      </Typography>
+      <Typography variant="subtitle1" sx={{ mb: 4, color: 'text.secondary' }}>
+        Manage and view student profiles across all years
+      </Typography>
 
-          {selectedStudent ? (
-            <div style={styles.detailView}>
-              <h2>Student Details</h2>
-              <p>
-                <strong>Name:</strong> {selectedStudent.name}
-              </p>
-              <p>
-                <strong>Email:</strong> {selectedStudent.email}
-              </p>
-              <p>
-                <strong>College:</strong> {selectedStudent.collegename}
-              </p>
-              <p>
-                <strong>Department:</strong> {selectedStudent.dept}
-              </p>
-              <p>
-                <strong>Register Number:</strong> {selectedStudent.regno}
-              </p>
-              <button style={styles.closeButton} onClick={closeDetails}>
-                Close
-              </button>
-            </div>
-          ) : (
-            <>
-              <table style={styles.table}>
-                <thead>
-                  <tr>
-                    <th style={styles.tableHeader}>Name</th>
-                    <th style={styles.tableHeader}>Department</th>
-                    <th style={styles.tableHeader}>College</th>
-                    <th style={styles.tableHeader}>Register Number</th>
-                    <th style={styles.tableHeader}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentStudents.map((student, index) => (
-                    <tr
-                      key={index}
-                      style={styles.row}
-                    >
-                      <td style={styles.tableCell}>{student.name}</td>
-                      <td style={styles.tableCell}>{student.dept}</td>
-                      <td style={styles.tableCell}>{student.collegename}</td>
-                      <td style={styles.tableCell}>{student.regno}</td>
-                      <td style={styles.tableCell}>
-                        <button
-                          style={styles.viewButton}
-                          onClick={() => viewStudentStats(student.regno)}
+      <Grid container spacing={2} sx={{ mb: 4 }}>
+        {Object.entries(yearCounts).map(([year, count]) => (
+          <Grid item xs={12} sm={6} md={3} key={year}>
+            <Card elevation={2}>
+              <CardContent>
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                  <div>
+                    <Typography variant="h6" component="div">
+                      Year {year}
+                    </Typography>
+                    <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
+                      {count}
+                    </Typography>
+                    <Typography color="text.secondary" variant="subtitle2">
+                      Total Students
+                    </Typography>
+                  </div>
+                  <SchoolIcon sx={{ fontSize: 60, color: '#ffffff', opacity: 0.7,backgroundColor:"#FDC500",borderRadius:"15px", padding:1 }} />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
+      <Card elevation={2}>
+        <Box sx={{ p: 2 }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+            <TextField
+              placeholder="Search students..."
+              variant="outlined"
+              size="small"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+              }}
+            />
+            <Button
+              variant="outlined"
+              startIcon={<SortIcon />}
+              onClick={handleMenuOpen}
+            >
+              Sort
+            </Button>
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleMenuClose}
+            >
+              <MenuItem onClick={() => requestSort("name")}>Sort by Name</MenuItem>
+              <MenuItem onClick={() => requestSort("dept")}>Sort by Department</MenuItem>
+              <MenuItem onClick={() => requestSort("year")}>Sort by Year</MenuItem>
+            </Menu>
+          </Box>
+
+          <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Name</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Department</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>College</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Year</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Register Number</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {sortedStudents
+                  .slice(indexOfFirstStudent, indexOfLastStudent)
+                  .map((student) => (
+                    <TableRow key={student.regno} hover>
+                      <TableCell>{student.name}</TableCell>
+                      <TableCell>{student.dept}</TableCell>
+                      <TableCell>{student.collegename}</TableCell>
+                      <TableCell>{student.year}</TableCell>
+                      <TableCell>{student.regno}</TableCell>
+                      <TableCell>
+                        <IconButton
+                          size="small"
+                          onClick={() => navigate(`/studentstats/${student.regno}`)}
+                          color="primary"
                         >
-                          View
-                        </button>
-                      </td>
-                    </tr>
+                          <VisibilityIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      </Card>
 
-              <div style={styles.pagination}>
-                {[...Array(Math.ceil(students.length / studentsPerPage)).keys()].map(
-                  (number) => (
-                    <button
-                      key={number}
-                      style={styles.pageButton}
-                      onClick={() => paginate(number + 1)}
-                    >
-                      {number + 1}
-                    </button>
-                  )
-                )}
-              </div>
-            </>
-          )}
-        </>
-      )}
-    </div>
+      <Box display="flex" justifyContent="center" alignItems="center" sx={{ mt: 3 }}>
+        <Button
+          variant="outlined"
+          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+          sx={{ mx: 1 }}
+        >
+          Previous
+        </Button>
+        <Typography variant="body2" sx={{ mx: 2 }}>
+          Page {currentPage} of {totalPages}
+        </Typography>
+        <Button
+          variant="outlined"
+          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+          disabled={currentPage === totalPages}
+          sx={{ mx: 1 }}
+        >
+          Next
+        </Button>
+      </Box>
+    </Box>
   );
 };
 

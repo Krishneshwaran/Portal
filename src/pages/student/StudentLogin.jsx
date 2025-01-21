@@ -15,6 +15,7 @@ const StudentLogin = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -30,7 +31,7 @@ const StudentLogin = ({ onLogin }) => {
 
     try {
       const response = await axios.post(
-        'https://vercel-1bge.onrender.com/api/student/login/',
+        `${API_BASE_URL }/api/student/login/`,
         formData,
         {
           headers: { 'Content-Type': 'application/json' },
@@ -96,8 +97,8 @@ const StudentLogin = ({ onLogin }) => {
       {loading && <Loader message="Logging you in..." />}
       
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div className="absolute -bottom-32 -left-32 h-[450px] w-[450px] animate-pulse-slow rounded-full bg-yellow-400 blur-3xl" />
-      <div className="absolute top-0 right-0 h-[500px] w-[500px] animate-pulse-slow rounded-full bg-gradient-to-tr from-amber-100 to-amber-500 blur-3xl" />
+      <div className="absolute -bottom-32 -left-32 h-[450px] w-[450px] animate-pulse-slow rounded-full bg-blue-100 blur-3xl" />
+      <div className="absolute top-0 right-0 h-[500px] w-[500px] animate-pulse-slow rounded-full bg-gradient-to-tr from-blue-100 to-blue-150 blur-3xl" />
       </div>
 
       <motion.div
@@ -213,14 +214,14 @@ const StudentLogin = ({ onLogin }) => {
             By logging in, you agree to our{' '}
             <Link
               to="/terms"
-              className="font-medium text-amber-600 hover:text-amber-500"
+              className="font-medium text-blue-600 hover:text-blue-500"
             >
               Terms of Service
             </Link>{' '}
             and{' '}
             <Link
               to="/privacy"
-              className="font-medium text-amber-600 hover:text-amber-500"
+              className="font-medium text-blue-600 hover:text-blue-500"
             >
               Privacy Policy
             </Link>

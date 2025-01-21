@@ -52,22 +52,20 @@ const TestCard = ({
   assessment_type = 'unknown',
   isCompleted = false,
   studentId = '',
-  isPublished = false
+  isPublished = false,
 }) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Get the correct icon based on assessment type
   const icon = useMemo(() =>
-    assessment_type === "coding" ? codingIcon : aptitudeIcon,
+    assessment_type === 'coding' ? codingIcon : aptitudeIcon,
   [assessment_type]);
 
-  // Memoized values to prevent unnecessary recalculations
   const statusConfig = useMemo(() => ({
     color: isCompleted ? theme.palette.success.main : theme.palette.error.main,
-    text: isCompleted ? 'Completed' : 'Ongoing',
-    buttonText: isCompleted ? 'View Test' : 'Take Test'
+    text: isCompleted ? 'Completed' : 'Live',
+    buttonText: isCompleted ? 'View Result' : 'Take Test',
   }), [isCompleted]);
 
   const formatDate = (dateString) => {
@@ -76,7 +74,7 @@ const TestCard = ({
       const date = new Date(dateString);
       return new Intl.DateTimeFormat('en-US', {
         dateStyle: 'medium',
-        timeStyle: 'short'
+        timeStyle: 'short',
       }).format(date);
     } catch (error) {
       console.error('Date formatting error:', error);
@@ -89,34 +87,39 @@ const TestCard = ({
     if (!isCompleted) {
       const testId = test?.contestId || test?.testId || 'unknown';
       navigate(`/testinstructions/${testId}`, {
-        state: { test, assessment_type }
+        state: { test, assessment_type },
       });
     }
   };
+
+  const registrationStartTime = new Date(test?.starttime);
+  const currentTime = new Date();
+  const isRegistrationStarted = currentTime >= registrationStartTime;
 
   return (
     <StyledCard
       variant="outlined"
       iscompleted={isCompleted.toString()}
-      onClick={handleCardClick}
+      onClick={isRegistrationStarted && !isCompleted ? handleCardClick : undefined}
     >
-      <CardContent sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
-        height: '100%',
-        padding: isMobile ? theme.spacing(2) : theme.spacing(3),
-      }}>
-        <Box sx={{
+      <CardContent
+        sx={{
           display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          alignItems: isMobile ? 'flex-start' : 'center',
-          gap: 2
-        }}>
-          <StyledAvatar
-            src={icon}
-            alt={assessment_type}
-          />
+          flexDirection: 'column',
+          gap: 2,
+          height: '100%',
+          padding: isMobile ? theme.spacing(2) : theme.spacing(3),
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'flex-start' : 'center',
+            gap: 2,
+          }}
+        >
+          <StyledAvatar src={icon} alt={assessment_type} />
           <Box sx={{ flexGrow: 1 }}>
             <Typography
               variant="h6"
@@ -144,7 +147,7 @@ const TestCard = ({
               fontSize: isMobile ? '0.875rem' : '1rem',
             }}
           >
-            {statusConfig.text}
+            {isRegistrationStarted ? statusConfig.text : 'Not Yet Started'}
           </Typography>
         </Box>
 
@@ -159,14 +162,16 @@ const TestCard = ({
           Take this test with proper preparation. All The Best!
         </Typography>
 
-        <Box sx={{
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          justifyContent: 'space-between',
-          alignItems: isMobile ? 'flex-start' : 'center',
-          gap: 2,
-          mt: 'auto'
-        }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            justifyContent: 'space-between',
+            alignItems: isMobile ? 'flex-start' : 'center',
+            gap: 2,
+            mt: 'auto',
+          }}
+        >
           <Box>
             {['starttime', 'endtime'].map((timeType) => (
               <Typography
@@ -193,21 +198,44 @@ const TestCard = ({
                 <Button
                   variant="contained"
                   color="primary"
-                  fullWidth={isMobile}
-                  sx={{ fontSize: isMobile ? '0.875rem' : '1rem' }}
+                  fullWidth={false} // Set to false to allow custom width
+                  sx={{
+                    fontSize: isMobile ? '0.75rem' : '0.875rem',
+                    padding: '4px 8px', // Adjust padding for smaller size
+                    minWidth: '80px', // Adjust minWidth for smaller size
+                  }}
                 >
                   View Result
                 </Button>
               </Link>
+            ) : isCompleted && !isPublished ? (
+              <Button
+                variant="contained"
+                color="primary"
+                disabled
+                fullWidth={false} // Set to false to allow custom width
+                sx={{
+                  fontSize: isMobile ? '0.75rem' : '0.875rem',
+                  padding: '4px 0px', // Adjust padding for smaller size
+                  minWidth: '120px', // Adjust minWidth for smaller size
+                }}
+              >
+                View Result
+              </Button>
             ) : (
               <Button
                 variant="contained"
                 color="primary"
-                onClick={handleCardClick}
-                fullWidth={isMobile}
-                sx={{ fontSize: isMobile ? '0.875rem' : '1rem' }}
+                onClick={isRegistrationStarted ? handleCardClick : undefined}
+                disabled={!isRegistrationStarted}
+                fullWidth={false} // Set to false to allow custom width
+                sx={{
+                  fontSize: isMobile ? '0.75rem' : '0.875rem',
+                  padding: '4px 8px', // Adjust padding for smaller size
+                  minWidth: '100px', // Adjust minWidth for smaller size
+                }}
               >
-                {statusConfig.buttonText}
+                {isRegistrationStarted ? statusConfig.buttonText : 'Yet to Start'}
               </Button>
             )}
           </Box>

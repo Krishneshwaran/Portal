@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 const FileUpload = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [file, setFile] = useState(null);
+    const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
     const navigate = useNavigate();
   
     const handleFileChange = (event) => {
@@ -24,7 +25,7 @@ const FileUpload = () => {
         formData.append('file', file);
   
         try {
-          const response = await fetch('https://vercel-1bge.onrender.com/userinput/', {
+          const response = await fetch(`${API_BASE_URL}/userinput/`, {
             method: 'POST',
             body: formData,
           });

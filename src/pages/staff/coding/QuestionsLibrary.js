@@ -32,6 +32,7 @@ const QuestionsLibrary = () => {
   const { contestId } = useParams();
   const location = useLocation();
   const requiredQuestions = location.state?.requiredQuestions || 0;
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   // Pagination states
   const [page, setPage] = useState(0);
@@ -40,7 +41,7 @@ const QuestionsLibrary = () => {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const response = await axios.get("https://vercel-1bge.onrender.com/manualProblems/");
+        const response = await axios.get(`${API_BASE_URL}/manualProblems/`);
         setQuestions(response.data.problems);
         setFilteredQuestions(response.data.problems);
 

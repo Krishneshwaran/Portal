@@ -30,6 +30,7 @@ const StyledTab = styled(Tab)({
     borderRadius: '6px',
   },
 });
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
 const DashboardHeader = styled(Box)(({ theme }) => ({
   background: 'linear-gradient(135deg, rgb(139, 135, 251), rgb(95, 121, 214) 2%%)',
@@ -51,6 +52,7 @@ const StudentDashboard = () => {
   const [studentData, setStudentData] = useState({
     name: "",
     regno: "",
+    email: "",
   });
 
   const theme = useTheme();
@@ -58,11 +60,15 @@ const StudentDashboard = () => {
 
   const fetchStudentData = async () => {
     try {
-      const response = await axios.get("https://vercel-1bge.onrender.com/api/student/profile/", {
+
+      const response = await axios.get(`${API_BASE_URL}/api/student/profile/`, {
+
         withCredentials: true,
       });
-      const { name, regno, studentId } = response.data;
-      setStudentData({ name, regno, studentId });
+      const { name, regno, studentId, email } = response.data;
+      setStudentData({ name, regno, studentId, email });
+
+      localStorage.setItem('studentEmail', email);
 
       const [openTestsData, mcqTestsData, codingReportsData, mcqReportsData] = await Promise.all([
         fetchOpenTests(regno),
@@ -83,7 +89,8 @@ const StudentDashboard = () => {
       const completedTestsWithPublishStatus = await Promise.all(
         allCompletedTests.map(async (test) => {
           const response = await axios.get(
-            `https://vercel-1bge.onrender.com/api/student/check-publish-status/${test?.contestId || test?.testId || "unknown"}/`
+
+            `${API_BASE_URL}/api/student/check-publish-status/${test?.contestId || test?.testId || "unknown"}/`
           );
           return { ...test, ispublish: response.data.ispublish || false };
         })
@@ -101,19 +108,25 @@ const StudentDashboard = () => {
 
   const fetchOpenTests = async (regno) => {
     try {
-      const response = await axios.get(`https://vercel-1bge.onrender.com/api/student/tests?regno=${regno}`, {
+
+      const response = await axios.get(`${API_BASE_URL}/api/student/tests?regno=${regno}`, {
         withCredentials: true,
       });
+
 
       const formattedTests = response.data.map((test) => {
         const { hours, minutes } = test.testConfiguration.duration;
         const duration = (parseInt(hours) * 3600) + (parseInt(minutes) * 60);
         const fullScreenMode = test.testConfiguration.fullScreenMode;
         const faceDetection = test.testConfiguration.faceDetection;
+        const deviceRestriction = test.testConfiguration.deviceRestriction;
+        const noiseDetection = test.testConfiguration.noiseDetection; // Add noiseDetection
 
         localStorage.setItem(`testDuration_${test.contestId}`, duration);
         localStorage.setItem(`fullScreenMode_${test.contestId}`, fullScreenMode);
         localStorage.setItem(`faceDetection_${test.contestId}`, faceDetection);
+        localStorage.setItem(`deviceRestriction_${test.contestId}`, deviceRestriction);
+        localStorage.setItem(`noiseDetection_${test.contestId}`, noiseDetection); // Set noiseDetection in localStorage
 
         return {
           contestId: test.contestId,
@@ -135,25 +148,34 @@ const StudentDashboard = () => {
 
   const fetchMcqTests = async (regno) => {
     try {
-      const response = await axios.get(`https://vercel-1bge.onrender.com/api/student/mcq-tests?regno=${regno}`, {
+
+      const response = await axios.get(`${API_BASE_URL}/api/student/mcq-tests?regno=${regno}`, {
         withCredentials: true,
       });
-
+  
       const formattedTests = response.data.map((test) => {
         const durationConfig = test.testConfiguration?.duration;
         const hours = parseInt(durationConfig?.hours || "0", 10);
         const minutes = parseInt(durationConfig?.minutes || "0", 10);
         const duration = (hours * 3600) + (minutes * 60);
-
+  
         const fullScreenMode = test.testConfiguration?.fullScreenMode || false;
         const faceDetection = test.testConfiguration?.faceDetection || false;
+        const deviceRestriction = test.testConfiguration?.deviceRestriction || false;
+        const noiseDetection = test.testConfiguration?.noiseDetection || false; // Add noiseDetection
 
+        const resultVisibility = test.testConfiguration?.resultVisibility || "Unknown";
+        
+  
         if (test.testConfiguration) {
           localStorage.setItem(`testDuration_${test._id}`, duration);
           localStorage.setItem(`fullScreenMode_${test._id}`, fullScreenMode);
           localStorage.setItem(`faceDetection_${test._id}`, faceDetection);
+          localStorage.setItem(`deviceRestriction_${test._id}`, deviceRestriction);
+          localStorage.setItem(`noiseDetection_${test._id}`, noiseDetection); // Set noiseDetection in localStorage
+          localStorage.setItem(`resultVisibility_${test._id}`, resultVisibility);
         }
-
+  
         return {
           testId: test._id,
           name: test.assessmentOverview?.name || "Unknown Test",
@@ -165,7 +187,7 @@ const StudentDashboard = () => {
           status: test.status || "Unknown",
         };
       });
-
+  
       return formattedTests;
     } catch (error) {
       console.error("Error fetching MCQ tests:", error);
@@ -175,7 +197,8 @@ const StudentDashboard = () => {
 
   const fetchCodingReports = async () => {
     try {
-      const response = await axios.get(`https://vercel-1bge.onrender.com/api/student/coding-reports/`, {
+
+      const response = await axios.get(`${API_BASE_URL}/api/student/coding-reports/`, {
         withCredentials: true,
       });
       return response.data;
@@ -187,7 +210,8 @@ const StudentDashboard = () => {
 
   const fetchMcqReports = async () => {
     try {
-      const response = await axios.get(`https://vercel-1bge.onrender.com/api/student/mcq-reports/`, {
+
+      const response = await axios.get(`${API_BASE_URL}/api/student/mcq-reports/`, {
         withCredentials: true,
       });
       return response.data;

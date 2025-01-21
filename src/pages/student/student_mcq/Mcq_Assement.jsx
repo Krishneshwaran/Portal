@@ -1,14 +1,21 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Header from "../../../components/staff/mcq/Header";
 import Question from "../../../components/staff/mcq/Question";
 import Sidebar from "../../../components/staff/mcq/Sidebar";
+import useNoiseDetection from "../../../components/staff/mcq/useNoiseDetection";
+import useFullScreenMode from "../../../components/staff/mcq/useFullScreenMode";
+import useDeviceRestriction from "../../../components/staff/mcq/useDeviceRestriction";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
+import { useTheme, useMediaQuery } from "@mui/material";
+import FaceDetectionComponent from "../../../components/staff/mcq/useVideoDetection"; // Import the FaceDetectionComponent
 
 export default function Mcq_Assessment() {
   const { contestId } = useParams();
   const studentId = sessionStorage.getItem("studentId");
   const navigate = useNavigate();
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
   const [questions, setQuestions] = useState([]);
   const [selectedAnswers, setSelectedAnswers] = useState(() => {
     const storedAnswers = sessionStorage.getItem(`selectedAnswers_${contestId}`);
@@ -22,7 +29,7 @@ export default function Mcq_Assessment() {
   const [loading, setLoading] = useState(true);
   const [duration, setDuration] = useState(0);
   const [fullScreenMode, setFullScreenMode] = useState(() => {
-    const storedFullScreenMode = sessionStorage.getItem(`fullScreenMode_${contestId}`);
+    const storedFullScreenMode = localStorage.getItem(`fullScreenMode_${contestId}`);
     return storedFullScreenMode === "true";
   });
   const [fullscreenWarnings, setFullscreenWarnings] = useState(() => {
@@ -35,11 +42,18 @@ export default function Mcq_Assessment() {
   const [showWarningModal, setShowWarningModal] = useState(false);
   const mediaStreamRef = useRef(null);
   const [remainingTime, setRemainingTime] = useState(0);
+  const [noiseDetectionCount, setNoiseDetectionCount] = useState(0);
+  const [showNoiseWarningModal, setShowNoiseWarningModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [hasFocus, setHasFocus] = useState(true);
   const lastActiveTime = useRef(Date.now());
   const lastWarningTime = useRef(Date.now());
+  const [isFreezePeriodOver, setIsFreezePeriodOver] = useState(false);
+  const [faceDetectionWarning, setFaceDetectionWarning] = useState('');
+  const [keydownWarnings, setKeydownWarnings] = useState(0);
+  const [reloadWarnings, setReloadWarnings] = useState(0);
+  const [inspectWarnings, setInspectWarnings] = useState(0);
 
   // ADDED: State to track mobile sidebar open/close and current screen width
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false); // ADDED
@@ -49,27 +63,57 @@ export default function Mcq_Assessment() {
   const disableAutoFullscreen = false; // CHANGED to false so it goes fullscreen on load
 
   // ADDED: Keep track of screen resizing so we can display the sidebar if width ≥ 1024
-  useEffect(() => {                                                     
-    const handleResize = () => {                                        
-      setScreenWidth(window.innerWidth);                                
-    };                                                                  
-    window.addEventListener("resize", handleResize);                    
-    return () => {                                                      
-      window.removeEventListener("resize", handleResize);               
-    };                                                                  
-  }, []);                                                               
+  // Define warning limits
+  const warningLimits = {
+    fullscreen: 3,
+    tabSwitch: 1,
+    noiseDetection: 2,
+    faceDetection: 3,
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      setScreenWidth(window.innerWidth);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const response = await axios.get(
-          `https://vercel-1bge.onrender.com/api/mcq/get_mcqquestions/${contestId}`
-        );
-        setQuestions(response.data.questions);
-        const { hours, minutes } = response.data.duration;
+        const sectionStatus = localStorage.getItem(`sections_${contestId}`);
+        const isSectionTrue = sectionStatus === "true";
+  
+        const apiUrl = isSectionTrue
+          ? `${API_BASE_URL}/api/mcq/sections/${contestId}/`
+          : `${API_BASE_URL}/api/mcq/get_mcqquestions/${contestId}/`;
+  
+        const response = await axios.get(apiUrl);
+  
+        // Check if session-based or non-session-based response
+        let parsedQuestions = [];
+        if (isSectionTrue) {
+          response.data.forEach((section) => {
+            section.questions.forEach((question) => {
+              parsedQuestions.push({
+                ...question,
+                sectionName: section.sectionName, // Add section metadata
+              });
+            });
+          });
+        } else {
+          parsedQuestions = response.data.questions || [];
+        }
+  
+        setQuestions(parsedQuestions);
+  
+        const { hours, minutes } = response.data.duration || { hours: 0, minutes: 0 };
         const totalDuration = parseInt(hours) * 3600 + parseInt(minutes) * 60;
         setDuration(totalDuration);
-
+  
         const startTime = sessionStorage.getItem(`startTime_${contestId}`);
         if (startTime) {
           const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
@@ -78,14 +122,14 @@ export default function Mcq_Assessment() {
           sessionStorage.setItem(`startTime_${contestId}`, Date.now());
           setRemainingTime(totalDuration);
         }
-
+  
         setLoading(false);
       } catch (error) {
         console.error("Error fetching questions:", error);
         setLoading(false);
       }
     };
-
+  
     fetchQuestions();
   }, [contestId, studentId]);
 
@@ -170,7 +214,7 @@ export default function Mcq_Assessment() {
 
   useEffect(() => {
     // On mount: If autoFullscreen is allowed => actuallyEnforceFullScreen
-    if (!isTestFinished && !disableAutoFullscreen) {
+    if (!isTestFinished && !disableAutoFullscreen && fullScreenMode) {
       actuallyEnforceFullScreen();
     }
 
@@ -182,12 +226,12 @@ export default function Mcq_Assessment() {
         document.msFullscreenElement;
 
       // If user exits fullscreen in the middle of the test, we show a warning
-      if (!isFullscreen && !isTestFinished && !disableAutoFullscreen) {
+      if (!isFullscreen && !isTestFinished && !disableAutoFullscreen && fullScreenMode) {
         addWarning("fullscreen");
         await actuallyEnforceFullScreen();
       }
       setFullScreenMode(isFullscreen);
-      sessionStorage.setItem(
+      localStorage.setItem(
         `fullScreenMode_${contestId}`,
         isFullscreen ? "true" : "false"
       );
@@ -202,7 +246,7 @@ export default function Mcq_Assessment() {
     };
 
     const handleKeyDown = async (e) => {
-      if (!isTestFinished) {
+      if (!isTestFinished && fullScreenMode) {
         // Prevent ESC
         if (e.key === "Escape") {
           e.preventDefault();
@@ -276,24 +320,11 @@ export default function Mcq_Assessment() {
       document.removeEventListener("mozfullscreenchange", onFullscreenChange);
       document.removeEventListener("MSFullscreenChange", onFullscreenChange);
     };
-  }, [isTestFinished, contestId]);
-
-  const handleFullscreenReEntry = async () => {
-    setShowWarningModal(false);
-    // Return to FS if user left it
-    if (!disableAutoFullscreen && !fullScreenMode) {
-      try {
-        await actuallyEnforceFullScreen();
-      } catch (error) {
-        console.error("Error returning to fullscreen:", error);
-        setTimeout(handleFullscreenReEntry, 500);
-      }
-    }
-  };
+  }, [isTestFinished, contestId, fullScreenMode]);
 
   useEffect(() => {
     // If not finished, try to do fullscreen on load
-    if (!disableAutoFullscreen && !isTestFinished) {
+    if (!disableAutoFullscreen && !isTestFinished && fullScreenMode) {
       (async () => {
         try {
           await actuallyEnforceFullScreen();
@@ -302,8 +333,11 @@ export default function Mcq_Assessment() {
         }
       })();
     }
-  }, []); // no lines removed
+  }, [fullScreenMode]); // Added fullScreenMode as a dependency
 
+
+  const { openDeviceRestrictionModal, handleDeviceRestrictionModalClose } = useDeviceRestriction(contestId);
+  
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1);
@@ -315,17 +349,88 @@ export default function Mcq_Assessment() {
       setCurrentIndex(currentIndex - 1);
     }
   };
+  
+  const handleNoiseDetection = () => {
+    setNoiseDetectionCount((prevCount) => {
+      const newCount = prevCount + 1;
+      sessionStorage.setItem(`noiseDetectionCount_${contestId}`, newCount);
+      return newCount;
+    });
+    setShowNoiseWarningModal(true);
+  };
+  
+  const noiseDetection = useNoiseDetection(contestId, handleNoiseDetection);
+  
 
-  const handleFinish = async () => {
+  const handleFinish = useCallback(async () => {
     try {
+      const formattedAnswers = {};
+
+      // Format answers for section-based or non-section-based payloads
+      questions.forEach((question, index) => {
+        if (question.sectionName) {
+          // Section-based logic
+          if (!formattedAnswers[question.sectionName]) {
+            formattedAnswers[question.sectionName] = {};
+          }
+          formattedAnswers[question.sectionName][question.text] =
+            selectedAnswers[index] || "notattended";
+        } else {
+          // Non-section-based logic
+          formattedAnswers[question.text] = selectedAnswers[index] || "notattended";
+        }
+      });
+
+      const resultVisibility = localStorage.getItem(`resultVisibility_${contestId}`);
+      const ispublish = resultVisibility === "Immediate release";
+
+      // Calculate the number of correct answers
+      let correctAnswers = 0;
+      questions.forEach((question, index) => {
+        if (selectedAnswers[index] === question.correctAnswer) {
+          correctAnswers++;
+        }
+      });
+
+      // Fetch the pass percentage from session storage
+      const passPercentage =
+        parseFloat(sessionStorage.getItem(`passPercentage_${contestId}`)) || 50;
+
+      // Calculate the grade
+      const totalQuestions = questions.length;
+      const percentage = (correctAnswers / totalQuestions) * 100;
+      const grade = percentage >= passPercentage ? "Pass" : "Fail";
+
+      console.log("Correct Answers:", correctAnswers);
+      console.log("Total Questions:", totalQuestions);
+      console.log("Percentage:", percentage);
+      console.log("Pass Percentage:", passPercentage);
+      console.log("Grade:", grade);
+
+      // Fetch warnings from session storage
+      const fullscreenWarning = sessionStorage.getItem(`fullscreenWarnings_${contestId}`);
+      // const noiseDetectionCount = sessionStorage.getItem(`noiseDetectionCount_${contestId}`) || 0; // Ensures variable is defined
+      const faceWarning = sessionStorage.getItem(`FaceDetectionCount_${contestId}`);
+
       const payload = {
         contestId,
-        answers: selectedAnswers,
-        warnings: fullscreenWarnings + tabSwitchWarnings,
+        studentId: localStorage.getItem("studentId"), // Fetch the studentId from local storage
+        answers: formattedAnswers,
+        FullscreenWarning: fullscreenWarnings,
+        NoiseWarning: noiseDetectionCount,
+        FaceWarning: faceWarning,
+        TabSwitchWarning: tabSwitchWarnings,
+        KeydownWarning: keydownWarnings,
+        ReloadWarning: reloadWarnings,
+        InspectWarning: inspectWarnings,
+        ispublish: ispublish,
+        grade: grade, // Include the calculated grade in the payload
+        passPercentage: passPercentage, // Include the pass percentage in the payload
       };
-
+      
+  
       const response = await axios.post(
-        "https://vercel-1bge.onrender.com/api/mcq/submit_assessment/",
+        `${API_BASE_URL}/api/mcq/submit_assessment/`,
         payload,
         {
           headers: {
@@ -334,19 +439,39 @@ export default function Mcq_Assessment() {
           withCredentials: true,
         }
       );
+  
       if (response.status === 200) {
         navigate("/studentdashboard");
       }
-
+  
       console.log("Test submitted successfully:", response.data);
       alert("Test submitted successfully!");
-
+  
       setIsTestFinished(true);
+  
+      // Clear session storage for warnings
+      sessionStorage.removeItem(`fullscreenWarnings_${contestId}`);
+      sessionStorage.removeItem(`tabSwitchWarnings_${contestId}`);
+      sessionStorage.removeItem(`keydownWarnings_${contestId}`);
+      sessionStorage.removeItem(`reloadWarnings_${contestId}`);
+      sessionStorage.removeItem(`inspectWarnings_${contestId}`);
     } catch (error) {
       console.error("Error submitting test:", error);
       alert("Failed to submit the test.");
     }
-  };
+  }, [
+    contestId,
+    questions,
+    selectedAnswers,
+    fullscreenWarnings,
+    tabSwitchWarnings,
+    keydownWarnings,
+    reloadWarnings,
+    inspectWarnings,
+    navigate,
+  ]);
+
+  
 
   useEffect(() => {
     if (remainingTime > 0) {
@@ -354,15 +479,22 @@ export default function Mcq_Assessment() {
         setRemainingTime((prevTime) => Math.max(prevTime - 1, 0));
       }, 1000);
       return () => clearInterval(interval);
+    } else if (isFreezePeriodOver) {
+      // Only trigger the Finish button if the freeze period is over
+      handleFinish();
     }
-  }, [remainingTime]);
+  }, [remainingTime, isFreezePeriodOver, handleFinish]);
 
   useEffect(() => {
     const disableRightClick = (e) => {
-      e.preventDefault();
+      if (fullScreenMode) {
+        e.preventDefault();
+      }
     };
     const disableTextSelection = (e) => {
-      e.preventDefault();
+      if (fullScreenMode) {
+        e.preventDefault();
+      }
     };
     document.addEventListener("contextmenu", disableRightClick);
     document.addEventListener("selectstart", disableTextSelection);
@@ -370,11 +502,11 @@ export default function Mcq_Assessment() {
       document.removeEventListener("contextmenu", disableRightClick);
       document.removeEventListener("selectstart", disableTextSelection);
     };
-  }, []);
+  }, [fullScreenMode]);
 
   useEffect(() => {
     const handleBeforeUnload = (e) => {
-      if (!isTestFinished) {
+      if (!isTestFinished && fullScreenMode) {
         e.preventDefault();
         e.returnValue = "";
         addWarning("tabSwitch");
@@ -382,7 +514,7 @@ export default function Mcq_Assessment() {
       }
     };
     const handleBlur = () => {
-      if (!isTestFinished) {
+      if (!isTestFinished && fullScreenMode) {
         setHasFocus(false);
         addWarning("tabSwitch");
       }
@@ -391,7 +523,7 @@ export default function Mcq_Assessment() {
       setHasFocus(true);
     };
     const handleVisibilityChange = () => {
-      if (!isTestFinished) {
+      if (!isTestFinished && fullScreenMode) {
         if (document.hidden) {
           const currentTime = Date.now();
           if (currentTime - lastActiveTime.current > 500) {
@@ -408,7 +540,7 @@ export default function Mcq_Assessment() {
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     const focusCheckInterval = setInterval(() => {
-      if (!isTestFinished && !document.hasFocus()) {
+      if (!isTestFinished && !document.hasFocus() && fullScreenMode) {
         addWarning("tabSwitch");
       }
     }, 1000);
@@ -420,8 +552,32 @@ export default function Mcq_Assessment() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       clearInterval(focusCheckInterval);
     };
-  }, [isTestFinished]);
+  }, [isTestFinished, fullScreenMode]);
 
+  useEffect(() => {
+    // Check if all warning counts exceed their limits
+    const allLimitsExceeded =
+      fullscreenWarnings >= warningLimits.fullscreen &&
+      tabSwitchWarnings >= warningLimits.tabSwitch &&
+      noiseDetectionCount >= warningLimits.noiseDetection &&
+      parseInt(sessionStorage.getItem(`FaceDetectionCount_${contestId}`)) >= warningLimits.faceDetection;
+
+    if (allLimitsExceeded) {
+      handleFinish();
+    }
+  }, [fullscreenWarnings, tabSwitchWarnings, noiseDetectionCount, handleFinish]);
+
+  const handleFullscreenReEntry = async () => {
+    setShowWarningModal(false);
+    if (!disableAutoFullscreen && !fullScreenMode) {
+      try {
+        await actuallyEnforceFullScreen();
+      } catch (error) {
+        console.error("Error returning to fullscreen:", error);
+        setTimeout(handleFullscreenReEntry, 500);
+      }
+    }
+  };
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
@@ -433,7 +589,7 @@ export default function Mcq_Assessment() {
     );
   }
 
-  if (!questions.length) {
+  if (!questions || questions.length === 0) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
         <div className="bg-white p-8 rounded-lg shadow-md text-center">
@@ -454,17 +610,17 @@ export default function Mcq_Assessment() {
     <div
       className="min-h-screen bg-gray-50 text-xs sm:text-sm md:text-base"
       style={{
-        userSelect: "none",
-        WebkitUserSelect: "none",
-        MozUserSelect: "none",
-        msUserSelect: "none",
+        userSelect: fullScreenMode ? "none" : "auto",
+        WebkitUserSelect: fullScreenMode ? "none" : "auto",
+        MozUserSelect: fullScreenMode ? "none" : "auto",
+        msUserSelect: fullScreenMode ? "none" : "auto",
         pointerEvents: !hasFocus ? "none" : "auto",
         filter: !hasFocus ? "blur(5px)" : "none",
       }}
-      onCopy={(e) => e.preventDefault()}
-      onCut={(e) => e.preventDefault()}
-      onPaste={(e) => e.preventDefault()}
-      onKeyDown={(e) => e.preventDefault()}
+      onCopy={(e) => fullScreenMode && e.preventDefault()}
+      onCut={(e) => fullScreenMode && e.preventDefault()}
+      onPaste={(e) => fullScreenMode && e.preventDefault()}
+      onKeyDown={(e) => fullScreenMode && e.preventDefault()}
     >
       <meta
         httpEquiv="Content-Security-Policy"
@@ -498,8 +654,8 @@ export default function Mcq_Assessment() {
             </button>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-6 p-4 sm:p-6 min-h-[600px] sm:min-h-[750px] mt-2 sm:mt-7">
-            <div className="flex-grow">
+          <div className="flex flex-col lg:flex-row gap-6 p-4 sm:p-6 min-h-[600px] sm:min-h-[750px] mt-2 sm:mt-7 relative">
+            <div className="flex-grow relative">
               <Question
                 // If you have direct control of how "Previous / Next / Finish" are laid out
                 // you might add special classes for them so we can apply custom logic in CSS
@@ -525,7 +681,7 @@ export default function Mcq_Assessment() {
                   screenWidth >= 1024 || isMobileSidebarOpen ? "block" : "none"
               }} */}
             <div
-              className={`lg:w-80 bg-white z-40 lg:z-auto 
+              className={`lg:w-80 bg-white z-40 lg:z-auto
               fixed lg:static top-0 bottom-0 right-0 transition-transform
               transform
               ${
@@ -538,26 +694,24 @@ export default function Mcq_Assessment() {
               }`}
             >
               <div className="sticky top-6 p-4 sm:p-0">
-                <Sidebar
-                  totalQuestions={questions.length}
-                  currentIndex={currentIndex}
-                  selectedAnswers={selectedAnswers}
-                  reviewStatus={reviewStatus}
-                  onQuestionClick={(index) => setCurrentIndex(index)}
-                />
+              <Sidebar
+                totalQuestions={questions.length}
+                currentIndex={currentIndex}
+                selectedAnswers={selectedAnswers}
+                reviewStatus={reviewStatus}
+                onQuestionClick={(index) => setCurrentIndex(index)}
+                sections={questions.reduce((acc, question) => {
+                  const section = acc.find((s) => s.sectionName === question.sectionName);
+                  if (section) {
+                    section.questions.push(question);
+                  } else {
+                    acc.push({ sectionName: question.sectionName, questions: [question] });
+                  }
+                  return acc;
+                }, [])}
+              />
               </div>
             </div>
-          </div>
-        </div>
-
-        <div className="fixed inset-0 pointer-events-none z-[5] flex items-center justify-start opacity-[0.08]">
-          <div className="transform rotate-45 text-black text-[120px] ml-8 font-extrabold select-none">
-            SNSGROUPS
-          </div>
-        </div>
-        <div className="fixed inset-0 pointer-events-none z-[5] flex items-center justify-center opacity-[0.08]">
-          <div className="transform rotate-45 text-black text-[120px] font-extrabold select-none">
-            SNSGROUPS
           </div>
         </div>
 
@@ -628,17 +782,99 @@ export default function Mcq_Assessment() {
             </div>
           </div>
         )}
+      <Dialog
+          open={openDeviceRestrictionModal}
+          onClose={handleDeviceRestrictionModalClose}
+          aria-labelledby="device-restriction-modal-title"
+          aria-describedby="device-restriction-modal-description"
+        >
+          <DialogTitle id="device-restriction-modal-title">{"Device Restriction"}</DialogTitle>
+          <DialogContent>
+            <DialogContent id="device-restriction-modal-description">
+              This test cannot be taken on a mobile or tablet device.
+            </DialogContent>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleDeviceRestrictionModalClose} color="primary">
+              OK
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {showNoiseWarningModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
+              <div className="text-red-600 mb-4">
+                <svg
+                  className="w-12 h-12 mx-auto"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-center mb-4">
+                Noise Detected
+              </h3>
+              <p className="text-gray-600 text-center mb-6">
+                Noise has been detected. Please ensure a quiet environment to continue the test.
+              </p>
+              <button
+                onClick={() => setShowNoiseWarningModal(false)}
+                className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        )}
+
+        <FaceDetectionComponent contestId={contestId} onWarning={setFaceDetectionWarning} /> {/* Integrate the FaceDetectionComponent */}
+
+        {faceDetectionWarning && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
+              <div className="text-red-600 mb-4">
+                <svg
+                  className="w-12 h-12 mx-auto"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-center mb-4">
+                Face Detection Warning
+              </h3>
+              <p className="text-gray-600 text-center mb-6">
+                {faceDetectionWarning}
+              </p>
+              <button
+                onClick={() => setFaceDetectionWarning('')}
+                className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/*
-        ADDED: Some global CSS override to place "Finish" below "Previous/Next" on mobile
-        (assuming inside <Question> you have a container with .button-row or .question-nav, etc.)
-        If not, you might have to adjust these class names accordingly.
-      */}
       <style>
         {`
           @media (max-width: 640px) {
-            /* On phone: Put "Previous" and "Next" side by side, "Finish" below */
             .question-nav {
               display: flex;
               flex-direction: column;
@@ -655,7 +891,6 @@ export default function Mcq_Assessment() {
             }
           }
           @media (min-width: 641px) {
-            /* Desktop: all three horizontally */
             .question-nav {
               display: flex;
               flex-direction: row;

@@ -14,6 +14,7 @@ const Mcq_bulkUpload = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const requiredQuestions = location.state?.requiredQuestions || 0;
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
     // Load questions from local storage on component mount
@@ -115,7 +116,7 @@ const Mcq_bulkUpload = () => {
 
     try {
       const response = await axios.post(
-        "https://vercel-1bge.onrender.com/api/mcq/save-questions/",
+        `${API_BASE_URL}/api/mcq/save-questions/`,
         { questions: selected },
         {
           headers: {

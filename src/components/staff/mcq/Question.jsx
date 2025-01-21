@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from "react";
 
+// Utility function to shuffle an array
+const shuffleArray = (array) => {
+  const shuffledArray = [...array];
+  for (let i = shuffledArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledArray[i], shuffledArray[j]] = [shuffledArray[j], shuffledArray[i]];
+  }
+  return shuffledArray;
+};
+
 export default function Question({
   question,
   currentIndex,
@@ -10,75 +20,88 @@ export default function Question({
   onAnswerSelect,
   selectedAnswers,
   onReviewMark,
-  reviewStatus,
 }) {
   const [selectedOption, setSelectedOption] = useState(
     selectedAnswers[currentIndex] || null
   );
   const [showPopup, setShowPopup] = useState(false);
-  const isMarkedForReview = reviewStatus[currentIndex] || false;
+  const [shuffledOptions, setShuffledOptions] = useState([]);
 
+  const studentEmail = localStorage.getItem("studentEmail") || "SNSGROUPS.COM";
+
+  // Shuffle options when the question changes
   useEffect(() => {
-    setSelectedOption(selectedAnswers[currentIndex] || null);
-  }, [currentIndex, selectedAnswers]);
+    setShuffledOptions(shuffleArray(question.options));
+  }, [question]);
 
   const handleOptionSelect = (option) => {
     setSelectedOption(option);
-    onAnswerSelect(currentIndex, option);
-  };
-
-  const handleReviewMark = () => {
-    const newStatus = !isMarkedForReview;
-    onReviewMark(currentIndex);
+    onAnswerSelect(currentIndex, option); // Update selected answers in the parent component
   };
 
   const handleFinishClick = () => {
-    setShowPopup(true);
+    setShowPopup(true); // Show the popup
   };
 
   const closePopup = () => {
-    setShowPopup(false);
+    setShowPopup(false); // Close the popup
   };
 
   const confirmFinish = () => {
     setShowPopup(false);
-    onFinish();
+    onFinish(); // Call the parent onFinish function
   };
 
   return (
     <div className="flex-1 relative">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-[#00296b] text-xl">
+        <h2 className="text-[#00296b] text-2xl font-bold">
           Question {currentIndex + 1}/{totalQuestions}
         </h2>
         <button
-          className={`text-sm border rounded-full px-4 py-1 ${
-            isMarkedForReview ? "text-white bg-green-500" : "text-red-500 border-red-500"
-          }`}
-          onClick={handleReviewMark}
+          className="text-red-500 text-sm border border-red-500 rounded-full px-4 py-1"
+          onClick={() => onReviewMark(currentIndex)} // Call the review mark callback
         >
-          {isMarkedForReview ? "Marked for Review" : "Mark for Review"}
+          Mark for review
         </button>
       </div>
-      <div className="border border-black/15 rounded-xl p-8">
-        <p className="text-lg font-bold">{question.text}</p>
 
-        <div className="space-y-4 mb-8 mt-5">
-          {question.options.map((option, idx) => (
+      <p className="text-2xl font-semibold mb-8">{question.text}</p>
+
+      <div className="space-y-4 mb-12">
+        {shuffledOptions.map((option, idx) => (
+          <div
+            key={idx}
+            className="flex items-center cursor-pointer"
+            onClick={() => handleOptionSelect(option)}
+          >
             <button
-              key={idx}
-              className={`w-full p-4 text-left border rounded-lg transition-colors ${
+              className={`w-8 h-8 flex items-center justify-center mr-4 border rounded-lg transition-colors text-1xl font-semibold ${
                 selectedOption === option ? "border-[#00296b] bg-[#fdc500]" : ""
               }`}
-              onClick={() => handleOptionSelect(option)}
             >
-              {String.fromCharCode(97 + idx)}) {option}
+              {String.fromCharCode(65 + idx)} {/* 65 is the ASCII code for 'A' */}
             </button>
-          ))}
-        </div>
+            <span className={`flex-1 p-4 border rounded-lg transition-colors text-1xl font-semibold ${
+              selectedOption === option ? "border-[#00296b] bg-[#fdc500]" : ""
+            }`}>
+              {option}
+            </span>
+          </div>
+        ))}
+      </div>
+      {/* Ensure watermark does not interfere with options */}
+      <div className="absolute inset-0 pointer-events-none z-[5] grid grid-cols-7 gap-2 p-4 opacity-[0.1]">
+        {[...Array(21)].map((_, index) => (
+          <div key={index} className="flex items-center justify-center">
+            <div className="transform rotate-45 text-black text-[20px] font-semibold select-none">
+              {studentEmail}
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="flex justify-between mt-6 mb-20">
+      <div className="flex justify-between mt-8">
         <button
           className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full flex items-center gap-2"
           onClick={onPrevious}
@@ -92,14 +115,13 @@ export default function Question({
         >
           Finish
         </button>
-        {currentIndex < totalQuestions - 1 && (
-          <button
-            className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full flex items-center gap-2"
-            onClick={onNext}
-          >
-            Next →
-          </button>
-        )}
+        <button
+          className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full flex items-center gap-2"
+          onClick={onNext}
+          disabled={currentIndex === totalQuestions - 1}
+        >
+          Next →
+        </button>
       </div>
 
       {showPopup && (

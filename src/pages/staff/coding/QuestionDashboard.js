@@ -41,11 +41,12 @@ const QuestionDashboard = () => {
   // Pagination states
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const response = await axios.get("https://vercel-1bge.onrender.com/api/get-coding-questions/");
+        const response = await axios.get(`${API_BASE_URL}/api/get-coding-questions/`);
         setQuestions(response.data.questions);
         setFilteredQuestions(response.data.questions);
       } catch (err) {
@@ -77,7 +78,7 @@ const QuestionDashboard = () => {
 
   const handleDeleteClick = async (id) => {
     try {
-      await axios.delete(`https://vercel-1bge.onrender.com/api/delete-coding-question/${id}/`);
+      await axios.delete(`${API_BASE_URL}/api/delete-coding-question/${id}/`);
       setQuestions(questions.filter((question) => question.id !== id));
       setFilteredQuestions(filteredQuestions.filter((question) => question.id !== id));
     } catch (err) {

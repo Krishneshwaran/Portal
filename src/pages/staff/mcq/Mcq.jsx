@@ -37,6 +37,7 @@ const Mcq = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({ level: [], tags: [] });
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
   const [availableTags, setAvailableTags] = useState([]);
   const [singleQuestionData, setSingleQuestionData] = useState({
     question: "", option1: "", option2: "", option3: "", option4: "",
@@ -68,7 +69,7 @@ tags: selectedQuestion?.tags || [],
   
   const handleDelete = async (question_id) => {
     try {
-        const response = await fetch(`https://vercel-1bge.onrender.com/api/delete_question/${question_id}/`, {
+        const response = await fetch(`${API_BASE_URL}/api/delete_question/${question_id}/`, {
             method: 'DELETE',
         });
 
@@ -91,7 +92,7 @@ const handleUpdate = async (question_id) => {
     // Show loading state if needed
     setIsLoading(true);
     
-    const response = await fetch(`https://vercel-1bge.onrender.com/api/update_question/${question_id}/`, {
+    const response = await fetch(`${API_BASE_URL}/api/update_question/${question_id}/`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -141,7 +142,7 @@ const handleUpdate = async (question_id) => {
   const fetchQuestions = async () => {
     try {
       setLoading(true);
-      const response = await fetch('https://vercel-1bge.onrender.com/api/fetch-all-questions/');
+      const response = await fetch(`${API_BASE_URL}/api/fetch-all-questions/`);
       if (!response.ok) throw new Error('Failed to fetch questions');
       const data = await response.json();
       setQuestions(data.questions);
@@ -176,7 +177,7 @@ const handleUpdate = async (question_id) => {
     }
 
     try {
-      const response = await fetch("https://vercel-1bge.onrender.com/api/upload-single-question/", {
+      const response = await fetch(`${API_BASE_URL}/api/upload-single-question/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(singleQuestionData)
@@ -219,7 +220,7 @@ const handleUpdate = async (question_id) => {
     formData.append("file", file);
 
     try {
-      const response = await fetch("https://vercel-1bge.onrender.com/api/mcq-bulk-upload/", {
+      const response = await fetch(`${API_BASE_URL}/api/mcq-bulk-upload/`, {
         method: "POST",
         body: formData,
       });

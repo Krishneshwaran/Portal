@@ -24,12 +24,13 @@ const StudentProfile = ({  }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   // Fetch profile data from backend
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await axios.get(`https://vercel-1bge.onrender.com/api/student/profile/`, {
+        const response = await axios.get(`${API_BASE_URL}/api/student/profile/`, {
             withCredentials: true, // Include cookies for authentication
           }); // Replace with your backend API
         setProfile(response.data);
@@ -55,7 +56,7 @@ const StudentProfile = ({  }) => {
     setSuccessMessage('');
     setError('');
     try {
-      await axios.put('https://vercel-1bge.onrender.com/api/student/profile/', profile); // Replace with your backend API
+      await axios.put(`${API_BASE_URL}/api/student/profile/`, profile); // Replace with your backend API
       setSuccessMessage('Profile updated successfully!');
     } catch (err) {
       setError('Failed to save profile data.');

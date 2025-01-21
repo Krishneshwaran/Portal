@@ -24,6 +24,7 @@ function ContestPage() {
   const [problems, setProblems] = useState([]);
   const [submissions, setSubmissions] = useState({});
   const mediaStreamRef = useRef(null);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
   const [testEvaluations, setTestEvaluations] = useState([]);
   const [timeLeft, setTimeLeft] = useState(duration);
   const [timerExpired, setTimerExpired] = useState(false);
@@ -168,7 +169,7 @@ function ContestPage() {
 
   const handleCompileAndRun = async () => {
     try {
-      const response = await axios.post("https://vercel-1bge.onrender.com/compile/", {
+      const response = await axios.post(`${API_BASE_URL}/compile/`, {
         user_code: code,
         language: language,
         problem_id: selectedProblemId,
@@ -187,7 +188,7 @@ function ContestPage() {
 
   const handleSubmit = async () => {
     try {
-      const response = await axios.post("https://vercel-1bge.onrender.com/submit/", {
+      const response = await axios.post(`${API_BASE_URL}/submit/`, {
         user_code: code,
         language: language,
         problem_id: selectedProblemId,
@@ -244,7 +245,7 @@ function ContestPage() {
         results: results,
       };
   
-      await axios.post("https://vercel-1bge.onrender.com/api/finish_test/", payload);
+      await axios.post(`${API_BASE_URL}/api/finish_test/`, payload);
   
       if (document.fullscreenElement) {
         await document.exitFullscreen();

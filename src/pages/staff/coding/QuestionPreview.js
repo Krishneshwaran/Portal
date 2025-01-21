@@ -37,6 +37,7 @@ const QuestionPreview = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const { contestId } = useParams();
   const navigate = useNavigate();
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
     const storedQuestions = sessionStorage.getItem("selectedQuestions");
@@ -46,7 +47,7 @@ const QuestionPreview = () => {
 
     const fetchStudents = async () => {
       try {
-        const response = await axios.get("https://vercel-1bge.onrender.com/api/student/");
+        const response = await axios.get(`${API_BASE_URL}/api/student/`);
         setStudents(response.data);
         setFilteredStudents(response.data);
       } catch (error) {
@@ -115,7 +116,7 @@ const QuestionPreview = () => {
 
   const handlePublish = async () => {
     try {
-      const response = await axios.post("https://vercel-1bge.onrender.com/publish/", {
+      const response = await axios.post(`${API_BASE_URL}/publish/`, {
         contestId,
         questions: selectedQuestions.map((q) => q.id),
         students: selectedStudents,

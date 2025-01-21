@@ -1,59 +1,90 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import codingImage from '../../assets/Group.png'; // Replace with the actual path
-import mcqImage from '../../assets/Skillimage.png'; // Replace with the actual path
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Calendar, Users, Clock, ChevronRight, FileText, Code } from "lucide-react";
+import { Card, CardHeader, CardFooter, CardBody } from "@nextui-org/react";
 
 const TestCard = ({ title, type, date, category, stats, status, contestId }) => {
   const navigate = useNavigate();
 
   const handleViewTest = () => {
-    navigate(`/viewtest/${contestId}`); // Navigate to the ViewTest page with the contestId
+    navigate(`/viewtest/${contestId}`);
   };
 
-  // Dynamic styles for the status
-  const statusStyles =
-    status === 'Live'
-      ? 'bg-green-200 text-green-800'
-      : status === 'Upcoming'
-      ? 'bg-yellow-200 text-yellow-800'
-      : 'bg-red-300 text-red-800';
+  const statusStyles = {
+    Live: "bg-[#34cf70] text-white",
+    Upcoming: "bg-[#fd944e] text-white",
+    Completed: "bg-red-500 text-white",
+  };
 
-  // Determine the image to display based on the type
-  const testImage = type.includes('Coding') ? codingImage : mcqImage;
+  const getIcon = (type) => {
+    switch (type) {
+      case "Coding":
+        return <Code className="w-8 h-8 text-[#fd944e]" />;
+      case "MCQ":
+        return <FileText className="w-8 h-8 text-[#000975]" />;
+      default:
+        return <FileText className="w-8 h-8 text-[#000975]" />;
+    }
+  };
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-sm">
-      <div className="flex justify-between items-start mb-6">
-        <div className="flex items-center gap-2">
-          <span className={`px-2 py-1 rounded-full text-sm font-semibold ${statusStyles}`}>{status}</span>
-          <h3 className="text-lg font-semibold">{title}</h3>
-        </div>
-        <button
-          onClick={handleViewTest}
-          className="px-4 py-2 bg-yellow-400 text-black rounded-lg hover:bg-yellow-500 transition-colors"
-        >
-          View Test
-        </button>
-      </div>
-
-      <div className="flex gap-2 mb-6">
-        <span className="px-3 py-1 bg-gray-100 rounded-full text-sm">{type}</span>
-        <span className="px-3 py-1 bg-gray-100 rounded-full text-sm">{date}</span>
-        <span className="px-3 py-1 bg-gray-100 rounded-full text-sm">{category}</span>
-      </div>
-
-      <div className="flex items-center mb-6">
-        <img src={testImage} alt={type} className="w-20 h-20 mr-4" />
-        <div className="grid grid-cols-3 gap-4 w-full">
-          {Object.entries(stats).map(([key, value]) => (
-            <div key={key} className="text-center">
-              <h4 className="text-2xl font-bold">{value}</h4>
-              <p className="text-gray-600 text-sm">{key}</p>
+    <motion.div whileHover={{ y: -2 }} className="w-full max-w-xl">
+      <Card className="py-4 shadow-lg bg-gradient-to-br from-blue-50 to-white rounded-2xl hover:shadow-xl transition-all duration-300">
+        <CardHeader className="flex justify-between items-center gap-5">
+          <div className="flex gap-4 items-center">
+            <div className="p-2 rounded-full">
+              {getIcon(type)}
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="text-[#000975]">
+              <h3 className="text-xl font-bold">{title}</h3>
+              <p className="text-sm">{category}</p>
+            </div>
+          </div>
+          <span
+            className={`px-4 py-2 mb-4 rounded-full text-xs font-semibold ${statusStyles[status]}`}
+          >
+            {status}
+          </span>
+        </CardHeader>
+        <CardBody className="grid grid-cols-3 gap-4 w-full">
+  {Object.entries(stats).map(([key, value]) => (
+    <div key={key} className="text-center">
+      <p className="text-gray-600 text-lg inline-block">{key}</p>
+      <h4 className="text-2xl font-medium inline-block ml-2">{value}</h4>
+      
     </div>
+  ))}
+</CardBody>
+        <CardFooter className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 mt-4">
+  <div className="flex flex-row gap-2">
+    <div className="flex bg-white py-1 px-2 sm:py-1 sm:px-3 border rounded-full items-center gap-2">
+      <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+      <span className="text-xs sm:text-xs">{date}</span>
+    </div>
+    <div className="flex bg-white py-1 px-2 sm:py-1 sm:px-3 border rounded-full items-center gap-2">
+      <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+      <span className="text-xs sm:text-xs">{category}</span>
+    </div>
+    <div className="flex bg-white py-1 px-2 sm:py-1 sm:px-3 border rounded-full items-center gap-2">
+      <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
+      <span className="text-xs sm:text-xs">{type}</span>
+    </div>
+  </div>
+
+  <motion.button
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    onClick={handleViewTest}
+    className="w-1/9 sm:w-32 ml-20 px-1 py-2 bg-[#000975] text-white rounded-lg hover:bg-amber-500 transition-colors flex items-center justify-center font-light text-xs sm:text-base"
+  >
+    View Test
+    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
+  </motion.button>
+</CardFooter>
+       
+      </Card>
+    </motion.div>
   );
 };
 

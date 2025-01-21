@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import assessmentIllustration from '../../assets/testinstruction.jpg';
-import { FaCheckCircle, FaTimesCircle, FaUserCheck, FaMicrophoneSlash, FaExpand, FaMobile } from 'react-icons/fa'; // Importing new icons
+import { FaCheckCircle, FaTimesCircle, FaUserCheck, FaMicrophoneSlash, FaExpand, FaMobile } from 'react-icons/fa';
 
 const TestInstructions = () => {
   const navigate = useNavigate();
@@ -11,18 +11,19 @@ const TestInstructions = () => {
   const { assessment_type } = location.state || {};
   const [loading, setLoading] = useState(false);
   const [mcqTests, setMcqTests] = useState([]);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   // Coding Assessment API function
   const start_codingTest = async (contestId, studentId) => {
     try {
-      const startTestResponse = await axios.post('https://vercel-1bge.onrender.com/api/start_test/', {
+      const startTestResponse = await axios.post(`${API_BASE_URL}/api/start_test/`, {
         contest_id: contestId,
         student_id: studentId,
       });
 
       console.log("Fetched from start_test API:", startTestResponse.data.message);
 
-      const saveReportResponse = await axios.post('https://vercel-1bge.onrender.com/api/save_coding_report/', {
+      const saveReportResponse = await axios.post(`${API_BASE_URL}/api/save_coding_report/`, {
         contest_id: contestId,
         student_id: studentId,
       });
@@ -38,7 +39,7 @@ const TestInstructions = () => {
   // MCQ Assessment API function
   const start_mcqTest = async (contestId, studentId) => {
     try {
-      const response = await axios.post('https://vercel-1bge.onrender.com/api/start_mcqtest/', {
+      const response = await axios.post(`${API_BASE_URL}/api/start_mcqtest/`, {
         contest_id: contestId,
         student_id: studentId,
       });
@@ -49,9 +50,31 @@ const TestInstructions = () => {
     }
   };
 
+  // API function to fetch sections
+  const fetchSections = async (contestId) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/mcq/sections/${contestId}/`);
+      console.log("Fetched sections from API:", response.data);
+    } catch (error) {
+      console.error("Error fetching sections:", error);
+      throw error;
+    }
+  };
+
+  // API function to fetch MCQ questions
+  const fetchMcqQuestions = async (contestId) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/mcq/get_mcqquestions/${contestId}/`);
+      console.log("Fetched MCQ questions from API:", response.data);
+    } catch (error) {
+      console.error("Error fetching MCQ questions:", error);
+      throw error;
+    }
+  };
+
   const fetchMcqTests = async (regno) => {
     try {
-      const response = await axios.get(`https://vercel-1bge.onrender.com/api/student/mcq-tests?regno=${regno}`, {
+      const response = await axios.get(`${API_BASE_URL}/api/student/mcq-tests?regno=${regno}`, {
         withCredentials: true,
       });
 
@@ -61,11 +84,14 @@ const TestInstructions = () => {
         const fullScreenMode = test.testConfiguration?.fullScreenMode || false;
         const faceDetection = test.testConfiguration?.faceDetection || false;
         const passPercentage = test.testConfiguration?.passPercentage || 0;
-      
+        const sections = test.sections || false;
+
         localStorage.setItem(`testDuration_${test._id}`, duration);
         localStorage.setItem(`fullScreenMode_${test._id}`, fullScreenMode);
         localStorage.setItem(`faceDetection_${test._id}`, faceDetection);
-      
+        sessionStorage.setItem(`passPercentage_${test._id}`, passPercentage); // Store pass percentage in session storage
+        localStorage.setItem(`sections_${test._id}`, JSON.stringify(sections));
+
         return {
           testId: test._id,
           name: test.assessmentOverview?.name || "Unknown Test",
@@ -85,14 +111,19 @@ const TestInstructions = () => {
           resultVisibility: test.testConfiguration?.resultVisibility || "Host Control",
           shuffleQuestions: test.testConfiguration?.shuffleQuestions || false,
           shuffleOptions: test.testConfiguration?.shuffleOptions || false,
+          sections: sections,
         };
       });
-      
 
       return formattedTests;
-    } catch (error) {
-      console.error("Error fetching MCQ tests:", error);
-      return [];
+    } catch (err) {
+      if (err.response?.status === 401) {
+        // Redirect to login if unauthorized
+        navigate("/studentlogin");
+      } else {
+        console.error("Failed to fetch test details");
+        console.error("Error fetching test details:", err);
+      }
     }
   };
 
@@ -119,6 +150,14 @@ const TestInstructions = () => {
 
     setLoading(true);
     try {
+      // Get the section status from localStorage
+      const sections = JSON.parse(localStorage.getItem(`sections_${contestId}`));
+      if (sections === true) {
+        await fetchSections(contestId);
+      } else {
+        await fetchMcqQuestions(contestId);
+      }
+
       if (assessment_type === "coding") {
         await start_codingTest(contestId, studentId);
         navigate(`/coding/${contestId}`, {
@@ -151,7 +190,6 @@ const TestInstructions = () => {
         <div className="space-y-6">
           <div className="bg-white rounded-lg p-6 md:p-10 shadow-lg">
             <div className="flex flex-col lg:flex-row lg:items-start lg:gap-12 mb-10">
-              {/* Left Column - Image */}
               <div className="lg:w-1/4 mb-6 lg:mb-0 pt-4">
                 <div className="bg-[#facc15] rounded-lg p-4">
                   <img
@@ -161,9 +199,7 @@ const TestInstructions = () => {
                   />
                 </div>
               </div>
-              {/* Right Column - Content */}
               <div className="lg:flex-1 pt-4 h-fit overflow-y-auto">
-                {/* Test Title and Description */}
                 <div className="mb-8">
                   <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-6">
                     {currentTest?.name || "Test Name"}
@@ -172,15 +208,11 @@ const TestInstructions = () => {
                     {currentTest?.description ||
                     "Embark on a journey to sharpen your analytical thinking and problem-solving skills with our course."}
                   </p>
-
-                  {/* Test Details Title */}
                   <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">
                     Test Details
                   </h2>
                 </div>
-                {/* Test Details Grid - Modified to always show 2 columns */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
-                  {/* Duration */}
                   <div className="p-6 bg-gray-100 rounded-lg">
                     <h3 className="text-gray-600 mb-3 text-lg font-medium">
                       Duration
@@ -189,7 +221,6 @@ const TestInstructions = () => {
                       {currentTest?.duration || "0 Hour"}
                     </p>
                   </div>
-                  {/* Questions */}
                   <div className="p-6 bg-gray-100 rounded-lg">
                     <h3 className="text-gray-600 mb-3 text-lg font-medium">
                       Questions
@@ -198,7 +229,6 @@ const TestInstructions = () => {
                       {currentTest?.questions || "0"}
                     </p>
                   </div>
-                  {/* Pass Percentage */}
                   <div className="p-6 bg-gray-100 rounded-lg">
                     <h3 className="text-gray-600 mb-3 text-lg font-medium">
                       Pass Percentage
@@ -207,13 +237,12 @@ const TestInstructions = () => {
                       {currentTest?.passPercentage || "0"}%
                     </p>
                   </div>
-                  {/* Sections */}
                   <div className="p-6 bg-gray-100 rounded-lg">
                     <h3 className="text-gray-600 mb-3 text-lg font-medium">
                       Sections
                     </h3>
                     <p className="font-semibold text-xl">
-                      {currentTest?.sections || "0"}
+                      {currentTest?.sections ? "Yes" : "No"}
                     </p>
                   </div>
                 </div>
@@ -221,7 +250,6 @@ const TestInstructions = () => {
             </div>
           </div>
 
-          {/* Registration Dates */}
           <div className="bg-white rounded-lg p-6 md:p-10 shadow-lg">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Registration Period</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
@@ -236,7 +264,6 @@ const TestInstructions = () => {
             </div>
           </div>
 
-          {/* Test Settings */}
           <div className="bg-white rounded-lg p-6 md:p-10 shadow-lg">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Test Settings</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
@@ -286,7 +313,6 @@ const TestInstructions = () => {
             </div>
           </div>
 
-          {/* Instructions */}
           <div className="bg-white rounded-lg p-6 md:p-10 shadow-lg">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Test Instructions</h2>
             <div className="space-y-6">
@@ -300,7 +326,6 @@ const TestInstructions = () => {
               </ul>
             </div>
 
-            {/* Start Button */}
             <div className="mt-10 flex justify-end">
               <button
                 onClick={handleStartTest}

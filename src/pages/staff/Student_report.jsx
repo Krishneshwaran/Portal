@@ -9,13 +9,14 @@ const StudentReport = () => {
   const [expandedQuestion, setExpandedQuestion] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
   const [filter, setFilter] = useState("all"); // State for filtering questions
 
   useEffect(() => {
     const fetchStudentReport = async () => {
       try {
         const response = await axios.get(
-          `https://vercel-1bge.onrender.com/api/mcq/student-report/${contestId}/${regno}/`
+          `${API_BASE_URL}/api/mcq/student-report/${contestId}/${regno}/`
         );
         console.log(response.data);  // Debugging
         setTestData(response.data);
@@ -34,7 +35,7 @@ const StudentReport = () => {
   if (error) return <div>{error}</div>;
   if (!testData) return <div>No data available.</div>;
 
-  const { attended_questions, grade, status, start_time, finish_time, red_flags, correct_answers, student } = testData;
+  const { attended_questions, grade, status, start_time, finish_time, red_flags, fullscreen,tabswitchwarning, facewarning, noisewarning, correct_answers, student } = testData;
 
   // Fetch pass percentage from session storage
   const passPercentage = sessionStorage.getItem('passPercentage');
@@ -139,15 +140,15 @@ const StudentReport = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
         <div className="bg-white shadow-md rounded-lg p-6 flex justify-between items-center">
           <p className="text-xl font-medium">Fullscreen Policy Breach</p>
-          <p className="text-2xl font-medium text-red-600">{red_flags}</p>
+          <p className="text-2xl font-medium text-red-600">{fullscreen+tabswitchwarning}</p>
         </div>
         <div className="bg-white shadow-md rounded-lg p-6 flex justify-between items-center">
           <p className="text-xl font-medium">Face Recognition Anomaly</p>
-          <p className="text-2xl font-medium text-red-600">{red_flags.face_detection}</p>
+          <p className="text-2xl font-medium text-red-600">{facewarning}</p>
         </div>
         <div className="bg-white shadow-md rounded-lg p-6 flex justify-between items-center">
           <p className="text-xl font-medium">Audio Disturbance Detected</p>
-          <p className="text-2xl font-medium text-red-600">{red_flags.noise_detection}</p>
+          <p className="text-2xl font-medium text-red-600">{noisewarning}</p>
         </div>
       </div>
 

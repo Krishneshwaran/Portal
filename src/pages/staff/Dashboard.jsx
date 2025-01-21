@@ -1,14 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { FaChartBar, FaUsers, FaClipboardList, FaCheckCircle } from 'react-icons/fa';
-import { Dialog, DialogTitle, DialogContent, IconButton, DialogActions, Typography, Grid, Box } from '@mui/material';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { FaChartBar, FaUsers, FaClipboardList, FaCheckCircle, FaSearch } from 'react-icons/fa';
+import { Dialog, DialogTitle, DialogContent, IconButton, DialogActions, Typography, Grid, Box, Tooltip, Pagination } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import StatsCard from '../../components/staff/StatsCard';
 import TestCard from '../../components/staff/TestCard';
+import CreateTestCard from '../../components/staff/CreaTestCard';
 import Loader from '../../layout/Loader';
 import mcq from '../../assets/mcq.png';
 import code from '../../assets/code.png';
 import api from '../../axiosConfig';
 import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -18,16 +22,20 @@ const Dashboard = () => {
     students: 0,
     liveTests: 0,
     completedTests: 0,
+    upcomingTest: 0,
   });
 
   const [tests, setTests] = useState([]);
   const [mcqTests, setMcqTests] = useState([]);
-  const [filteredTests, setFilteredTests] = useState([]);
   const [activeFilter, setActiveFilter] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 8; // Show 8 test cards per page
 
+  // Fetch data on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -42,28 +50,35 @@ const Dashboard = () => {
         const mcqAssessments = mcqResponse?.data?.assessments || [];
 
         const totalTests = codingTests.length + mcqAssessments.length;
-        const liveTests =
-          [...codingTests, ...mcqAssessments].filter((test) => test.status === 'Live').length;
-        const completedTests =
-          [...codingTests, ...mcqAssessments].filter(
-            (test) =>
-              test.status === 'Completed' ||
-              (test.testEndDate && new Date(test.testEndDate) < new Date())
-          ).length;
+        const liveTests = [...codingTests, ...mcqAssessments].filter((test) => test.status === 'Live').length;
+        const completedTests = [...codingTests, ...mcqAssessments].filter(
+          (test) => test.status === 'Completed' || (test.testEndDate && new Date(test.testEndDate) < new Date())
+        ).length;
+        const upcomingTests = [...codingTests, ...mcqAssessments].filter(
+          (test) => test.status === 'Upcoming'
+        ).length;
 
         setStats({
           totalTests,
           students: studentStatsResponse?.data?.total_students || 0,
           liveTests,
           completedTests,
+          upcomingTest: upcomingTests,
         });
 
         setTests(codingTests);
         setMcqTests(mcqAssessments);
-        setFilteredTests([...codingTests, ...mcqAssessments]);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to fetch test data. Please try again later.');
+        toast.error('Failed to fetch test data. Please try again later.', {
+          position: 'top-right',
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
       } finally {
         setIsLoading(false);
       }
@@ -72,55 +87,72 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
-  const filterTests = (status) => {
-    setActiveFilter(status);
-    if (status === 'All') {
-      setFilteredTests([...tests, ...mcqTests]);
-    } else {
-      setFilteredTests(
-        [...tests, ...mcqTests].filter((test) => test.status === status)
+  // Filter tests based on status and search query
+  const filteredTests = useMemo(() => {
+    const allTests = [...tests, ...mcqTests];
+    if (activeFilter === 'All') {
+      return allTests.filter((test) =>
+        (test.assessmentName || test.name || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-  };
+    return allTests.filter(
+      (test) => test.status === activeFilter && (test.assessmentName || test.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [tests, mcqTests, activeFilter, searchQuery]);
 
+  // Paginated tests
+  const paginatedTests = useMemo(() => {
+    return filteredTests.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  }, [filteredTests, page]);
+
+  // Handle filter change
+  const filterTests = useCallback((status) => {
+    setActiveFilter(status);
+    setPage(1); // Reset to the first page when filter changes
+  }, []);
+
+  // Handle modal open/close
   const handleModalOpen = () => setIsModalOpen(true);
   const handleModalClose = () => setIsModalOpen(false);
 
-  const navigateToCreateTest = (type) => {
-    if (type === 'coding') {
-      navigate('/create-coding-test');
-    } else if (type === 'mcq') {
-      navigate('/create-mcq-test');
-    }
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setPage(1); // Reset to the first page when search query changes
   };
 
-  useEffect(() => {
-    filterTests(activeFilter);
-  }, [tests, mcqTests, activeFilter]);
+  // Handle page change
+  const handlePageChange = (event, value) => {
+    setPage(value);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-[#f4f6ff86]">
+      {/* Toast Container */}
+      <ToastContainer />
+
       {/* Header Section */}
-      <div className="bg-gradient-to-r from-[#00296B] to-[#0077B6] mx-3 rounded-b-2xl p-6 mb-8">
-        <h2 className="text-3xl text-white mb-8 font-bold">Overall Stats</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="bg-transparent mx-7 ml-16 mr-14 rounded-b-2xl p-6 mb-4">
+        <h2 className="text-3xl text-[#000975] mb-6 font-medium">Overall Stats</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
           <StatsCard icon={<FaChartBar />} title="Total Tests" value={stats.totalTests} />
           <StatsCard icon={<FaUsers />} title="No of Students" value={stats.students} />
-          <StatsCard icon={<FaClipboardList />} title="Live Tests" value={stats.liveTests} />
-          <StatsCard icon={<FaCheckCircle />} title="Completed Tests" value={stats.completedTests} />
+          <StatsCard icon={<FaClipboardList />} title="No of Live Test" value={stats.liveTests} />
+          <StatsCard icon={<FaCheckCircle />} title="No of Completed Test" value={stats.completedTests} />
+          <StatsCard icon={<FaCheckCircle />} title="No of Upcoming Test" value={stats.upcomingTest} />
         </div>
       </div>
 
       {/* Main Content Section */}
       <div className="max-w-8xl mx-auto px-4 py-8">
-        {/* Tabs and Create Test Button */}
+        {/* Tabs, Search, and Create Test Button */}
         <div className="flex justify-between items-center mb-6">
-          <div className="flex gap-4">
+          <div className="flex text-sm gap-4 ml-20">
             {['All', 'Live', 'Completed', 'Upcoming'].map((status) => (
               <button
                 key={status}
-                className={`px-4 py-2 ${
-                  activeFilter === status ? 'text-blue-600 font-bold' : 'text-gray-600 hover:text-gray-900'
+                className={`px-4 rounded-[10000px] py-1 ${
+                  activeFilter === status ? 'bg-[#000975] text-white font-bold' : 'text-gray-600 hover:text-gray-900'
                 }`}
                 onClick={() => filterTests(status)}
               >
@@ -128,12 +160,16 @@ const Dashboard = () => {
               </button>
             ))}
           </div>
-          <button
-            className="px-6 py-2 bg-[#00296B] text-white rounded-lg hover:bg-[#0077B6] transition-colors"
-            onClick={handleModalOpen}
-          >
-            Create Test
-          </button>
+          <div className="relative mr-16">
+            <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="px-10 py-2 rounded-full focus:outline-none focus:ring-1 focus:ring-blue-400 w-full"
+            />
+          </div>
         </div>
 
         {/* Tests Section */}
@@ -141,27 +177,43 @@ const Dashboard = () => {
           <Loader />
         ) : error ? (
           <Typography color="error">{error}</Typography>
-        ) : filteredTests.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {filteredTests.map((test) => (
-              <TestCard
-                key={test._id}
-                contestId={test.contestId || test._id}
-                title={test.assessmentName || test.name || 'Unnamed Test'}
-                type={test.type || 'General'}
-                date={test.endDate ? new Date(test.endDate).toLocaleDateString() : 'Date Unavailable'}
-                category={test.category || 'Uncategorized'}
-                stats={{
-                  Assigned: test.assignedCount || 0,
-                  YetToStart: test.yetToStartCount || 0,
-                  Completed: test.completedCount || 0,
-                }}
-                status={test.status || 'Upcoming'}
-              />
-            ))}
-          </div>
         ) : (
-          <Typography>No tests found for the selected filter.</Typography>
+          <>
+            <div className="grid bg-white rounded-2xl grid-cols-1 md:grid-cols-3 p-3 ml-14 mr-12 gap-12">
+              {activeFilter === 'All' && <CreateTestCard />}
+              {paginatedTests.length > 0 ? (
+                paginatedTests.map((test) => (
+                  <TestCard
+                    key={test._id}
+                    contestId={test.contestId || test._id}
+                    title={test.assessmentName || test.name || 'Unnamed Test'}
+                    type={test.type || 'General'}
+                    date={test.endDate ? format(new Date(test.endDate), 'MM/dd/yyyy') : 'Date Unavailable'}
+                    category={test.category || 'Uncategorized'}
+                    stats={{
+                      Assigned: test.assignedCount || 0,
+                      Register: test.register || 0,
+                      Completed: test.complete || 0,
+                    }}
+                    status={test.status || 'Upcoming'}
+                  />
+                ))
+              ) : (
+                <Typography className="col-span-full text-center">No tests found for the selected filter.</Typography>
+              )}
+            </div>
+
+            {/* Pagination */}
+            <div className="flex justify-center mt-6">
+              <Pagination
+                count={Math.ceil(filteredTests.length / itemsPerPage)}
+                page={page}
+                onChange={handlePageChange}
+                color="primary"
+                size="medium"
+              />
+            </div>
+          </>
         )}
       </div>
 

@@ -14,6 +14,7 @@ const AIGenerate = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const navigate = useNavigate();
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -40,7 +41,7 @@ const AIGenerate = () => {
       };
   
       const response = await axios.post(
-        "https://portalbackendupdated-production.up.railway.app/staff/api/generate-questions/",
+        `${API_BASE_URL}/api/mcq/api/generate-questions/`,
         requestData,
         {
           headers: {

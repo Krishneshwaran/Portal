@@ -14,6 +14,7 @@ export default function Signup() {
     confirmPassword: '',
   });
   const [showPassword, setShowPassword] = useState(true);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -45,7 +46,7 @@ export default function Signup() {
         password: formData.password
       };
 
-      const response = await axios.post('https://vercel-1bge.onrender.com/api/staff/signup/', payload);
+      const response = await axios.post(`${API_BASE_URL}/api/staff/signup/`, payload);
       
       if (response.data.message === 'Signup successful') {
         localStorage.setItem('token', response.data.token);

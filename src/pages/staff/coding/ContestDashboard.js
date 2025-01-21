@@ -22,13 +22,14 @@ const ContestDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [expandedRow, setExpandedRow] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
   const itemsPerPage = 5; // Number of contests per page
 
   // Fetch contests on mount
   useEffect(() => {
     const fetchContests = async () => {
       try {
-        const response = await axios.get("https://vercel-1bge.onrender.com/api/contests/");
+        const response = await axios.get(`${API_BASE_URL}/api/contests/`);
         setContests(response.data); // Array of contest objects
       } catch (error) {
         console.error("Error fetching contests:", error);
@@ -49,7 +50,7 @@ const ContestDashboard = () => {
   const fetchContestStats = async (contestId) => {
     try {
       const response = await axios.get(
-        `https://vercel-1bge.onrender.com/api/contests/stats/${contestId}/`
+        `${API_BASE_URL}/api/contests/stats/${contestId}/`
       );
       return response.data; // { total_students, started, completed }
     } catch (error) {
@@ -63,7 +64,7 @@ const ContestDashboard = () => {
     if (!window.confirm("Are you sure you want to delete this contest?")) return;
 
     try {
-      await axios.delete(`https://vercel-1bge.onrender.com/api/contests/delete/${contestId}/`);
+      await axios.delete(`${API_BASE_URL}/api/contests/delete/${contestId}/`);
       setContests((prev) => prev.filter((contest) => contest.contest_id !== contestId));
       alert("Contest deleted successfully!");
     } catch (error) {

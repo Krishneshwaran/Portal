@@ -2,18 +2,20 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 
-const StudentResult = ({  }) => {
+const StudentResult = () => {
   const { contestId, studentId } = useParams();
   const [testData, setTestData] = useState(null);
   const [expandedQuestion, setExpandedQuestion] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
   const regno = studentId;
+
   useEffect(() => {
     const fetchStudentReport = async () => {
       try {
         const response = await axios.get(
-          `https://vercel-1bge.onrender.com/api/mcq/student-report/${contestId}/${regno}/`
+          `${API_BASE_URL}/api/mcq/student-report/${contestId}/${regno}/`
         );
         setTestData(response.data);
         setLoading(false);
@@ -30,8 +32,9 @@ const StudentResult = ({  }) => {
   if (error) return <div>{error}</div>;
   if (!testData) return <div>No data available.</div>;
 
-  const { attended_questions, grade, status, start_time, finish_time } = testData;
+  const { attended_questions, grade, status, start_time, finish_time, passPercentage } = testData;
   const score = (attended_questions.filter((q) => q.isCorrect).length / attended_questions.length) * 100;
+  const calculatedGrade = score >= passPercentage ? "Pass" : "Fail";
 
   return (
     <div className="space-y-6 p-6">
@@ -51,7 +54,7 @@ const StudentResult = ({  }) => {
           </div>
           <div>
             <p className="text-sm font-medium">Grade</p>
-            <p className="text-2xl font-bold">{grade}</p>
+            <p className="text-2xl font-bold">{calculatedGrade}</p>
           </div>
           <div>
             <p className="text-sm font-medium">Status</p>

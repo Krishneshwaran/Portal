@@ -1,12 +1,21 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
 import ContestPage from './pages/staff/coding/ContestPage';
+import StartContest from './pages/staff/coding/StartContest';
 import SelectTestOption from './pages/staff/coding/SelectTestOption';
+import FileUpload from './pages/staff/coding/FileUpload';
+import ManualSelectUI from './pages/staff/coding/ManualSelectUI';
+import HrUpload from './pages/staff/coding/HrUploadPage';
+import OnebyOne from './pages/staff/coding/OnebyOne';
+import ManualPage from './pages/staff/coding/ManualPage';
+import ContestDashboard from './pages/staff/coding/ContestDashboard';
 import Login from './pages/staff/Login';
-// import Signup from './pages/staff/Signup';
+import Signup from './pages/staff/Signup';
 import Dashboard from './pages/staff/Dashboard';
-// import StudentRegister from './pages/student/StudentRegister';
+import GeneralHome from './pages/GeneralHome';
+import StudentRegister from './pages/student/StudentRegister';
 import StudentLogin from './pages/student/StudentLogin';
+import StudentPasswordReset from './pages/student/StudentPasswordReset';
 import StudentDashboard from './pages/student/StudentDashboard';
 import StudentProfile from './pages/student/StudentProfile';
 import Navbar from './pages/student/Navbar';
@@ -24,12 +33,11 @@ import StaffStudentProfile from './pages/staff/coding/StaffStudentProfile';
 import StudentStats from './pages/staff/coding/studentstats';
 import Mcq from './pages/staff/mcq/Mcq';
 import Mcq_Assement from './pages/student/student_mcq/Mcq_Assement';
-import Viewtest from './pages/staff/coding/Viewtest';
-import StaffProfile from './pages/staff/Staffprofile';
+import ViewTest from './pages/staff/coding/ViewTest';
+import StaffProfile from './pages/staff/StaffProfile';
 import Mcq_Assesment from './pages/staff/mcq/Mcq_Assesment';
 import Mcq_CombinedDashboard from './pages/staff/mcq/Mcq_CombinedDashboard';
 import AIGenerate from "./pages/staff/mcq/AIGenerate";
-import QuestionsDisplay from './pages/staff/mcq/QuestionsDisplay';
 import Mcq_section from './pages/staff/mcq/Mcq_section';
 import Mcq_createQuestion from './components/staff/mcq/Mcq_createQuestion';
 import Mcq_bulkUpload from './components/staff/mcq/Mcq_bulkUpload';
@@ -37,7 +45,8 @@ import Mcq_Dashboard from './pages/staff/mcq/Mcq_Dashboard';
 import McqLibrary from './pages/staff/mcq/McqQuestionLibrary'
 import Student_report from './pages/staff/Student_report';
 import StudentResult from './pages/student/StudentResult';
-import StudentPasswordReset from './pages/student/StudentPasswordReset';
+import QuestionsDisplay from './pages/staff/mcq/QuestionsDisplay';
+
 
 
 // Layout component for wrapping student routes 
@@ -64,12 +73,12 @@ function App() {
     <Router>
       <Routes>
         {/* General Home */}
-        <Route path="/" element={<StudentLogin onLogin={setStudentId} />}/>
+        <Route path="/" element={<GeneralHome />} />
 
         {/* Student Routes */}
-        {/* <Route path="/StudentRegister" element={<StudentRegister />} /> */}
-        <Route path="/StudentLogin" element={<StudentLogin onLogin={setStudentId} />} />
+        <Route path="/StudentRegister" element={<StudentRegister />} />
         <Route path="/StudentPasswordReset" element={<StudentPasswordReset />} />
+        <Route path="/StudentLogin" element={<StudentLogin onLogin={setStudentId} />} />
         <Route element={<StudentLayout />}>
           <Route path="/studentdashboard" element={<StudentDashboard />} />
           <Route path="/studentprofile" element={<StudentProfile studentId={studentId} />} />
@@ -82,7 +91,7 @@ function App() {
 
         {/* Staff Routes */}
         <Route path="/stafflogin" element={<Login />} />
-        {/* <Route path="/staffsignup" element={<Signup />} /> */}
+        <Route path="/staffsignup" element={<Signup />} />
         <Route element={<StaffLayout />}>
           <Route path="/staffdashboard" element={<Dashboard />} />
           <Route path="/staffprofile" element={<StaffProfile />} />
@@ -100,7 +109,7 @@ function App() {
           <Route path="/:contestId/question-preview" element={<QuestionPreview />} />
           <Route path="mcq/aigenerator" element={<AIGenerate />} />
           <Route path="mcq/airesponse" element={<QuestionsDisplay />} />
-
+          
 
           {/* <Route path="/coding" element={<ContestDashboard />} /> */}
           {/* <Route path="/FileUpload" element={<FileUpload />} /> */}
@@ -114,7 +123,7 @@ function App() {
 
           <Route path="/library/coding" element={<QuestionDashboard />} />
           <Route path="/BulkUpload" element={<BulkUpload />} />
-          <Route path="/viewtest/:contestId" element={<Viewtest />} />
+          <Route path="/viewtest/:contestId" element={<ViewTest  />} />
           <Route path="/viewtest/:contestId/:regno" element={<Student_report />} />
 
           {/* MCQ - routes */}

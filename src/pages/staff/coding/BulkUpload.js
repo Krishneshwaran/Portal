@@ -5,6 +5,7 @@ const BulkUpload = () => {
   const [file, setFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("");
   const [isDragActive, setIsDragActive] = useState(false);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   const handleFileChange = (event) => {
     const uploadedFile = event.target.files[0];
@@ -50,7 +51,7 @@ const BulkUpload = () => {
 
     try {
       setUploadStatus("Uploading...");
-      const response = await fetch("https://vercel-1bge.onrender.com/api/bulk-upload/", {
+      const response = await fetch(`${API_BASE_URL}/api/bulk-upload/`, {
         method: "POST",
         body: formData,
       });

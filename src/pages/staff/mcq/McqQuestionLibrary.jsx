@@ -11,6 +11,7 @@ const McqLibrary = () => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   // Fetch questions from API
   useEffect(() => {
@@ -23,12 +24,18 @@ const McqLibrary = () => {
           return;
         }
 
-        const response = await axios.get('https://vercel-1bge.onrender.com/api/fetch-all-questions/', {
+        const response = await axios.get(`${API_BASE_URL}/api/fetch-all-questions/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        setQuestions(response.data.questions || []);
-        setFilteredQuestions(response.data.questions || []);
+        // Ensure tags are always arrays
+        const sanitizedQuestions = response.data.questions.map(question => ({
+          ...question,
+          tags: Array.isArray(question.tags) ? question.tags : []
+        }));
+
+        setQuestions(sanitizedQuestions);
+        setFilteredQuestions(sanitizedQuestions);
         setError(null);
       } catch (error) {
         console.error('Error fetching questions:', error);
@@ -70,7 +77,7 @@ const McqLibrary = () => {
 
     try {
       await axios.post(
-        "https://vercel-1bge.onrender.com/api/mcq/save-questions/",
+        `${API_BASE_URL}/api/mcq/save-questions/`,
         { questions: selected },
         {
           headers: {
@@ -133,7 +140,7 @@ const McqLibrary = () => {
                 <h3 className="font-medium">{question.question}</h3>
                 <p>
                   <strong>Level:</strong> {question.level} | <strong>Tags:</strong>{' '}
-                  {question.tags?.join(', ')}
+                  {Array.isArray(question.tags) ? question.tags.join(', ') : 'No tags'}
                 </p>
               </div>
             ))}
