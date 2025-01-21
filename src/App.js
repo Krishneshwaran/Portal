@@ -33,7 +33,7 @@ import StaffStudentProfile from './pages/staff/coding/StaffStudentProfile';
 import StudentStats from './pages/staff/coding/studentstats';
 import Mcq from './pages/staff/mcq/Mcq';
 import Mcq_Assement from './pages/student/student_mcq/Mcq_Assement';
-import ViewTest from './pages/staff/coding/ViewTest';
+import ViewTest from './pages/staff/coding/Viewtest';
 import StaffProfile from './pages/staff/Staffprofile';
 import Mcq_Assesment from './pages/staff/mcq/Mcq_Assesment';
 import Mcq_CombinedDashboard from './pages/staff/mcq/Mcq_CombinedDashboard';
