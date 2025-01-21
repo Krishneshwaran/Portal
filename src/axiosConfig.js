@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000', // Use environment variable for base URL
-  withCredentials: true, // Ensures cookies are sent with requests
+  withCredentials: false, // Ensures cookies are sent with requests
 });
 
 // Helper function to retrieve CSRF token

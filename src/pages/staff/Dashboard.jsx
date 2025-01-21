@@ -41,9 +41,9 @@ const Dashboard = () => {
       try {
         setIsLoading(true);
         const [contestResponse, studentStatsResponse, mcqResponse] = await Promise.all([
-          api.get('/staff/contests', { withCredentials: true }),
-          api.get('/staff/students/stats', { withCredentials: true }),
-          api.get('/staff/mcq', { withCredentials: true }),
+          api.get('/staff/contests', { withCredentials: false }),
+          api.get('/staff/students/stats', { withCredentials: false }),
+          api.get('/staff/mcq', { withCredentials: false }),
         ]);
 
         const codingTests = contestResponse?.data?.contests || [];
