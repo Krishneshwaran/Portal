@@ -45,7 +45,7 @@ const Dashboard = () => {
           api.get('/students/stats', { withCredentials: true }),
           api.get('/mcq', { withCredentials: true }),
         ]);
-
+ 
         const codingTests = contestResponse?.data?.contests || [];
         const mcqAssessments = mcqResponse?.data?.assessments || [];
 
@@ -189,11 +189,11 @@ const Dashboard = () => {
                     title={test.assessmentName || test.name || 'Unnamed Test'}
                     type={test.type || 'General'}
                     date={test.endDate ? format(new Date(test.endDate), 'MM/dd/yyyy') : 'Date Unavailable'}
-                    category={test.category || 'Uncategorized'}
+                    time={test.endDate ? format(new Date(test.endDate), 'hh:mm a') : 'Time Unavailable'}
                     stats={{
                       Assigned: test.assignedCount || 0,
-                      Register: test.register || 0,
-                      Completed: test.complete || 0,
+                      'Yet to Start': (test.assignedCount || 0) - (test.completedCount || 0),
+                      Completed: test.completedCount || 0,
                     }}
                     status={test.status || 'Upcoming'}
                   />

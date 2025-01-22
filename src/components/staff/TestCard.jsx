@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Calendar, Users, Clock, ChevronRight, FileText, Code } from "lucide-react";
 import { Card, CardHeader, CardFooter, CardBody } from "@nextui-org/react";
+import { format } from 'date-fns'; // Ensure you have date-fns or a similar library for date formatting
 
-const TestCard = ({ title, type, date, category, stats, status, contestId }) => {
+const TestCard = ({ title, type, date, time, stats, status, contestId }) => {
   const navigate = useNavigate();
 
   const handleViewTest = () => {
@@ -38,7 +39,6 @@ const TestCard = ({ title, type, date, category, stats, status, contestId }) => 
             </div>
             <div className="text-[#000975]">
               <h3 className="text-base font-bold">{title}</h3>
-              <p className="text-xs">{category}</p>
             </div>
           </div>
           <span
@@ -47,7 +47,7 @@ const TestCard = ({ title, type, date, category, stats, status, contestId }) => 
             {status}
           </span>
         </CardHeader>
-        <CardBody className="grid grid-cols-3 gap-2 w-full">
+        <CardBody className="grid grid-cols-3 gap-4 w-full">
           {Object.entries(stats).map(([key, value]) => (
             <div key={key} className="text-center">
               <p className="text-gray-600 text-sm inline-block">{key}</p>
@@ -62,20 +62,19 @@ const TestCard = ({ title, type, date, category, stats, status, contestId }) => 
               <span className="text-xs sm:text-xs">{date}</span>
             </div>
             <div className="flex bg-white py-0.5 px-1.5 sm:py-0.5 sm:px-2 border rounded-full items-center gap-1">
-              <Users className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
-              <span className="text-xs sm:text-xs">{category}</span>
-            </div>
-            <div className="flex bg-white py-0.5 px-1.5 sm:py-0.5 sm:px-2 border rounded-full items-center gap-1">
               <Clock className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
+              <span className="text-xs sm:text-xs whitespace-nowrap">{time}</span> {/* Added whitespace-nowrap */}
+            </div>
+            <div className="flex bg-white py-1 px-2 sm:py-1 sm:px-3 border rounded-full items-center gap-2">
+              <Users className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
               <span className="text-xs sm:text-xs">{type}</span>
             </div>
           </div>
-
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleViewTest}
-            className="w-1/9 sm:w-20 ml-16 px-0.5 py-1 bg-[#000975] text-white rounded-lg hover:bg-amber-500 transition-colors flex items-center justify-center font-light text-xs sm:text-xs"
+            className="w-1/9 sm:w-20 ml-14 px-1 py-2 bg-[#000975] text-white rounded-lg hover:bg-amber-500 transition-colors flex items-center justify-center font-light text-sm sm:text-sm"
           >
             View Test
             <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 ml-1" />

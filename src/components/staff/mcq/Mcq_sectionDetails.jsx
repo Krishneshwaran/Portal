@@ -56,7 +56,7 @@ const Mcq_sectionDetails = () => {
   }]);
   const navigate = useNavigate();
   const [activeSectionIndex, setActiveSectionIndex] = useState(null);
-  const [filters, setFilters] = useState({ collegename: "", dept: "" });
+  const [filters, setFilters] = useState({ collegename: "", dept: "", year: "" });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sharingLink, setSharingLink] = useState("");
@@ -423,7 +423,8 @@ const Mcq_sectionDetails = () => {
     const filtered = students.filter(
       (student) =>
         (filters.collegename ? student.collegename.includes(filters.collegename) : true) &&
-        (filters.dept ? student.dept.includes(filters.dept) : true)
+        (filters.dept ? student.dept.includes(filters.dept) : true) &&
+        (filters.year ? student.year.includes(filters.year) : true)
     );
     setFilteredStudents(filtered);
   };
@@ -808,7 +809,7 @@ const Mcq_sectionDetails = () => {
                   >
                     Next
                   </button>
-                </div>
+                  </div>
 
                 {/* Submit Button */}
                 <div className="flex justify-end mt-6">
@@ -875,6 +876,15 @@ const Mcq_sectionDetails = () => {
               value={filters.dept}
               onChange={handleFilterChange}
             />
+            <TextField
+              label="Filter by Year"
+              name="year"
+              variant="outlined"
+              fullWidth
+              margin="dense"
+              value={filters.year}
+              onChange={handleFilterChange}
+            />
           </Box>
           <TableContainer component={Paper}>
             <Table>
@@ -897,7 +907,8 @@ const Mcq_sectionDetails = () => {
                   <TableCell>Registration Number</TableCell>
                   <TableCell>Department</TableCell>
                   <TableCell>College Name</TableCell>
-                  <TableCell>Email</TableCell>
+                  <TableCell>Year</TableCell>
+                  {/* <TableCell>Email</TableCell> */}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -915,7 +926,8 @@ const Mcq_sectionDetails = () => {
                       <TableCell>{student.regno}</TableCell>
                       <TableCell>{student.dept}</TableCell>
                       <TableCell>{student.collegename}</TableCell>
-                      <TableCell>{student.email}</TableCell>
+                      <TableCell>{student.year}</TableCell>
+                      {/* <TableCell>{student.email}</TableCell> */}
                     </TableRow>
                   ))}
               </TableBody>

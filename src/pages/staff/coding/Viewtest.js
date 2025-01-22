@@ -30,7 +30,7 @@ const ViewTest = () => {
   const [students, setStudents] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState([]);
-  const [filters, setFilters] = useState({collegename: "", dept: "", year: "", status: "", searchText: "",}); // Extended filters
+  const [filters, setFilters] = useState({ collegename: "", dept: "", year: "", status: "", searchText: "" }); // Extended filters
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [dialogStudents, setDialogStudents] = useState([]); // To store all students for the dialog
   const [dialogFilters, setDialogFilters] = useState({ collegename: "", dept: "", year: "" });
@@ -44,8 +44,8 @@ const ViewTest = () => {
   const [downloadAnchorEl, setDownloadAnchorEl] = useState(null); // To manage download menu
   const [studentReports, setStudentReports] = useState({}); // To store correct answers for students
   const [loading, setLoading] = useState(false);
-
-
+  const [modalOpen, setModalOpen] = useState(false); // State to manage modal
+  const [startedModalOpen, setStartedModalOpen] = useState(false); // State to manage modal for "Started" status
 
   const handlePublish = async () => {
     if (isPublished) {
@@ -80,14 +80,13 @@ const ViewTest = () => {
     }
   };
 
-
   const handleDownloadAll = () => {
     // Ensure student data is available
     if (!testDetails.student_details || testDetails.student_details.length === 0) {
       alert("No student data available to download");
       return;
     }
-  
+
     // Create CSV
     const headers = [
       "Name",
@@ -98,7 +97,7 @@ const ViewTest = () => {
       "Status",
       "Correct Answers",
     ];
-  
+
     const csvContent = [
       headers.join(","),
       ...testDetails.student_details.map((student) =>
@@ -113,7 +112,7 @@ const ViewTest = () => {
         ].join(",")
       ),
     ].join("\n");
-  
+
     // Trigger download
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
@@ -125,17 +124,17 @@ const ViewTest = () => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
-  
+
   const handleDownloadByStatus = (status) => {
     const filteredData = testDetails.student_details.filter(
       (student) => student.status.toLowerCase() === status.toLowerCase()
     );
-  
+
     if (filteredData.length === 0) {
       alert(`No students found with status: ${status}`);
       return;
     }
-  
+
     const headers = [
       "Name",
       "Registration Number",
@@ -145,7 +144,7 @@ const ViewTest = () => {
       "Status",
       "Correct Answers",
     ];
-  
+
     const csvContent = [
       headers.join(","),
       ...filteredData.map((student) =>
@@ -160,7 +159,7 @@ const ViewTest = () => {
         ].join(",")
       ),
     ].join("\n");
-  
+
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -176,14 +175,14 @@ const ViewTest = () => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
-  
+
   // Fetch Test Details
   useEffect(() => {
     const fetchTestDetails = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/api/contests/${contestId}/`);
         setTestDetails(response.data);
-  
+
         // Safely handle optional student_details
         const updatedStudents = (response.data.student_details || []).map((student) => ({
           ...student,
@@ -192,7 +191,7 @@ const ViewTest = () => {
         }));
         setStudents(updatedStudents);
         setFilteredStudents(updatedStudents);
-  
+
         // Safely handle optional testConfiguration
         const passPercentage = response.data.testConfiguration?.passPercentage;
         if (passPercentage !== undefined) {
@@ -203,7 +202,7 @@ const ViewTest = () => {
         console.error(err);
       }
     };
-  
+
     if (contestId) fetchTestDetails();
   }, [contestId]);
 
@@ -222,7 +221,6 @@ const ViewTest = () => {
     }
   };
 
-
   useEffect(() => {
     const fetchAllStudents = async () => {
       try {
@@ -238,10 +236,9 @@ const ViewTest = () => {
         console.error("Failed to fetch all students:", error);
       }
     };
-  
+
     if (publishDialogOpen) fetchAllStudents();
   }, [publishDialogOpen]);
-
 
   // Handle Input Change
   const handleInputChange = (e, field, section) => {
@@ -270,9 +267,8 @@ const ViewTest = () => {
       setLoading(true);
   
       await axios.put(`${API_BASE_URL}/api/contests/${contestId}/`, testDetails);
-  
       alert("Test details updated successfully");
-  
+
       // Wait for a moment to show the animation before refreshing
       setTimeout(() => {
         window.location.reload(); // Refresh the page
@@ -284,16 +280,15 @@ const ViewTest = () => {
       setLoading(false); // Stop the loading animation
     }
   };
-  
 
-    // Handle Filter Changes
+  // Handle Filter Changes
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prevFilters) => ({ ...prevFilters, [name]: value }));
   };
 
-   // Apply Filters
-   useEffect(() => {
+  // Apply Filters
+  useEffect(() => {
     const applyFilters = () => {
       let filtered = [...students];
 
@@ -327,33 +322,31 @@ const ViewTest = () => {
   useEffect(() => {
     const applyDialogFilters = () => {
       let filtered = [...dialogStudents];
-  
+
       // Filter by College Name
       if (dialogFilters.collegename) {
         filtered = filtered.filter((student) =>
           student.collegename.toLowerCase().includes(dialogFilters.collegename.toLowerCase())
         );
       }
-  
+
       // Filter by Department
       if (dialogFilters.dept) {
         filtered = filtered.filter((student) =>
           student.dept.toLowerCase().includes(dialogFilters.dept.toLowerCase())
         );
       }
-  
+
       // Filter by Year
       if (dialogFilters.year) {
         filtered = filtered.filter((student) => student.year === dialogFilters.year);
       }
-  
+
       setFilteredDialogStudents(filtered);
     };
-  
+
     applyDialogFilters();
   }, [dialogFilters, dialogStudents]);
-
-  
 
   // Manage Selected Students
   const handleSelectAll = (e) => {
@@ -423,6 +416,20 @@ const ViewTest = () => {
     navigate("/staffdashboard"); // Adjust the path as per your routing setup
   };
 
+  const handleViewClick = (student) => {
+    if (student.status.toLowerCase() === "yet to start") {
+      setModalOpen(true);
+    } else if (student.status.toLowerCase() === "started") {
+      setModalOpen(true);
+    } else {
+      navigate(`${student.studentId}`);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+  };
+
   if (error) return <div>{error}</div>;
   if (!testDetails) return <div>Loading...</div>;
 
@@ -471,7 +478,7 @@ const ViewTest = () => {
           >
             Delete Contest
           </Button>
-          
+
         </div>
       </div>
       {/* Header Section */}
@@ -565,100 +572,92 @@ const ViewTest = () => {
               </MenuItem>
             </Menu>
           </div>
-          
 
           {/* Filter Section */}
           <Box mb={2} display="flex" gap={2}>
-          <TextField
-          label="Search"
-          variant="outlined"
-          fullWidth
-          margin="dense"
-          name="searchText"
-          value={filters.searchText || ""}
-          onChange={handleFilterChange}
-        />
-        <TextField
-          label="Filter by Status"
-          select
-          variant="outlined"
-          fullWidth
-          margin="dense"
-          name="status"
-          value={filters.status || ""}
-          onChange={handleFilterChange}
-          SelectProps={{ native: true }}
-        >
-          <option value="">All</option>
-          <option value="Completed">Completed</option>
-          <option value="Started">Started</option>
-          <option value="Yet to Start">Yet to Start</option>
-        </TextField>
-        <TextField
-          label="Filter by Year"
-          select
-          variant="outlined"
-          fullWidth
-          margin="dense"
-          name="year"
-          value={filters.year || ""}
-          onChange={handleFilterChange}
-          SelectProps={{ native: true }}
-        >
-          <option value="">All</option>
-          <option value="I">I</option>
-          <option value="II">II</option>
-          <option value="III">III</option>
-          <option value="IV">IV</option>
-        </TextField>
+            <TextField
+              label="Search"
+              variant="outlined"
+              fullWidth
+              margin="dense"
+              name="searchText"
+              value={filters.searchText || ""}
+              onChange={handleFilterChange}
+            />
+            <TextField
+              label="Filter by Status"
+              select
+              variant="outlined"
+              fullWidth
+              margin="dense"
+              name="status"
+              value={filters.status || ""}
+              onChange={handleFilterChange}
+              SelectProps={{ native: true }}
+            >
+              <option value="">All</option>
+              <option value="Completed">Completed</option>
+              <option value="Started">Started</option>
+              <option value="Yet to Start">Yet to Start</option>
+            </TextField>
+            <TextField
+              label="Filter by Year"
+              select
+              variant="outlined"
+              fullWidth
+              margin="dense"
+              name="year"
+              value={filters.year || ""}
+              onChange={handleFilterChange}
+              SelectProps={{ native: true }}
+            >
+              <option value="">All</option>
+              <option value="I">I</option>
+              <option value="II">II</option>
+              <option value="III">III</option>
+              <option value="IV">IV</option>
+            </TextField>
           </Box>
 
           {/* Students Table */}
           <TableContainer component={Paper}>
-          <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Registration Number</TableCell>
-              <TableCell>Department</TableCell>
-              <TableCell>College Name</TableCell>
-              <TableCell>Year</TableCell>
-              <TableCell>Status</TableCell>
-              {!isEditing && <TableCell>Actions</TableCell>}
-              {isEditing && <TableCell>Actions</TableCell>}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredStudents
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((student) => (
-                <TableRow key={student.regno}>
-                  <TableCell>{student.name}</TableCell>
-                  <TableCell>{student.regno}</TableCell>
-                  <TableCell>{student.dept}</TableCell>
-                  <TableCell>{student.collegename}</TableCell>
-                  <TableCell>{student.year}</TableCell>
-                  <TableCell>{student.status}</TableCell>
-                  <TableCell>
-                  <button
-                    className="text-red-500 ml-2"
-                    onClick={() => navigate(`${student.studentId}`)}
-                  >
-                    View
-                  </button>
-                </TableCell>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Registration Number</TableCell>
+                  <TableCell>Department</TableCell>
+                  <TableCell>College Name</TableCell>
+                  <TableCell>Year</TableCell>
+                  <TableCell>Status</TableCell>
+                  {!isEditing && <TableCell>Actions</TableCell>}
+                  {isEditing && <TableCell>Actions</TableCell>}
                 </TableRow>
-              ))}
-          </TableBody>
-        </Table>
+              </TableHead>
+              <TableBody>
+                {filteredStudents
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((student) => (
+                    <TableRow key={student.regno}>
+                      <TableCell>{student.name}</TableCell>
+                      <TableCell>{student.regno}</TableCell>
+                      <TableCell>{student.dept}</TableCell>
+                      <TableCell>{student.collegename}</TableCell>
+                      <TableCell>{student.year}</TableCell>
+                      <TableCell>{student.status}</TableCell>
+                      <TableCell>
+                        <button
+                          className="text-red-500 ml-2"
+                          onClick={() => handleViewClick(student)}
+                        >
+                          View
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
           </TableContainer>
-          {/* <TablePagination
-        rowsPerPage={rowsPerPage}
-        page={page}
-        count={filteredStudents.length}
-        onPageChange={(e, newPage) => setPage(newPage)}
-        onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
-      /> */}
 
           {/* Add Student Button */}
           {isEditing && (
@@ -701,119 +700,137 @@ const ViewTest = () => {
 
       {/* Add Student Dialog */}
       <Dialog open={publishDialogOpen} onClose={() => setPublishDialogOpen(false)} fullWidth>
-  <DialogTitle>Select Students</DialogTitle>
-  <DialogContent>
-    <Box mb={2}>
-      <TextField
-        label="Filter by College Name"
-        name="collegename"
-        variant="outlined"
-        fullWidth
-        margin="dense"
-        onChange={(e) =>
-          setDialogFilters((prev) => ({ ...prev, collegename: e.target.value }))
-        }
-      />
-      <TextField
-        label="Filter by Department"
-        name="dept"
-        variant="outlined"
-        fullWidth
-        margin="dense"
-        onChange={(e) =>
-          setDialogFilters((prev) => ({ ...prev, dept: e.target.value }))
-        }
-      />
-      <TextField
-        label="Filter by Year"
-        name="year"
-        select
-        variant="outlined"
-        fullWidth
-        margin="dense"
-        onChange={(e) =>
-          setDialogFilters((prev) => ({ ...prev, year: e.target.value }))
-        }
-        SelectProps={{ native: true }}
-      >
-        <option value="">All</option>
-        <option value="I">I</option>
-        <option value="II">II</option>
-        <option value="III">III</option>
-        <option value="IV">IV</option>
-      </TextField>
-    </Box>
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell padding="checkbox">
-              <Checkbox
-                indeterminate={
-                  selectedStudents.length > 0 &&
-                  selectedStudents.length < filteredDialogStudents.length
-                }
-                checked={selectedStudents.length === filteredDialogStudents.length}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setSelectedStudents(
-                      filteredDialogStudents.map((student) => student.regno)
-                    );
-                  } else {
-                    setSelectedStudents([]);
-                  }
-                }}
-              />
-            </TableCell>
-            <TableCell>Name</TableCell>
-            <TableCell>Registration Number</TableCell>
-            <TableCell>Department</TableCell>
-            <TableCell>College Name</TableCell>
-            <TableCell>Year</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {filteredDialogStudents
-            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-            .map((student) => (
-              <TableRow key={student.regno}>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={selectedStudents.includes(student.regno)}
-                    onChange={() => {
-                      setSelectedStudents((prev) =>
-                        prev.includes(student.regno)
-                          ? prev.filter((id) => id !== student.regno)
-                          : [...prev, student.regno]
-                      );
-                    }}
-                  />
-                </TableCell>
-                <TableCell>{student.name}</TableCell>
-                <TableCell>{student.regno}</TableCell>
-                <TableCell>{student.dept}</TableCell>
-                <TableCell>{student.collegename}</TableCell>
-                <TableCell>{student.year}</TableCell>
-              </TableRow>
-            ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-    <TablePagination
-      rowsPerPage={rowsPerPage}
-      page={page}
-      count={filteredDialogStudents.length}
-      onPageChange={(e, newPage) => setPage(newPage)}
-      onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
-    />
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={() => setPublishDialogOpen(false)}>Cancel</Button>
-    <Button onClick={handleAddStudent} color="primary" variant="contained">
-      Add
-    </Button>
-  </DialogActions>
-</Dialog>;
+        <DialogTitle>Select Students</DialogTitle>
+        <DialogContent>
+          <Box mb={2}>
+            <TextField
+              label="Filter by College Name"
+              name="collegename"
+              variant="outlined"
+              fullWidth
+              margin="dense"
+              onChange={(e) =>
+                setDialogFilters((prev) => ({ ...prev, collegename: e.target.value }))
+              }
+            />
+            <TextField
+              label="Filter by Department"
+              name="dept"
+              variant="outlined"
+              fullWidth
+              margin="dense"
+              onChange={(e) =>
+                setDialogFilters((prev) => ({ ...prev, dept: e.target.value }))
+              }
+            />
+            <TextField
+              label="Filter by Year"
+              name="year"
+              select
+              variant="outlined"
+              fullWidth
+              margin="dense"
+              onChange={(e) =>
+                setDialogFilters((prev) => ({ ...prev, year: e.target.value }))
+              }
+              SelectProps={{ native: true }}
+            >
+              <option value="">All</option>
+              <option value="I">I</option>
+              <option value="II">II</option>
+              <option value="III">III</option>
+              <option value="IV">IV</option>
+            </TextField>
+          </Box>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      indeterminate={
+                        selectedStudents.length > 0 &&
+                        selectedStudents.length < filteredDialogStudents.length
+                      }
+                      checked={selectedStudents.length === filteredDialogStudents.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedStudents(
+                            filteredDialogStudents.map((student) => student.regno)
+                          );
+                        } else {
+                          setSelectedStudents([]);
+                        }
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Registration Number</TableCell>
+                  <TableCell>Department</TableCell>
+                  <TableCell>College Name</TableCell>
+                  <TableCell>Year</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredDialogStudents
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((student) => (
+                    <TableRow key={student.regno}>
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          checked={selectedStudents.includes(student.regno)}
+                          onChange={() => {
+                            setSelectedStudents((prev) =>
+                              prev.includes(student.regno)
+                                ? prev.filter((id) => id !== student.regno)
+                                : [...prev, student.regno]
+                            );
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>{student.name}</TableCell>
+                      <TableCell>{student.regno}</TableCell>
+                      <TableCell>{student.dept}</TableCell>
+                      <TableCell>{student.collegename}</TableCell>
+                      <TableCell>{student.year}</TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            rowsPerPage={rowsPerPage}
+            page={page}
+            count={filteredDialogStudents.length}
+            onPageChange={(e, newPage) => setPage(newPage)}
+            onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPublishDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleAddStudent} color="primary" variant="contained">
+            Add
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* No Report Available Modal */}
+      <Dialog open={modalOpen} onClose={handleCloseModal}>
+        <DialogTitle className="font-semibold">No Report Available</DialogTitle>
+        <DialogContent>
+          <p>The report for this student is not available yet.</p>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseModal} color="primary">
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Blur Background when Modal is Open */}
+      {(modalOpen || startedModalOpen) && (
+        <div className="fixed inset-0 backdrop-blur-sm z-40"></div>
+      )}
     </div>
   );
 };

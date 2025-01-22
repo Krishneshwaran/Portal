@@ -465,6 +465,7 @@ const Mcq_Dashboard = () => {
                     <TableCell>Registration Number</TableCell>
                     <TableCell>Department</TableCell>
                     <TableCell>College Name</TableCell>
+                    <TableCell>Year</TableCell>
                     <TableCell>Email</TableCell>
                   </TableRow>
                 </TableHead>
@@ -483,6 +484,7 @@ const Mcq_Dashboard = () => {
                         <TableCell>{student.regno}</TableCell>
                         <TableCell>{student.dept}</TableCell>
                         <TableCell>{student.collegename}</TableCell>
+                        <TableCell>{student.year}</TableCell>
                         <TableCell>{student.email}</TableCell>
                       </TableRow>
                     ))}
