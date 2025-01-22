@@ -3,14 +3,14 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Menu, MenuItem, Avatar, Tooltip } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LogoutIcon from "@mui/icons-material/Logout";
-import Cookies from "js-cookie"; // Don't forget to import Cookies
+import Cookies from "js-cookie";
 
 import logo from "../../assets/Institution.png";
 
 const StaffNavbar = () => {
   const [username, setUsername] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
-  const [isScrolled, setIsScrolled] = useState(false); // State to track scrolling
+  const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,14 +24,14 @@ const StaffNavbar = () => {
 
   const handleLogout = () => {
     console.log("Logout clicked");
-    Cookies.remove("username"); // Remove the username cookie
-    Cookies.remove("staffToken"); // Optionally remove other cookies
-    navigate("/stafflogin"); // Navigate to login page after logout
+    Cookies.remove("username");
+    Cookies.remove("staffToken");
+    navigate("/stafflogin");
     handleMenuClose();
   };
 
   const handleSettings = () => {
-    navigate("/staffprofile"); // Navigate to the StaffProfile page
+    navigate("/staffprofile");
     handleMenuClose();
   };
 
@@ -42,7 +42,7 @@ const StaffNavbar = () => {
     }
 
     const handleScroll = () => {
-      if (window.scrollY > 10) { // Set the scroll distance threshold
+      if (window.scrollY > 10) {
         setIsScrolled(true);
       } else {
         setIsScrolled(false);
@@ -68,41 +68,49 @@ const StaffNavbar = () => {
         </div>
         <div className="flex ml-38 items-center gap-8">
           <nav className="flex gap-6 text-black mt-2">
-            {/* Added margin-top to move links down */}
             <Tooltip title="Go to Home Dashboard">
               <Link
                 to="/staffdashboard"
-                className={`font-medium transition-all duration-300 ${
+                className={`font-medium transition-all duration-300 relative ${
                   location.pathname === "/staffdashboard"
-                    ? "text-yellow-500 border-b-2 border-yellow-500 font-bold"
+                    ? "text-yellow-500 font-bold"
                     : "text-[#000975]"
                 }`}
               >
                 Home
+                {location.pathname === "/staffdashboard" && (
+                  <span className="blinking-dot"></span>
+                )}
               </Link>
             </Tooltip>
             <Tooltip title="View and Manage Students">
               <Link
                 to="/staffstudentprofile"
-                className={`font-medium transition-all duration-300 ${
+                className={`font-medium transition-all duration-300 relative ${
                   location.pathname === "/staffstudentprofile"
-                    ? "text-yellow-500 border-b-2 border-yellow-500 font-bold"
+                    ? "text-yellow-500 font-bold"
                     : "text-[#000975]"
                 }`}
               >
                 Student
+                {location.pathname === "/staffstudentprofile" && (
+                  <span className="blinking-dot"></span>
+                )}
               </Link>
             </Tooltip>
             <Tooltip title="Access Library Resources">
               <Link
                 to="/library"
-                className={`font-medium transition-all duration-300 ${
+                className={`font-medium transition-all duration-300 relative ${
                   location.pathname === "/library"
-                    ? "text-yellow-500 border-b-2 border-yellow-500 font-bold"
+                    ? "text-yellow-500 font-bold"
                     : "text-[#000975]"
                 }`}
               >
                 Library
+                {location.pathname === "/library" && (
+                  <span className="blinking-dot"></span>
+                )}
               </Link>
             </Tooltip>
           </nav>
@@ -128,6 +136,28 @@ const StaffNavbar = () => {
           <LogoutIcon className="mr-2" /> Logout
         </MenuItem>
       </Menu>
+      <style jsx>{`
+        .blinking-dot {
+          position: absolute;
+          bottom: -10px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 8px;
+          height: 8px;
+          background-color: #fdc500;
+          border-radius: 50%;
+          animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0;
+          }
+        }
+      `}</style>
     </>
   );
 };

@@ -8,81 +8,71 @@ export default function Sidebar({
   selectedAnswers,
   reviewStatus,
   onQuestionClick,
-  sections,
+  sections // Add sections prop
 }) {
   const [isSectionBased, setIsSectionBased] = useState(false);
-  const [expandedSection, setExpandedSection] = useState(null);
+  const [sectionData, setSectionData] = useState([]);
 
   useEffect(() => {
-    // Check if the test is section-based
-    const isSectionTest = sections && sections.length > 0;
-    setIsSectionBased(isSectionTest);
+    // Check local storage to determine if the test is section-based
+    const isSectionBased = localStorage.getItem("sections_v6nheee9w") === "true";
+    setIsSectionBased(isSectionBased);
 
-    // Default to the first section being expanded
-    if (isSectionTest) {
-      setExpandedSection(0);
+    if (isSectionBased && sections) {
+      // Extract section data from the sections prop
+      const sectionData = sections.map(section => ({
+        sectionName: section.sectionName,
+        questions: section.questions.map((_, index) => index + 1)
+      }));
+      setSectionData(sectionData);
     }
   }, [sections]);
 
-  const toggleSection = (index) => {
-    setExpandedSection((prevIndex) => (prevIndex === index ? null : index));
-  };
+  const length = totalQuestions || 0;
+  const questionNumbers = Array.from({ length }, (_, i) => i + 1);
+
+  const questionStatuses = questionNumbers.map((num) => {
+    const index = num - 1;
+    if (reviewStatus[index]) return "review";
+    if (num - 1 === currentIndex) return "current";
+    if (selectedAnswers[index]) return "answered";
+    return "notAnswered";
+  });
 
   return (
     <div className="w-[300px]">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[#00296b] font-medium">Sections</h3>
+          <h3 className="text-[#00296b] font-medium">
+            {isSectionBased ? "Sections" : "Questions"}
+          </h3>
         </div>
         <Legend />
         {isSectionBased ? (
           <div className="flex flex-col space-y-4">
-            {sections.map((section, sectionIndex) => (
+            {sectionData.map((section, sectionIndex) => (
               <div key={sectionIndex} className="flex flex-col space-y-2">
-                {/* Section Header with Toggle */}
-                <div
-                  className="flex items-center justify-between px-4 py-2 bg-gray-200 rounded-full cursor-pointer"
-                  onClick={() => toggleSection(sectionIndex)}
-                >
-                  <span>{section.sectionName}</span>
-                  <span className="text-xl font-bold">
-                    {expandedSection === sectionIndex ? "▲" : "▼"}
-                  </span>
+                <div className="px-4 py-2 bg-gray-200 rounded-full text-center">
+                  {section.sectionName}
                 </div>
-
-                {/* Render Questions Only if the Section is Expanded */}
-                {expandedSection === sectionIndex && (
-                  <QuestionNumbers
-                    questionNumbers={section.questions.map(
-                      (_, index) => `S${sectionIndex + 1}Q${index + 1}`
-                    )}
-                    questionStatuses={section.questions.map((_, index) => {
-                      const uniqueIndex = `${sectionIndex}-${index}`;
-                      if (reviewStatus[uniqueIndex]) return "review";
-                      if (selectedAnswers[uniqueIndex]) return "answered";
-                      if (`${sectionIndex}-${index}` === `${currentIndex.section}-${currentIndex.question}`) return "current";
-                      return "notAnswered";
-                    })}
-                    onQuestionClick={(questionIndex) =>
-                      onQuestionClick({
-                        section: sectionIndex,
-                        question: questionIndex,
-                      })
-                    }
-                  />
-                )}
+                <QuestionNumbers
+                  questionNumbers={section.questions}
+                  questionStatuses={section.questions.map((num) => {
+                    const index = num - 1;
+                    if (reviewStatus[index]) return "review";
+                    if (num - 1 === currentIndex) return "current";
+                    if (selectedAnswers[index]) return "answered";
+                    return "notAnswered";
+                  })}
+                  onQuestionClick={onQuestionClick}
+                />
               </div>
             ))}
           </div>
         ) : (
           <QuestionNumbers
-            questionNumbers={Array.from({ length: totalQuestions }, (_, i) => i + 1)}
-            questionStatuses={Array.from({ length: totalQuestions }, (_, i) => {
-              if (reviewStatus[i]) return "review";
-              if (selectedAnswers[i]) return "answered";
-              if (i === currentIndex) return "current";
-              return "notAnswered";
-            })}
+            questionNumbers={questionNumbers}
+            questionStatuses={questionStatuses}
             onQuestionClick={onQuestionClick}
           />
         )}

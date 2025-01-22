@@ -13,6 +13,14 @@ const Mcq_createQuestion = () => {
   const [isNewQuestion, setIsNewQuestion] = useState(false);
   const navigate = useNavigate();
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+  const handleOptionChange = (index, value) => {
+    const updatedOptions = [...options];
+    updatedOptions[index] = value;
+    setOptions(updatedOptions);
+};
+const handleTagChange = (e) => {
+  setTags(e.target.value.split(',').map(tag => tag.trim()));
+};
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -51,102 +59,92 @@ const Mcq_createQuestion = () => {
   };
 
   const loadQuestionIntoForm = (questionData) => {
-    setIsNewQuestion(false);
+    setIsNewQuestion(false); // Editing an existing question
     setQuestion(questionData.question || "");
     setOptions(questionData.options || ["", "", "", ""]);
     setAnswer(questionData.correctAnswer || "");
     setLevel(questionData.level || "easy");
     setTags(questionData.tags || []);
-  };
+};
 
-  const resetFormForNewQuestion = () => {
-    setIsNewQuestion(true);
-    setQuestion("");
-    setOptions(["", "", "", ""]);
-    setAnswer("");
-    setLevel("easy");
-    setTags([]);
-  };
+const resetFormForNewQuestion = () => {
+  setIsNewQuestion(true); // New question creation mode
+  setQuestion("");
+  setOptions(["", "", "", ""]);
+  setAnswer("");
+  setLevel("easy");
+  setTags([]);
+};
 
-  const handleOptionChange = (index, value) => {
-    const updatedOptions = [...options];
-    updatedOptions[index] = value;
-    setOptions(updatedOptions);
-  };
 
-  const handleTagChange = (e) => {
-    setTags(e.target.value.split(',').map(tag => tag.trim()));
-  };
-
-  const handleSaveQuestion = async () => {
-    if (!question.trim()) {
+const handleSaveQuestion = async () => {
+  if (!question.trim()) {
       alert("Please enter a question.");
       return;
-    }
+  }
 
-    if (options.some(option => !option.trim())) {
+  if (options.some(option => !option.trim())) {
       alert("Please fill in all options.");
       return;
-    }
+  }
 
-    if (!answer) {
+  if (!answer) {
       alert("Please select a correct answer.");
       return;
-    }
+  }
 
-    const newQuestion = {
+  const newQuestion = {
       question,
       options,
       correctAnswer: answer,
       level,
       tags,
-    };
+  };
 
-    try {
+  try {
       const token = localStorage.getItem("contestToken");
       if (!token) {
-        alert("Unauthorized access. Please log in again.");
-        return;
+          alert("Unauthorized access. Please log in again.");
+          return;
       }
 
       if (isNewQuestion) {
-        await axios.post(
-          `${API_BASE_URL}/api/mcq/save-questions/`,
-          { questions: [newQuestion] },
-          {
-            headers: { Authorization: `Bearer ${token} `},
-          }
-        );
-        alert("New question saved successfully!");
+          // Save as a new question
+          await axios.post(
+              `${API_BASE_URL}/api/mcq/save-questions/`,
+              { questions: [newQuestion] },
+              {
+                  headers: { Authorization: `Bearer ${token}` },
+              }
+          );
+          alert("New question saved successfully!");
       } else {
-        await axios.put(
-          `${API_BASE_URL}/api/mcq/questions/${questionList[currentQuestionIndex]._id}`,
-          newQuestion,
-          {
-            headers: { Authorization: `Bearer ${token} `},
+          // Edit existing question
+          const questionId = questionList[currentQuestionIndex]?._id;
+          if (!questionId) {
+              console.error("Question ID is missing in questionList:", questionList);
+              alert("Failed to update question. Question ID is missing.");
+              return;
           }
-        );
-        alert("Question updated successfully!");
+
+          await axios.put(
+              `${API_BASE_URL}/api/mcq/questions/${questionId}/`,
+              newQuestion,
+              {
+                  headers: { Authorization: `Bearer ${token}` },
+              }
+          );
+          alert("Question updated successfully!");
       }
 
-      const response = await axios.get(`${API_BASE_URL}/api/mcq/questions`, {
-        headers: { Authorization: `Bearer ${token} `},
-      });
-
-      const fetchedQuestions = response.data.questions || [];
-      setQuestionList(fetchedQuestions);
-
-      if (isNewQuestion) {
-        resetFormForNewQuestion();
-        setCurrentQuestionIndex(fetchedQuestions.length - 1);
-      } else {
-        loadQuestionIntoForm(newQuestion);
-      }
-    } catch (error) {
+      // Refresh the page after saving
+      window.location.reload();
+  } catch (error) {
       console.error("Error saving question:", error.response?.data || error.message);
       alert("Failed to save the question. Please try again.");
-    }
-  };
+  }
+};
+
 
   const handlePreviousQuestion = () => {
     if (currentQuestionIndex > 0) {

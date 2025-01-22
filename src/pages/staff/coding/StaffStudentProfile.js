@@ -109,31 +109,33 @@ const App = () => {
 
   return (
     <Box sx={{ p: 6, bgcolor: '#f5f5f5', minHeight: '100vh' }}>
-      <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>
-        Student Profile Management
-      </Typography>
-      <Typography variant="subtitle1" sx={{ mb: 4, color: 'text.secondary' }}>
-        Manage and view student profiles across all years
-      </Typography>
+     <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>
+  Academic Profile Management
+</Typography>
+<Typography variant="subtitle1" sx={{ mb: 4, color: 'text.secondary' }}>
+  A comprehensive platform for analyzing and overseeing student profiles across academic cohorts.
+</Typography>
+
 
       <Grid container spacing={2} sx={{ mb: 4 }}>
         {Object.entries(yearCounts).map(([year, count]) => (
           <Grid item xs={12} sm={6} md={3} key={year}>
-            <Card elevation={2}>
+            <Card elevation={2}sx={{borderRadius: "15px","&:hover": {boxShadow: "0 4px 8px rgba(0, 0, 0, 0.3)", 
+}}}>
               <CardContent>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Box display="flex" justifyContent="space-between" alignItems="center" >
                   <div>
-                    <Typography variant="h6" component="div">
-                      Year {year}
+                    <Typography variant="h8" component="div">
+                       {year} Year
                     </Typography>
                     <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
                       {count}
                     </Typography>
                     <Typography color="text.secondary" variant="subtitle2">
-                      Total Students
+                     Students
                     </Typography>
                   </div>
-                  <SchoolIcon sx={{ fontSize: 60, color: '#ffffff', opacity: 0.7,backgroundColor:"#FDC500",borderRadius:"15px", padding:1 }} />
+                  <SchoolIcon sx={{ fontSize: 50, color: '#ffffff',backgroundColor:"#000975",borderRadius:"15px", padding:1 }} />
                 </Box>
               </CardContent>
             </Card>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-import { FaList, FaThumbsUp, FaClipboardCheck, FaHourglassEnd, FaThumbsDown, FaStar, FaUser, FaFilter } from 'react-icons/fa';
+import { FaList, FaThumbsUp, FaClipboardCheck, FaHourglassEnd, FaThumbsDown, FaStar, FaUser, FaFilter, FaCheck, FaTimes} from 'react-icons/fa';
 
 const StudentReport = () => {
   const { contestId, regno } = useParams();
@@ -206,7 +206,16 @@ const StudentReport = () => {
                   question.isCorrect ? "text-green-600" : "text-red-600"
                 }`}
               >
-                {question.isCorrect ? "Correct" : "Incorrect"}
+                {question.isCorrect ? (
+        <>
+          <FaCheck style={{ color: "green", marginRight: "8px",fontSize:'25px' }} />
+          
+        </>
+      ) : (
+        <>
+          <FaTimes style={{ color: "red", marginRight: "8px", fontSize:'25px'}} />
+        </>
+      )}
               </p>
             </div>
           ))}

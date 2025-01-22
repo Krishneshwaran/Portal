@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import assessmentIllustration from '../../assets/testinstruction.jpg';
-import { FaCheckCircle, FaTimesCircle, FaUserCheck, FaMicrophoneSlash, FaExpand, FaMobile } from 'react-icons/fa';
+import image from '../../assets/test_instruction_image.png';
+import { FaCheckCircle, FaTimesCircle, FaUserCheck, FaMicrophoneSlash, FaExpand, FaMobile } from 'react-icons/fa'; // Importing new icons
+import Navbar from "./Navbar";
 
 const TestInstructions = () => {
   const navigate = useNavigate();
@@ -50,28 +51,6 @@ const TestInstructions = () => {
     }
   };
 
-  // API function to fetch sections
-  const fetchSections = async (contestId) => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/api/mcq/sections/${contestId}/`);
-      console.log("Fetched sections from API:", response.data);
-    } catch (error) {
-      console.error("Error fetching sections:", error);
-      throw error;
-    }
-  };
-
-  // API function to fetch MCQ questions
-  const fetchMcqQuestions = async (contestId) => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/api/mcq/get_mcqquestions/${contestId}/`);
-      console.log("Fetched MCQ questions from API:", response.data);
-    } catch (error) {
-      console.error("Error fetching MCQ questions:", error);
-      throw error;
-    }
-  };
-
   const fetchMcqTests = async (regno) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/student/mcq-tests?regno=${regno}`, {
@@ -84,13 +63,10 @@ const TestInstructions = () => {
         const fullScreenMode = test.testConfiguration?.fullScreenMode || false;
         const faceDetection = test.testConfiguration?.faceDetection || false;
         const passPercentage = test.testConfiguration?.passPercentage || 0;
-        const sections = test.sections || false;
 
         localStorage.setItem(`testDuration_${test._id}`, duration);
         localStorage.setItem(`fullScreenMode_${test._id}`, fullScreenMode);
         localStorage.setItem(`faceDetection_${test._id}`, faceDetection);
-        sessionStorage.setItem(`passPercentage_${test._id}`, passPercentage); // Store pass percentage in session storage
-        localStorage.setItem(`sections_${test._id}`, JSON.stringify(sections));
 
         return {
           testId: test._id,
@@ -111,9 +87,9 @@ const TestInstructions = () => {
           resultVisibility: test.testConfiguration?.resultVisibility || "Host Control",
           shuffleQuestions: test.testConfiguration?.shuffleQuestions || false,
           shuffleOptions: test.testConfiguration?.shuffleOptions || false,
-          sections: sections,
         };
       });
+
 
       return formattedTests;
     } catch (err) {
@@ -150,14 +126,6 @@ const TestInstructions = () => {
 
     setLoading(true);
     try {
-      // Get the section status from localStorage
-      const sections = JSON.parse(localStorage.getItem(`sections_${contestId}`));
-      if (sections === true) {
-        await fetchSections(contestId);
-      } else {
-        await fetchMcqQuestions(contestId);
-      }
-
       if (assessment_type === "coding") {
         await start_codingTest(contestId, studentId);
         navigate(`/coding/${contestId}`, {
@@ -185,156 +153,172 @@ const TestInstructions = () => {
   const currentTest = mcqTests.find(test => test.testId === contestId);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-[1920px] mx-auto">
-        <div className="space-y-6">
-          <div className="bg-white rounded-lg p-6 md:p-10 shadow-lg">
-            <div className="flex flex-col lg:flex-row lg:items-start lg:gap-12 mb-10">
-              <div className="lg:w-1/4 mb-6 lg:mb-0 pt-4">
-                <div className="bg-[#facc15] rounded-lg p-4">
-                  <img
-                    src={assessmentIllustration}
-                    alt="Assessment illustration"
-                    className="w-full rounded-lg object-cover h-96"
-                  />
-                </div>
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      {/* Main Container */}
+      <div className="flex flex-grow bg-white mx-12 mt-8 mb-4 border-2 rounded-2xl">
+        {/* Left Container */}
+        <div className="w-4/6 p-8 border-r border-gray-300 text-lg">
+          {/* Test Overview */}
+          <div className="flex items-center gap-6 mb-8">
+            {/* Image Section */}
+            <div className="w-3/5">
+              <img
+                src={image}
+                alt="test_instruction_img"
+                className="w-full h-auto rounded-lg shadow-md"
+              />
+            </div>
+
+            {/* Test Info */}
+            <div className="text-lg font-bold text-[#00296B] space-y-2">
+              <table className="w-full">
+                <tbody>
+                  <tr>
+                    <td>Estimated Duration</td>
+                    <td className='px-4'>:</td>
+                    <td className='text-black font-medium'>{currentTest?.duration || "0 Hour"}</td>
+                  </tr>
+                  <tr>
+                    <td>No. of Questions</td>
+                    <td className='px-4'>:</td>
+                    <td className='text-black font-medium'>{currentTest?.questions || "0"}</td>
+                  </tr>
+                  <tr>
+                    <td>No. of Sections</td>
+                    <td className='px-4'>:</td>
+                    <td className='text-black font-medium'>{currentTest?.sections ? "Yes" : "No"}</td>
+                  </tr>
+                  <tr>
+                    <td>Pass Percentage</td>
+                    <td className='px-4'>:</td>
+                    <td className='text-black font-medium'>{currentTest?.passPercentage || "0"}%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Test Name */}
+          <h1 className="text-[#00296B] font-bold text-4xl mb-6">
+            {currentTest?.name || "Test Name"}
+          </h1>
+
+          {/* Registration Info */}
+          <div className="flex justify-between mb-6">
+            <p>
+              <span className='text-[#00296B] font-bold'>Registration Start Date : </span> {formatDate(currentTest?.starttime) || "23 AUG 2023 Time: 7 PM"}
+            </p>
+            <p>
+              <span className='text-[#00296B] font-bold'>Registration End Date : </span> {formatDate(currentTest?.endtime) || "24 AUG 2023 Time: 7 PM"}
+            </p>
+          </div>
+
+          {/* Description */}
+          <div className="mb-6 text-gray-700 leading-relaxed">
+            {currentTest?.description ||
+              "Embark on a journey to sharpen your analytical thinking and problem-solving skills with our course."}
+          </div>
+
+          {/* Instructions */}
+          <div className="mb-8">
+            <p className="mb-4 text-[#00296B] text-lg font-bold ">Instructions: Read carefully; contact the Department for clarifications.</p>
+            <ul className="list-disc list-inside space-y-2">
+              <li>Questions: {currentTest?.questions || "30"} questions, 1 mark each.</li>
+              <li>Duration: {currentTest?.duration || "45"} minutes.</li>
+              <li>
+                Device: Use a stable internet connection on a laptop or suitable device (iPhones not recommended).
+              </li>
+              <li>Submission: Click "Submit" after each question.</li>
+              <li>Fair Play: Unfair practices, including plagiarism, result in disqualification.</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Right Container */}
+        <div className="w-1/3 text-lg flex flex-col text-center">
+          <h1 className="font-bold text-2xl text-[#00296B] py-6 border-b border-gray-300">
+            Question Settings
+          </h1>
+
+          {/* Proctoring Settings */}
+          <div className="border border-gray-300 mx-8 rounded-2xl mt-6 mb-4">
+            <div className='text-left border-b border-gray-300 py-2 pl-4 leading-6'>
+              <h2 className="font-bold text-[#00296B] mb-1">Proctoring Enabled</h2>
+              <p className="text-gray-700 mb-2">This enables in Proctoring Candidates</p>
+            </div>
+
+            <div className="text-[#00296B] space-y-4 p-4">
+              <div className="flex justify-between">
+                <p>Face Detection</p>
+                {currentTest?.faceDetection ? (
+                  <FaCheckCircle className="text-green-500 text-2xl" />
+                ) : (
+                  <FaTimesCircle className="text-red-500 text-2xl" />
+                )}
               </div>
-              <div className="lg:flex-1 pt-4 h-fit overflow-y-auto">
-                <div className="mb-8">
-                  <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-6">
-                    {currentTest?.name || "Test Name"}
-                  </h1>
-                  <p className="text-gray-600 text-lg mb-6">
-                    {currentTest?.description ||
-                    "Embark on a journey to sharpen your analytical thinking and problem-solving skills with our course."}
-                  </p>
-                  <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">
-                    Test Details
-                  </h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
-                  <div className="p-6 bg-gray-100 rounded-lg">
-                    <h3 className="text-gray-600 mb-3 text-lg font-medium">
-                      Duration
-                    </h3>
-                    <p className="font-semibold text-xl">
-                      {currentTest?.duration || "0 Hour"}
-                    </p>
-                  </div>
-                  <div className="p-6 bg-gray-100 rounded-lg">
-                    <h3 className="text-gray-600 mb-3 text-lg font-medium">
-                      Questions
-                    </h3>
-                    <p className="font-semibold text-xl">
-                      {currentTest?.questions || "0"}
-                    </p>
-                  </div>
-                  <div className="p-6 bg-gray-100 rounded-lg">
-                    <h3 className="text-gray-600 mb-3 text-lg font-medium">
-                      Pass Percentage
-                    </h3>
-                    <p className="font-semibold text-xl">
-                      {currentTest?.passPercentage || "0"}%
-                    </p>
-                  </div>
-                  <div className="p-6 bg-gray-100 rounded-lg">
-                    <h3 className="text-gray-600 mb-3 text-lg font-medium">
-                      Sections
-                    </h3>
-                    <p className="font-semibold text-xl">
-                      {currentTest?.sections ? "Yes" : "No"}
-                    </p>
-                  </div>
-                </div>
+              <div className="flex justify-between">
+                <p>Noise Detection</p>
+                {currentTest?.noiseDetection ? (
+                  <FaCheckCircle className="text-green-500 text-2xl" />
+                ) : (
+                  <FaTimesCircle className="text-red-500 text-2xl" />
+                )}
+              </div>
+              <div className="flex justify-between">
+                <p>Full Screen Mode</p>
+                {currentTest?.fullScreenMode ? (
+                  <FaCheckCircle className="text-green-500 text-2xl" />
+                ) : (
+                  <FaTimesCircle className="text-red-500 text-2xl" />
+                )}
+              </div>
+              <div className="flex justify-between">
+                <p>Mobile Access Restriction</p>
+                {currentTest?.deviceRestriction ? (
+                  <FaCheckCircle className="text-green-500 text-2xl" />
+                ) : (
+                  <FaTimesCircle className="text-red-500 text-2xl" />
+                )}
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg p-6 md:p-10 shadow-lg">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Registration Period</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              <div className="p-6 bg-gray-100 rounded-lg">
-                <h3 className="text-gray-600 mb-3 text-lg">Start Date</h3>
-                <p className="font-semibold text-xl">{formatDate(currentTest?.starttime) || "23 AUG 2023 Time: 7 PM"}</p>
-              </div>
-              <div className="p-6 bg-gray-100 rounded-lg">
-                <h3 className="text-gray-600 mb-3 text-lg">End Date</h3>
-                <p className="font-semibold text-xl">{formatDate(currentTest?.endtime) || "24 AUG 2023 Time: 7 PM"}</p>
-              </div>
+          {/* Additional Settings */}
+          <div className="space-y-4 mx-8 text-left text-[#00296B]">
+            <div className="border border-gray-300 rounded-2xl p-4">
+            <span> • </span>
+              {currentTest?.resultVisibility === "Host Control"
+                ? "Host will release the result"
+                : "Results will be released immediately"}
+            </div>
+            <div className="border border-gray-300 rounded-2xl p-4">
+            <span> • </span>
+              Minimum Pass Percentage: {currentTest?.passPercentage || "50"}%
+            </div>
+            <div className="border border-gray-300 rounded-2xl p-4">
+            <span> • </span>
+              {currentTest?.shuffleQuestions
+                ? "The questions will be shuffled"
+                : "The questions will not be shuffled"}
+            </div>
+            <div className="border border-gray-300 rounded-2xl p-4">
+            <span> • </span>
+              {currentTest?.shuffleOptions
+                ? "The options will be shuffled"
+                : "The options will not be shuffled"}
             </div>
           </div>
 
-          <div className="bg-white rounded-lg p-6 md:p-10 shadow-lg">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Test Settings</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-              <div>
-                <h3 className="text-xl md:text-2xl font-semibold mb-6">Proctoring Features</h3>
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between p-4 bg-gray-100 rounded-lg">
-                    <span className="text-lg">Face Detection</span>
-                    {currentTest?.faceDetection ? <FaCheckCircle className="text-green-500 text-2xl" /> : <FaTimesCircle className="text-red-500 text-2xl" />}
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-gray-100 rounded-lg">
-                    <span className="text-lg">Noise Detection</span>
-                    {currentTest?.noiseDetection ? <FaCheckCircle className="text-green-500 text-2xl" /> : <FaTimesCircle className="text-red-500 text-2xl" />}
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-gray-100 rounded-lg">
-                    <span className="text-lg">Full Screen Mode</span>
-                    {currentTest?.fullScreenMode ? <FaCheckCircle className="text-green-500 text-2xl" /> : <FaTimesCircle className="text-red-500 text-2xl" />}
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-gray-100 rounded-lg">
-                    <span className="text-lg">Mobile Access Restriction</span>
-                    {currentTest?.deviceRestriction ? <FaCheckCircle className="text-green-500 text-2xl" /> : <FaTimesCircle className="text-red-500 text-2xl" />}
-                  </div>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-xl md:text-2xl font-semibold mb-6">Test Rules</h3>
-                <div className="space-y-4">
-                  <p className="flex items-center gap-3 p-4 bg-gray-100 rounded-lg text-lg">
-                    <span className="text-gray-700 text-2xl">•</span>
-                    {currentTest?.resultVisibility === "Host Control" ? "Host will release the result" : "Immediately result will release"}
-                  </p>
-
-                  <p className="flex items-center gap-3 p-4 bg-gray-100 rounded-lg text-lg">
-                    <span className="text-gray-700 text-2xl">•</span>
-                    Minimum Pass Percentage: {currentTest?.passPercentage || "50"}%
-                  </p>
-                  <p className="flex items-center gap-3 p-4 bg-gray-100 rounded-lg text-lg">
-                    <span className="text-gray-700 text-2xl">•</span>
-                    {currentTest?.shuffleQuestions ? "The questions will be shuffled" : "The questions will not be shuffled"}
-                  </p>
-                  <p className="flex items-center gap-3 p-4 bg-gray-100 rounded-lg text-lg">
-                    <span className="text-gray-700 text-2xl">•</span>
-                    {currentTest?.shuffleOptions ? "The options will be shuffled" : "The options will not be shuffled"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-6 md:p-10 shadow-lg">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Test Instructions</h2>
-            <div className="space-y-6">
-              <p className="text-gray-600 text-lg">Please read the following instructions carefully before starting the test:</p>
-              <ul className="list-disc pl-8 space-y-3 text-gray-700 text-lg">
-                <li>Questions: {currentTest?.questions || "30"} questions, 1 mark each.</li>
-                <li>Duration: {currentTest?.duration || "45"} minutes.</li>
-                <li>Device: Use a stable internet connection on a laptop or suitable device (iPhones not recommended).</li>
-                <li>Submission: Click "Submit" after each question.</li>
-                <li>Fair Play: Unfair practices, including plagiarism, result in disqualification.</li>
-              </ul>
-            </div>
-
-            <div className="mt-10 flex justify-end">
-              <button
-                onClick={handleStartTest}
-                disabled={loading}
-                className="px-10 py-4 bg-[#facc15] text-black rounded-full font-semibold text-lg hover:bg-[#e5b810] transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Loading...' : 'Start Test'}
-              </button>
-            </div>
+          {/* Publish Button */}
+          <div className="mt-10 mb-4 pt-4 border-t border-t-gray-300">
+            <button
+              onClick={handleStartTest}
+              disabled={loading}
+              className="px-10 py-4 bg-[#facc15] text-white rounded-full font-semibold text-lg hover:bg-[#e5b810] transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Loading...' : 'Start Test'}
+            </button>
           </div>
         </div>
       </div>
@@ -343,3 +327,7 @@ const TestInstructions = () => {
 };
 
 export default TestInstructions;
+
+
+
+

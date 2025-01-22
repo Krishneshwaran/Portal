@@ -60,7 +60,7 @@ export default function Question({
         </h2>
         <button
           className="text-red-500 text-sm border border-red-500 rounded-full px-4 py-1"
-          onClick={() => onReviewMark(currentIndex)}
+          onClick={() => onReviewMark(currentIndex)} // Call the review mark callback
         >
           Mark for review
         </button>
@@ -82,17 +82,14 @@ export default function Question({
             >
               {String.fromCharCode(65 + idx)} {/* 65 is the ASCII code for 'A' */}
             </button>
-            <span
-              className={`flex-1 p-4 border rounded-lg transition-colors text-1xl font-semibold ${
-                selectedOption === option ? "border-[#00296b] bg-[#fdc500]" : ""
-              }`}
-            >
+            <span className={`flex-1 p-4 border rounded-lg transition-colors text-1xl font-semibold ${
+              selectedOption === option ? "border-[#00296b] bg-[#fdc500]" : ""
+            }`}>
               {option}
             </span>
           </div>
         ))}
       </div>
-
       {/* Ensure watermark does not interfere with options */}
       <div className="absolute inset-0 pointer-events-none z-[5] grid grid-cols-7 gap-2 p-4 opacity-[0.1]">
         {[...Array(21)].map((_, index) => (

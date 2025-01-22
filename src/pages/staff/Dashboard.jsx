@@ -48,6 +48,8 @@ const Dashboard = () => {
  
         const codingTests = contestResponse?.data?.contests || [];
         const mcqAssessments = mcqResponse?.data?.assessments || [];
+        const reversedCodingTests = [...codingTests].reverse();
+        const reversedMcqTests = [...mcqAssessments].reverse();
 
         const totalTests = codingTests.length + mcqAssessments.length;
         const liveTests = [...codingTests, ...mcqAssessments].filter((test) => test.status === 'Live').length;
@@ -66,8 +68,8 @@ const Dashboard = () => {
           upcomingTest: upcomingTests,
         });
 
-        setTests(codingTests);
-        setMcqTests(mcqAssessments);
+        setTests(reversedCodingTests);
+        setMcqTests(reversedMcqTests);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to fetch test data. Please try again later.');
