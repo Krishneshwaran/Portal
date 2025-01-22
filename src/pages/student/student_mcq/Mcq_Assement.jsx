@@ -28,6 +28,10 @@ export default function Mcq_Assessment() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [duration, setDuration] = useState(0);
+  const [faceDetection, setFaceDetection] = useState(() => {
+    const storedFaceDetection = localStorage.getItem(`faceDetection_${contestId}`);
+    return storedFaceDetection === "true";
+  });
   const [fullScreenMode, setFullScreenMode] = useState(() => {
     const storedFullScreenMode = localStorage.getItem(`fullScreenMode_${contestId}`);
     return storedFullScreenMode === "true";
@@ -137,6 +141,17 @@ export default function Mcq_Assessment() {
     sessionStorage.setItem(`selectedAnswers_${contestId}`, JSON.stringify(selectedAnswers));
     sessionStorage.setItem(`reviewStatus_${contestId}`, JSON.stringify(reviewStatus));
   }, [selectedAnswers, reviewStatus, contestId]);
+
+  useEffect(() => {
+    localStorage.setItem(`faceDetection_${contestId}`, faceDetection);
+  }, [faceDetection, contestId]);
+
+  const handleFaceDetection = (isDetected) => {
+    setFaceDetection(isDetected);
+    if (!isDetected) {
+      setFaceDetectionWarning("Face not detected. Please ensure you are visible to the camera.");
+    }
+  };  
 
   const handleAnswerSelect = (index, answer) => {
     setSelectedAnswers((prev) => ({ ...prev, [index]: answer }));
@@ -835,41 +850,46 @@ export default function Mcq_Assessment() {
           </div>
         )}
 
-        <FaceDetectionComponent contestId={contestId} onWarning={setFaceDetectionWarning} /> {/* Integrate the FaceDetectionComponent */}
+          {faceDetection && (
+            <FaceDetectionComponent
+              contestId={contestId}
+              onWarning={handleFaceDetection}
+            />
+            )}
 
-        {faceDetectionWarning && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
-              <div className="text-red-600 mb-4">
-                <svg
-                  className="w-12 h-12 mx-auto"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+          {faceDetectionWarning && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+              <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
+                <div className="text-red-600 mb-4">
+                  <svg
+                    className="w-12 h-12 mx-auto"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-center mb-4">
+                  Face Detection Warning
+                </h3>
+                <p className="text-gray-600 text-center mb-6">
+                  {faceDetectionWarning}
+                </p>
+                <button
+                  onClick={() => setFaceDetectionWarning('')}
+                  className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
+                  Continue
+                </button>
               </div>
-              <h3 className="text-xl font-semibold text-center mb-4">
-                Face Detection Warning
-              </h3>
-              <p className="text-gray-600 text-center mb-6">
-                {faceDetectionWarning}
-              </p>
-              <button
-                onClick={() => setFaceDetectionWarning('')}
-                className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Continue
-              </button>
             </div>
-          </div>
-        )}
+          )}
       </div>
 
       <style>

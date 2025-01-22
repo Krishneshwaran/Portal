@@ -14,8 +14,7 @@ const TestCard = ({
   const navigate = useNavigate();
 
   const icon = useMemo(() =>
-    assessment_type === 'coding' ? <Code className="w-8 h-8 text-[#fd944e]" /> : <FileText className="w-8 h-8 text-[#000975]" />,
-  [assessment_type]);
+    assessment_type === 'coding' ? <Code className="w-7 h-7 text-[#fd944e]" /> : <FileText className="w-7 h-7 text-[#000975]" />, [assessment_type]);
 
   const statusConfig = useMemo(() => ({
     color: isCompleted ? 'text-red-500' : 'text-green-500',
@@ -58,48 +57,47 @@ const TestCard = ({
   };
 
   return (
-    <motion.div whileHover={{ y: -2 }} className="w-full mb-4 p-3 max-w-8xl">
+    <motion.div whileHover={{ y: -2 }} className="w-full mb-2.5 max-w-[630px]">
       <div
-        className={`py-4 shadow-lg bg-gradient-to-br from-blue-50 to-white rounded-2xl hover:shadow-xl transition-all duration-300 cursor-pointer ${isCompleted ? 'cursor-not-allowed' : ''}`}
+        className={`py-1.5 px-5 shadow-lg bg-gradient-to-br from-blue-50 to-white rounded-xl hover:shadow-xl transition-all duration-300 cursor-pointer ${isCompleted ? 'cursor-not-allowed' : ''}`}
         onClick={isRegistrationStarted && !isCompleted ? handleCardClick : undefined}
       >
-        
-        <div className="flex justify-between items-center gap-5 p-4">
-          <div className="flex gap-4 items-center">
-            <div className="p-2 rounded-full">
+        <div className="flex justify-between items-center gap-4 p-3">
+          <div className="flex gap-3 items-center">
+            <div className=" rounded-full">
               {icon}
             </div>
             <div className="text-[#000975]">
-              <h3 className="text-xl font-bold">{test?.name || 'Unknown Test'}</h3>
+              <h3 className="text-lg font-semibold">{test?.name || 'Unknown Test'}</h3>
               <p className="text-sm">{assessment_type?.toUpperCase() || 'Unknown Type'}</p>
             </div>
           </div>
           <span
-            className={`px-4 py-2 mb-4 rounded-full text-xs font-semibold ${statusStyles[isRegistrationStarted ? statusConfig.text : 'Not Yet Started']}`}
+            className={`px-3 py-0.5 rounded-full text-xs font-semibold ${statusStyles[isRegistrationStarted ? statusConfig.text : 'Not Yet Started']}`}
           >
             {isRegistrationStarted ? statusConfig.text : 'Not Yet Started'}
           </span>
         </div>
-        <div className="p-4">
-          <p className="text-gray-600 italic">
+        <div className="p-3">
+          <p className="text-gray-600 italic text-sm">
             Take this test with proper preparation. All The Best!
           </p>
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 mt-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-1.5 sm:gap-3 mt-3">
             <div>
               {['starttime', 'endtime'].map((timeType) => (
-                <p key={timeType} className="text-gray-800 mb-0.5">
+                <p key={timeType} className="text-gray-800 text-md mb-0.5">
                   <strong>{timeType === 'starttime' ? 'Start' : 'End'} Time:</strong> {formatDate(test?.[timeType])}
                 </p>
               ))}
             </div>
             <div>
-              {isCompleted && isPublished ? (
+            {isCompleted && isPublished ? (
                 <Link
                   to={`/result/${test?.contestId || test?.testId || 'unknown'}/${studentId}`}
                   className="text-white"
                 >
                   <button
-                    className="w-1/9 sm:w-32 ml-20 px-1 py-2 bg-[#000975] text-white rounded-lg hover:bg-amber-500 transition-colors flex items-center justify-center font-light text-xs sm:text-base"
+                    className="w-[10px] sm:w-28 px-1 py-2 bg-[#000975] text-white rounded-lg hover:bg-amber-500 transition-colors flex items-center justify-center font-light text-xs sm:text-base"
                   >
                     View Result
                     <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
@@ -107,7 +105,7 @@ const TestCard = ({
                 </Link>
               ) : isCompleted && !isPublished ? (
                 <button
-                  className="w-1/9 sm:w-32 ml-20 px-1 py-2 bg-[#000975] text-white rounded-lg hover:bg-amber-500 transition-colors flex items-center justify-center font-light text-xs sm:text-base opacity-50 cursor-not-allowed"
+                  className="w-[10px] sm:w-28 px-1 py-2 bg-[#000975] text-white rounded-lg hover:bg-amber-500 transition-colors flex items-center justify-center font-light text-xs sm:text-base opacity-50 cursor-not-allowed"
                   disabled
                 >
                   View Result
@@ -115,18 +113,18 @@ const TestCard = ({
                 </button>
               ) : (
                 <button
-                  className={`w-1/9 sm:w-32 ml-20 px-1 py-2 bg-[#000975] text-white rounded-lg hover:bg-amber-500 transition-colors flex items-center justify-center font-light text-xs sm:text-base ${!isRegistrationStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`w-[10px] sm:w-28 px-1 py-2 bg-[#000975] text-white rounded-lg hover:bg-amber-500 transition-colors flex items-center justify-center font-light text-xs sm:text-base ${!isRegistrationStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
                   onClick={isRegistrationStarted ? handleCardClick : undefined}
                   disabled={!isRegistrationStarted}
                 >
                   {isRegistrationStarted ? statusConfig.buttonText : 'Yet to Start'}
-                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
+                  <ChevronRight className="w-4 h-4 sm:w-4 sm:h-5 ml-2" />
                 </button>
               )}
             </div>
           </div>
         </div>
-        </div>
+      </div>
     </motion.div>
   );
 };

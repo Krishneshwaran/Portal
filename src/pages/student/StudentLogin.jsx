@@ -111,7 +111,7 @@ const StudentLogin = ({ onLogin }) => {
           <motion.div variants={itemVariants} className="mb-10 text-center">
           <h1 className="text-4xl font-bold text-gray-800">
           SNS INSTITUTION
-          ASSESMENT-PORTAL
+          ASSESSMENT-PORTAL
             </h1>
             <p className="text-xl font-sm text-gray-800">
               Login to Your Account

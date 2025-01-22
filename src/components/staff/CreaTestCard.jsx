@@ -22,12 +22,12 @@ const CreateTestCard = () => {
         className="w-full max-w-xl cursor-pointer"
         onClick={handleModalOpen}
       >
-        <Card className="p-16 bg-transparent border-2 border-dashed rounded-2xl flex items-center justify-center">
-          <Plus className="w-16 h-16 bg-transparent rounded-full text-gray-500" />
+        <Card className="p-12 bg-transparent border-2 border-dashed rounded-2xl flex items-center justify-center">
+          <Plus className="w-12 h-12 bg-transparent rounded-full text-gray-500" />
           <h2 className="m-2 mb-2 text-gray-500">Create Your Test Here...</h2>
         </Card>
       </motion.div>
-      <Dialog open={isModalOpen} onClose={handleModalClose} maxWidth="sm" fullWidth>
+      <Dialog open={isModalOpen} onClose={handleModalClose} maxWidth="xs" fullWidth>
         <DialogTitle>
           <Typography variant="h6" align="center" fontWeight="bold">
             Select Test Type
@@ -46,13 +46,13 @@ const CreateTestCard = () => {
           </IconButton>
         </DialogTitle>
         <DialogContent>
-          <Grid container spacing={3} sx={{ mt: 2 }}>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={6}>
               <Box
                 sx={{
-                  p: 3,
+                  p: 2,
                   textAlign: 'center',
-                  height: '230px',
+                  height: '184px',
                   border: '1px solid #E0E0E0',
                   borderRadius: '12px',
                   cursor: 'pointer',
@@ -64,8 +64,8 @@ const CreateTestCard = () => {
                   handleModalClose();
                 }}
               >
-                <img src={mcq} alt="Skill Assessment" style={{ maxWidth: '80px', margin: '0 auto' }} />
-                <Typography variant="h6" mt={2}>
+                <img src={mcq} alt="Skill Assessment" style={{ maxWidth: '64px', margin: '0 auto' }} />
+                <Typography variant="h6" mt={1}>
                   Skill Assessment
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
@@ -76,9 +76,9 @@ const CreateTestCard = () => {
             <Grid item xs={6}>
               <Box
                 sx={{
-                  p: 3,
+                  p: 2,
                   textAlign: 'center',
-                  height: '230px',
+                  height: '184px',
                   border: '1px solid #E0E0E0',
                   borderRadius: '12px',
                   cursor: 'pointer',
@@ -90,8 +90,8 @@ const CreateTestCard = () => {
                   handleModalClose();
                 }}
               >
-                <img src={code} alt="Code Contest" style={{ maxWidth: '80px', margin: '0 auto' }} />
-                <Typography variant="h6" mt={2}>
+                <img src={code} alt="Code Contest" style={{ maxWidth: '64px', margin: '0 auto' }} />
+                <Typography variant="h6" mt={1}>
                   Code Contest
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
@@ -101,11 +101,11 @@ const CreateTestCard = () => {
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions sx={{ justifyContent: 'center', mt: 2 }}>
+        <DialogActions sx={{ justifyContent: 'center', mt: 1 }}>
           <Typography
             variant="body2"
             color="textSecondary"
-            sx={{ textAlign: 'center', width: '100%', marginBottom: '16px' }}
+            sx={{ textAlign: 'center', width: '100%', marginBottom: '12px' }}
           >
             You can select a test type to proceed or close the dialog.
           </Typography>

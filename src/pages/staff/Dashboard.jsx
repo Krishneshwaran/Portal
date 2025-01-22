@@ -40,26 +40,15 @@ const Dashboard = () => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-  
-        // Make API calls to localhost
         const [contestResponse, studentStatsResponse, mcqResponse] = await Promise.all([
-          fetch('https://vercel-1bge.onrender.com/staff/contests', {
-            method: 'GET',
-            credentials: 'include',
-          }).then((res) => res.json()),
-          fetch('https://vercel-1bge.onrender.com/staff/students/stats', {
-            method: 'GET',
-            credentials: 'include',
-          }).then((res) => res.json()),
-          fetch('https://vercel-1bge.onrender.com/staff/mcq', {
-            method: 'GET',
-            credentials: 'include',
-          }).then((res) => res.json()),
+          api.get('/contests', { withCredentials: true }),
+          api.get('/students/stats', { withCredentials: true }),
+          api.get('/mcq', { withCredentials: true }),
         ]);
-  
-        const codingTests = contestResponse?.contests || [];
-        const mcqAssessments = mcqResponse?.assessments || [];
-  
+
+        const codingTests = contestResponse?.data?.contests || [];
+        const mcqAssessments = mcqResponse?.data?.assessments || [];
+
         const totalTests = codingTests.length + mcqAssessments.length;
         const liveTests = [...codingTests, ...mcqAssessments].filter((test) => test.status === 'Live').length;
         const completedTests = [...codingTests, ...mcqAssessments].filter(
@@ -68,15 +57,15 @@ const Dashboard = () => {
         const upcomingTests = [...codingTests, ...mcqAssessments].filter(
           (test) => test.status === 'Upcoming'
         ).length;
-  
+
         setStats({
           totalTests,
-          students: studentStatsResponse?.total_students || 0,
+          students: studentStatsResponse?.data?.total_students || 0,
           liveTests,
           completedTests,
           upcomingTest: upcomingTests,
         });
-  
+
         setTests(codingTests);
         setMcqTests(mcqAssessments);
       } catch (err) {
@@ -94,10 +83,9 @@ const Dashboard = () => {
         setIsLoading(false);
       }
     };
-  
+
     fetchData();
   }, []);
-  
 
   // Filter tests based on status and search query
   const filteredTests = useMemo(() => {

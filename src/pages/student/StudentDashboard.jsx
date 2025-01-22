@@ -5,9 +5,11 @@ import TestCard from "./TestCard";
 import axios from "axios";
 import NoExams from "../../assets/happy.png";
 import { Clock, BookOpen, Award } from 'lucide-react';
+import backgroundImage from '../../assets/pattern.png';
+import rightSideImage from '../../assets/OBJECTS.png';
 
 const StyledTabs = styled(Tabs)({
-  backgroundColor: '#f8fafc',
+  backgroundColor: '#ffff',
   borderRadius: '8px',
   '& .MuiTabs-indicator': {
     backgroundColor: '#2563eb',
@@ -231,22 +233,26 @@ const StudentDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Container maxWidth="xl" className="py-4 px-2 sm:px-4">
-        <DashboardHeader>
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="bg-blue p-2 rounded-full">
-              <Award className="h-10 w-10 bg-blue" />
-            </div>
-            <div>
-              <Typography variant="h5" className="font-bold text-sky-600">
-                Welcome back, {studentData.name}!
-              </Typography>
-              <Typography variant="subtitle1" className="text-blue-950 px-1">
-                Registration Number: {studentData.regno}
-              </Typography>
-            </div>
-          </div>
-        </DashboardHeader>
+      <Container maxWidth="2xl" className="py-1 px-2 sm:px-4">
+      <DashboardHeader className="bg-white mt-4 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${backgroundImage})`}}>
+      <div className="flex flex-col sm:flex-row items-center gap-4">
+        <div className="bg-blue p-2 rounded-full">
+          <Award className="h-10 w-10 bg-blue" />
+        </div>
+        <div>
+          <Typography variant="h5" className="font-bold text-[#000975]">
+            Welcome back, {studentData.name}!
+          </Typography>
+          <Typography variant="h6" className="text-gray-500">
+            Registration Number: {studentData.regno}
+          </Typography>
+        </div>
+        {/* <div
+          className="absolute right-0 top-0 h-full w-1/3 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${rightSideImage})` }}
+        ></div> */}
+      </div>
+    </DashboardHeader>
 
         <Box className="bg-white rounded-xl shadow-sm p-4">
           <StyledTabs value={activeTab} onChange={handleTabChange}>
@@ -257,7 +263,7 @@ const StudentDashboard = () => {
           <Box className="mt-6">
             {activeTab === 0 && (
               <>
-                <Typography variant="h6" className="font-bold text-gray-900 mb-4">
+                <Typography variant="h6" className="font-bold text-gray-900 mb-7">
                   Active Assessments
                 </Typography>
                 <Grid container spacing={2}>
