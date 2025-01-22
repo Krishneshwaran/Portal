@@ -17,7 +17,7 @@ import StudentRegister from './pages/student/StudentRegister';
 import StudentLogin from './pages/student/StudentLogin';
 import StudentPasswordReset from './pages/student/StudentPasswordReset';
 import StudentDashboard from './pages/student/StudentDashboard';
-import StudentProfile from './pages/student/Studentprofile';
+import StudentProfile from './pages/student/StudentProfile';
 import Navbar from './pages/student/Navbar';
 import StaffNavbar from './pages/staff/StaffNavbar';
 import TestInstructions from './pages/student/TestInstruction';
