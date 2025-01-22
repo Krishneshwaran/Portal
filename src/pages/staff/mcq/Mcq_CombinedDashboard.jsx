@@ -26,6 +26,9 @@ const Mcq_CombinedDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { formData } = location.state;
+  useEffect(() => {
+    console.log(formData)
+  }, [formData])
   const [dashboardStats, setDashboardStats] = useState({
     totalQuestions: 0,
     totalSections: 0,

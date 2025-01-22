@@ -20,8 +20,14 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import QuestionModal from "../../../components/staff/mcq/QuestionModal";
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 import ShareModal from "../../../components/staff/mcq/ShareModal";
+import { form } from "@nextui-org/react";
+//icon imports
+import clockIcon from "../../../assets/icons/clock-icon.svg";
+import markIcon from "../../../assets/icons/mark-icon.svg";
+import questionIcon from "../../../assets/icons/question-icon.svg";
+import sectionIcon from "../../../assets/icons/section-icon.svg";
 
 const Mcq_Dashboard = () => {
   const navigate = useNavigate();
@@ -49,7 +55,8 @@ const Mcq_Dashboard = () => {
   const [sharingLink, setSharingLink] = useState("");
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+  const API_BASE_URL =
+    process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -74,7 +81,9 @@ const Mcq_Dashboard = () => {
     const applyFilters = () => {
       const filtered = students.filter(
         (student) =>
-          (filters.collegename ? student.collegename.includes(filters.collegename) : true) &&
+          (filters.collegename
+            ? student.collegename.includes(filters.collegename)
+            : true) &&
           (filters.dept ? student.dept.includes(filters.dept) : true)
       );
       setFilteredStudents(filtered);
@@ -111,14 +120,18 @@ const Mcq_Dashboard = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const fetchedQuestions = response.data.questions || [];
-      setQuestions(fetchedQuestions);
-      setDashboardStats((prev) => ({
-        ...prev,
-        totalQuestions: fetchedQuestions.length,
+      // Handle both formats of the backend response
+      const fetchedQuestions = response.data.questions.map((question) => ({
+        ...question,
+        correctAnswer: question.correctAnswer || question.answer || "No Answer Provided",
       }));
+      setQuestions(fetchedQuestions);
+
     } catch (error) {
-      console.error("Error fetching questions:", error.response?.data || error.message);
+      console.error(
+        "Error fetching questions:",
+        error.response?.data || error.message
+      );
       alert("Failed to load questions. Please try again.");
     } finally {
       setIsLoading(false);
@@ -147,7 +160,10 @@ const Mcq_Dashboard = () => {
         alert("Failed to finish the contest. Please try again.");
       }
     } catch (error) {
-      console.error("Error finishing contest:", error.response?.data || error.message);
+      console.error(
+        "Error finishing contest:",
+        error.response?.data || error.message
+      );
       alert("Failed to finish the contest. Please try again.");
     }
   };
@@ -165,7 +181,6 @@ const Mcq_Dashboard = () => {
         alert("Unauthorized access. Please log in again.");
         return;
       }
-  
       // Decode the contestId from the token
       const decodedToken = jwtDecode(token); // Use jwt-decode library
       const contestId = decodedToken?.contestId;
@@ -173,15 +188,18 @@ const Mcq_Dashboard = () => {
         alert("Invalid contest token. Please log in again.");
         return;
       }
-  
       // Remove duplicates from questions
-      const uniqueQuestions = Array.from(new Set(questions.map(JSON.stringify))).map(JSON.parse);
+      const uniqueQuestions = Array.from(
+        new Set(questions.map(JSON.stringify))
+      ).map(JSON.parse);
 
-  
       // Get email addresses of selected students
-      const selectedStudentDetails = students.filter((student) => selectedStudents.includes(student.regno));
-      const selectedStudentEmails = selectedStudentDetails.map((student) => student.email);
-  
+      const selectedStudentDetails = students.filter((student) =>
+        selectedStudents.includes(student.regno)
+      );
+      const selectedStudentEmails = selectedStudentDetails.map(
+        (student) => student.email
+      );
       // Prepare the payload for the request
       const payload = {
         contestId, // Include contestId in the payload
@@ -189,10 +207,9 @@ const Mcq_Dashboard = () => {
         students: selectedStudents,
         studentEmails: selectedStudentEmails,
       };
-  
       // Make the API call to publish questions
       const response = await axios.post(
-        `${API_BASE_URL}/api/mcq/publish/`,
+        "http://localhost:8000/api/mcq/publish/",
         payload,
         {
           headers: {
@@ -201,26 +218,34 @@ const Mcq_Dashboard = () => {
           },
         }
       );
-  
       if (response.status === 200) {
-        setSharingLink(`${process.env.REACT_APP_FRONTEND_LINK}/testinstructions/${contestId}`);
+        setSharingLink(
+          `${process.env.REACT_APP_FRONTEND_LINK}/testinstructions/${contestId}`
+        );
         setShareModalOpen(true); // Open the share modal
       } else {
-        alert(`Failed to publish questions: ${response.data.message || "Unknown error."}`);
+        alert(
+          `Failed to publish questions: ${
+            response.data.message || "Unknown error."
+          }`
+        );
       }
     } catch (error) {
       console.error("Error publishing questions:", error);
-  
       // Handle specific errors
       if (error.response) {
         // Server responded with a status other than 2xx
-        alert(`Error: ${error.response.data.message || error.response.statusText}`);
+        alert(
+          `Error: ${error.response.data.message || error.response.statusText}`
+        );
       } else if (error.request) {
         // Request made but no response received
         alert("No response from the server. Please try again later.");
       } else {
         // Other errors
-        alert("An error occurred while publishing questions. Please try again.");
+        alert(
+          "An error occurred while publishing questions. Please try again."
+        );
       }
     } finally {
       // Close the publish dialog regardless of success or failure
@@ -238,7 +263,12 @@ const Mcq_Dashboard = () => {
         setDashboardStats((prev) => ({
           ...prev,
           totalMarks: totalMarks || 0,
-          totalDuration: duration ? `${duration.hours.padStart(2, '0')}:${duration.minutes.padStart(2, '0')}:00` : "00:00:00",
+          totalDuration: duration
+            ? `${duration.hours.padStart(2, "0")}:${duration.minutes.padStart(
+                2,
+                "0"
+              )}:00`
+            : "00:00:00",
           maximumMark: passPercentage || 0,
         }));
 
@@ -257,7 +287,6 @@ const Mcq_Dashboard = () => {
     setShareModalOpen(false); // Close the modal
     navigate(`/staffdashboard`); // Navigate to the dashboard
   };
-  
   const handleAddQuestion = () => {
     setIsModalOpen(true);
   };
@@ -266,45 +295,42 @@ const Mcq_Dashboard = () => {
     setIsModalOpen(false);
   };
 
+  useEffect(() => {
+    fetchQuestions();
+  }, []);
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen flex justify-center">
       <div className="max-w-5xl w-full">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8 mt-8">
+        <div className="mx-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-x-6 mb-8 mt-8 items-stretch justify-stretch">
           {[
             {
               label: "Total Questions",
               value: dashboardStats.totalQuestions,
-              icon: "❓",
+              icon: questionIcon,
             },
             {
               label: "Total Marks",
               value: dashboardStats.totalMarks,
-              icon: "📝",
+              icon: markIcon,
             },
             {
               label: "Total Duration",
               value: dashboardStats.totalDuration,
-              icon: "⏱️",
+              icon: clockIcon,
             },
             {
               label: "Maximum Mark",
               value: dashboardStats.maximumMark,
-              icon: "📝",
+              icon: markIcon,
             },
           ].map((item, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between p-4 bg-white shadow-md rounded-lg border-l-4 border-yellow-400"
-            >
-              <div className="text-yellow-500 text-4xl">{item.icon}</div>
-              <div className="text-right">
-                <h3 className="text-gray-500 text-sm font-medium">
-                  {item.label}
-                </h3>
-                <p className="text-xl font-semibold text-gray-800">
-                  {item.value}
-                </p>
-              </div>
+            <div className="bg-white text-[#00296B] shadow-md rounded-lg p-5 relative flex flex-col items-center justify-center py-8">
+              <span className="absolute -top-4 -right-4 p-2 bg-white z-10 shadow-lg rounded-full">
+                <img src={item.icon} alt="" className="w-6" />
+              </span>
+              <p className="text-xs"> {item.label} </p>
+              <p className="text-3xl"> {item.value} </p>
             </div>
           ))}
         </div>
@@ -320,31 +346,31 @@ const Mcq_Dashboard = () => {
         </div>
 
         {!isLoading && questions.length > 0 && (
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Loaded Questions
-            </h3>
+          <div className="mt-8 px-5 pt-4 pb-6 bg-white shadow-md text-[#00296B] rounded-xl">
+          <h3 className="text-lg font-semibold mb-4">Questions</h3>
+          {isLoading ? (
+            <p>Loading questions...</p>
+          ) : (
             <ul className="space-y-4">
               {questions.map((question, index) => (
                 <li
                   key={index}
-                  className="flex items-center justify-between bg-white shadow-md rounded-lg p-4 border border-gray-300"
+                  className="flex items-center justify-between bg-[#fafdff] shadow-md rounded-lg p-4 border border-gray-300"
                 >
-                  <div className="flex flex-col">
-                    <h4 className="text-gray-800 font-medium">{`Question ${index + 1}`}</h4>
-                    <p className="text-gray-600">{question.question}</p>
+                  <div className="flex text-sm">
+                    <p className="">{question.question}</p>
                   </div>
-                  <div>
-                    <span className="text-gray-500">
-                      {question.correctAnswer
-                        ? `Answer: ${question.correctAnswer}`
-                        : "No Answer Provided"}
+                  <div className="flex items-center">
+                    <p className="font-semibold text-sm mr-1">Answer: </p>
+                    <span className="text-sm">
+                      {question.correctAnswer}
                     </span>
                   </div>
                 </li>
               ))}
             </ul>
-          </div>
+          )}
+        </div>
         )}
 
         {isLoading && (
@@ -356,7 +382,9 @@ const Mcq_Dashboard = () => {
 
         {!isLoading && questions.length === 0 && (
           <div className="text-center mt-16">
-            <p className="text-gray-600">No questions available in the database.</p>
+            <p className="text-gray-600">
+              No questions available in the database.
+            </p>
             <button
               onClick={() => navigate("/mcq/sectionDetails")}
               className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
@@ -381,14 +409,19 @@ const Mcq_Dashboard = () => {
           <QuestionModal
             showModal={isModalOpen}
             onClose={handleModalClose}
-            handleCreateManually={() => navigate('/mcq/CreateQuestion')}
-            handleBulkUpload={() => navigate('/mcq/bulkUpload')}
-            handleMcqlibrary={() => navigate('/mcq/McqLibrary')}
-            handleAi={() => navigate('/mcq/aigenerator')}
+            handleCreateManually={() => navigate("/mcq/CreateQuestion")}
+            handleBulkUpload={() => navigate("/mcq/bulkUpload")}
+            handleMcqlibrary={() => navigate("/mcq/McqLibrary")}
+            handleAi={() => navigate("/mcq/aigenerator")}
           />
         )}
 
-        <Dialog open={publishDialogOpen} onClose={() => setPublishDialogOpen(false)} fullWidth maxWidth="lg">
+        <Dialog
+          open={publishDialogOpen}
+          onClose={() => setPublishDialogOpen(false)}
+          fullWidth
+          maxWidth="lg"
+        >
           <DialogTitle>Select Students</DialogTitle>
           <DialogContent>
             <Box mb={3}>
@@ -482,12 +515,11 @@ const Mcq_Dashboard = () => {
             </Button>
           </DialogActions>
         </Dialog>
-       <ShareModal
-           open={shareModalOpen}
-          onClose={handleShareModalClose} 
+        <ShareModal
+          open={shareModalOpen}
+          onClose={handleShareModalClose}
           shareLink={sharingLink}
         />
-
       </div>
     </div>
   );
