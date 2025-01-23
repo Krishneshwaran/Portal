@@ -122,7 +122,7 @@ const FaceDetectionComponent = ({ contestId, onWarning }) => {
                 onWarning(`${newCount === 1 ? "First" : newCount === 2 ? "Second" : newCount === 3 ? "Third" : `${newCount}th`} Warning: Face detection issue detected!`);
             }
 
-            if (newCount === 5) {
+            if (newCount === 120) {
                 onWarning(`Eleventh Warning: You have been kicked out!`);
                 setIsKicked(true);
             }
