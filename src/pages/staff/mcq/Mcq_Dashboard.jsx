@@ -234,7 +234,7 @@ const filterDuplicateQuestions = (questions) => {
       };
 
       const response = await axios.post(
-        "http://localhost:8000/api/mcq/publish/",
+        `${API_BASE_URL}/api/mcq/publish/`,
         payload,
         {
           headers: {
