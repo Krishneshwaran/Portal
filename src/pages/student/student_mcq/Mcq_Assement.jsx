@@ -118,14 +118,22 @@ export default function Mcq_Assessment() {
           parsedQuestions = response.data.questions || [];
         }
 
-        // Shuffle questions only if not already shuffled
-        const shuffledQuestions = sessionStorage.getItem(`shuffledQuestions_${contestId}`);
-        if (!shuffledQuestions) {
-          const shuffled = parsedQuestions.sort(() => Math.random() - 0.5);
-          sessionStorage.setItem(`shuffledQuestions_${contestId}`, JSON.stringify(shuffled));
-          setQuestions(shuffled);
+        // Fetch current test details from local storage
+        const storedCurrentTest = JSON.parse(localStorage.getItem("currentTest"));
+        setCurrentTest(storedCurrentTest);
+
+        // Shuffle questions only if currentTest.shuffleQuestions is true
+        if (storedCurrentTest && storedCurrentTest.shuffleQuestions) {
+          const shuffledQuestions = sessionStorage.getItem(`shuffledQuestions_${contestId}`);
+          if (!shuffledQuestions) {
+            const shuffled = parsedQuestions.sort(() => Math.random() - 0.5);
+            sessionStorage.setItem(`shuffledQuestions_${contestId}`, JSON.stringify(shuffled));
+            setQuestions(shuffled);
+          } else {
+            setQuestions(JSON.parse(shuffledQuestions));
+          }
         } else {
-          setQuestions(JSON.parse(shuffledQuestions));
+          setQuestions(parsedQuestions);
         }
 
         const { hours, minutes } = response.data.duration || { hours: 0, minutes: 0 };
@@ -169,10 +177,10 @@ export default function Mcq_Assessment() {
       // Increment and store the count
       const currentCount = parseInt(sessionStorage.getItem(`faceDetectionCount_${contestId}`)) || 0;
       const newCount = currentCount + 1;
-      
+
       sessionStorage.setItem(`faceDetectionCount_${contestId}`, newCount.toString());
       setFaceDetectionCount(newCount);
-      
+
       console.log("Face detection count updated:", newCount);
     }
   };
@@ -396,7 +404,6 @@ export default function Mcq_Assessment() {
   const testName = currentTest?.name || "Default Test Name";
   const testDetails = JSON.parse(localStorage.getItem("currentTest"));
 
-
   useEffect(() => {
     const storedCurrentTest = JSON.parse(localStorage.getItem("currentTest"));
     setCurrentTest(storedCurrentTest);
@@ -443,13 +450,11 @@ export default function Mcq_Assessment() {
       // Fetch the pass percentage from session storage
       const currentTest = JSON.parse(localStorage.getItem("currentTest"));
       const passPercentage = JSON.parse(localStorage.getItem("currentTest"))?.passPercentage || 50;
-      
 
       // Calculate the grade
       const totalQuestions = questions.length;
       const percentage = (correctAnswers / totalQuestions) * 100;
       const grade = percentage >= passPercentage ? "Pass" : "Fail";
-      
 
       console.log("Correct Answers:", correctAnswers);
       console.log("Total Questions:", totalQuestions);
@@ -792,6 +797,7 @@ export default function Mcq_Assessment() {
                 selectedAnswers={selectedAnswers}
                 onReviewMark={handleReviewMark}
                 reviewStatus={reviewStatus}
+                shuffleOptions={currentTest?.shuffleOptions}
               />
             </div>
 

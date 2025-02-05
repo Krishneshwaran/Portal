@@ -123,7 +123,7 @@ const McqLibrary = () => {
     setFilter('');
   };
 
-  // Submit Selected Questions
+  // Submit selected questions
   const handleSubmit = async () => {
     const token = localStorage.getItem("contestToken");
 
@@ -141,7 +141,6 @@ const McqLibrary = () => {
       );
 
       toast.success("Questions added successfully!");
-
       setQuestions([]);
       setSelectedQuestions([]);
       navigate('/mcq/QuestionsDashboard');
@@ -205,17 +204,16 @@ const McqLibrary = () => {
           </div>
 
           {/* Middle Panel for Questions List */}
-          <div className="col-span-2  w-auto">
+          <div className="col-span-2 w-auto">
             {/* Search Bar and Select/Deselect Button */}
             <div className="sticky top-4 bg-white p-2 shadow rounded-lg flex items-center justify-between">
               <button
                 onClick={toggleSelectAll}
-                className="py-2 px-4 rounded-lg text-sm text-[#00296B] bg-[#fdc500] bg-opacity-40 border border-[#fdc500] text-[#00975] hover:bg-opacity-80"
+                className="py-1 px-7 bg-white border-2 border-[#efeeee] shadow-blue-100 font-semibold text-[#000a75b2] rounded-xl hover:bg-white h-full flex items-center justify-center gap-2"
               >
                 {selectAll ? 'Deselect All' : 'Select All'}
               </button>
               <div className="flex items-center flex-grow ml-4">
-
                 <input
                   type="text"
                   placeholder="Search questions..."
@@ -242,8 +240,8 @@ const McqLibrary = () => {
 
           {/* Right Panel for Selected Questions */}
           <div className="col-span-1">
-            <div className="bg-white shadow p-4 rounded-lg ">
-              <h2 className="text-sm font-bold mb-4 text-[#00296B]  ">Selected Questions</h2>
+            <div className="bg-white shadow p-4 rounded-lg">
+              <h2 className="text-sm font-bold mb-4 text-[#00296B]">Selected Questions</h2>
               {selectedCurrentQuestions.length === 0 ? (
                 <p className="text-sm text-[#00296B]">No questions selected</p>
               ) : (
@@ -257,7 +255,7 @@ const McqLibrary = () => {
               )}
               {selectedQuestions.length > selectedQuestionsPerPage && (
                 <Pagination
-                className="mt-4"
+                  className="mt-4"
                   count={selectedTotalPages}
                   page={selectedCurrentPage}
                   onChange={handleSelectedPageChange}
@@ -277,7 +275,7 @@ const McqLibrary = () => {
               )}
               <button
                 onClick={handleSubmit}
-                className="mt-4 w-full  py-2 px-4 rounded-lg text-sm bg-[#fdc500] text-[#00296B] bg-opacity-40 border border-[#fdc500] text-[#00975] hover:bg-opacity-80"
+                className="mt-4 w-full py-2 px-4 rounded-lg text-sm bg-[#fdc500] text-[#00296B] bg-opacity-40 border border-[#fdc500] text-[#00975] hover:bg-opacity-80"
               >
                 Save Selected Questions
               </button>

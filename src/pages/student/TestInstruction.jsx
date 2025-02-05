@@ -93,6 +93,8 @@ const TestInstructions = () => {
           deviceRestriction: test.testConfiguration?.deviceRestriction || false,
           noiseDetection: test.testConfiguration?.noiseDetection || false,
           passPercentage: test.testConfiguration?.passPercentage || 0,
+          shuffleOptions: test.testConfiguration?.shuffleOptions || false,
+          shuffleQuestions: test.testConfiguration?.shuffleQuestions || false,
         };
       });
     } catch (err) {

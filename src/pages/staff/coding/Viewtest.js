@@ -29,6 +29,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import heroImg from "../../../assets/test_view_hero_img.png";
 import StudentTable from "../../../components/staff/StudentTable";
 import Loader from "../../../layout/Loader"; // Import the Loader component
+import { XCircle } from 'lucide-react';
 
 function formatDateTime(dateString) {
   const date = new Date(dateString);
@@ -1072,35 +1073,48 @@ const ViewTest = () => {
                 <TableBody>
                   {currentStudents.map((student) => (
                     <TableRow key={student.regno}>
-                      <TableCell sx={{ textAlign: "center" }}>
-                        {student.name}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: "center" }}>
-                        {student.regno}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: "center" }}>
-                        {student.dept}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: "center" }}>
-                        {student.collegename}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: "center" }}>
-                        {student.year}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: "center" }}>
-                        {student.status}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: "center" }}>
+                      <TableCell sx={{ position: "relative", textAlign: "center" }}>
+                      {isEditing && (
                         <button
-                          className="text-red-500 ml-2"
-                          onClick={() => handleViewClick(student)}
-                        >
-                          View
+                          onClick={() => handleDeleteStudent(student.regno)}
+                          style={{
+                            position: "absolute",
+                            left: "20px", // Adjust as needed
+                            top: "50%",
+                            transform: "translateY(-50%)"
+                          }}
+                                                                     >
+                          <XCircle className="text-red-500" />
                         </button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
+                      )}
+                      <span>{student.name}</span>
+                    </TableCell>
+                    <TableCell sx={{ textAlign: "center" }}>
+                      {student.regno}
+                    </TableCell>
+                    <TableCell sx={{ textAlign: "center" }}>
+                      {student.dept}
+                    </TableCell>
+                    <TableCell sx={{ textAlign: "center" }}>
+                      {student.collegename}
+                    </TableCell>
+                    <TableCell sx={{ textAlign: "center" }}>
+                      {student.year}
+                    </TableCell>
+                    <TableCell sx={{ textAlign: "center" }}>
+                      {student.status}
+                    </TableCell>
+                    <TableCell sx={{ textAlign: "center" }}>
+                      <button
+                        className="text-red-500 ml-2"
+                        onClick={() => handleViewClick(student)}
+                      >
+                        View
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
               </Table>
             </TableContainer>
 

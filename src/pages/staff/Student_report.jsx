@@ -170,7 +170,7 @@ const StudentReport = ({ contestId: propContestId, regno: propRegno, hideDetails
   
         {/* Student Details */}
         <div className="flex-1 text-center flex flex-col items-start">
-          <div className="flex-1 text-[#000975] text-2xl mb-3">
+          <div className="flex-1 text-[#000975] font-semibold text-2xl ml-1 mb-3 uppercase ">
             <h3>{studentName}</h3>
           </div>
           <div className="w-full h-full card bg-white p-5 rounded-2xl shadow-sm grid grid-cols-2 gap-4 md:gap-x-4 lg:gap-x-14">
@@ -216,7 +216,7 @@ const StudentReport = ({ contestId: propContestId, regno: propRegno, hideDetails
   
         {/* Badge Section */}
         <div className="flex items-center ml-5">
-          <div className="w-[200px] h-[220px] bg-white rounded-xl shadow-md flex flex-col justify-center items-center p-4">
+          <div className="w-[200px] h-[160px] mt-10 bg-white rounded-xl shadow-sm flex flex-col justify-center items-center p-4">
             {(() => {
               const totalMarks = (correct_answers / attended_questions.length) * 100;
 

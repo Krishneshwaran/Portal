@@ -21,6 +21,7 @@ export default function Question({
   selectedAnswers,
   onReviewMark,
   reviewStatus,
+  shuffleOptions,
 }) {
   const [selectedOption, setSelectedOption] = useState(
     selectedAnswers[currentIndex] || null
@@ -32,7 +33,11 @@ export default function Question({
 
   // Shuffle options when the question changes
   useEffect(() => {
-    setShuffledOptions(shuffleArray(question.options));
+    if(shuffleOptions) {
+      setShuffledOptions(shuffleArray(question.options));
+    } else {
+      setShuffledOptions(question.options);
+    }
   }, [question]);
 
   // Update selected option when selectedAnswers changes
