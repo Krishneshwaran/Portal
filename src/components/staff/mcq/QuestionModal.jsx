@@ -3,14 +3,14 @@ import LibraryModal from '../mcq/LibraryModal'; // Import the new component
 
 const QuestionModal = ({ onClose, handleCreateManually, handleBulkUpload, handleMcqlibrary, handleAi, handleQuestionLibrary, handleTestLibrary }) => {
   const [showLibraryOptions, setShowLibraryOptions] = useState(false);
-  const [showLibraryModal, setShowLibraryModal] = useState(false);
+ const [isLibraryModalOpen, setIsLibraryModalOpen] = useState(false);
 
   const handleLibraryClick = () => {
     setShowLibraryOptions(true);
   };
 
   const handleLibraryModalClose = () => {
-    setShowLibraryModal(false);
+    setIsLibraryModalOpen(false);
   };
 
   return (
@@ -69,7 +69,9 @@ const QuestionModal = ({ onClose, handleCreateManually, handleBulkUpload, handle
           Close
         </button>
       </div>
-      {showLibraryModal && <LibraryModal onClose={handleLibraryModalClose} />}
+      {showLibraryOptions && (
+        <LibraryModal onClose={handleLibraryModalClose} />
+      )}
     </div>
   );
 };

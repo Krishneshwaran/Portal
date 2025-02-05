@@ -36,6 +36,9 @@ const Dashboard = () => {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
+  const [clickCount, setClickCount] = useState(0);
+  const [showToggle, setShowToggle] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -155,25 +158,44 @@ const Dashboard = () => {
     }
   }, [location]);
 
+  const handleOverallStatsClick = () => {
+    setClickCount((prevCount) => {
+      const newCount = prevCount + 1;
+      if (newCount === 15) {
+        setShowToggle(true);
+      }
+      return newCount;
+    });
+  };
+
+  const toggleDarkMode = () => {
+    setIsDarkMode((prevMode) => !prevMode);
+  };
+
   return (
-    <div className="min-h-screen bg-[#f4f6ff86]">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-[#f4f6ff86]'}`}>
       {/* Toast Container */}
       <ToastContainer />
 
       {/* Header Section */}
-      <div className="bg-transparent mx-5 ml-16 mr-14 rounded-b-2xl p-6 mb-2">
-        <h2 className="text-3xl text-[#000975] mb-6 font-medium">Overall Stats</h2>
+      <div className={`bg-transparent mx-5 ml-16 mr-14 rounded-b-2xl p-6 mb-2 ${isDarkMode ? 'text-white' : ''}`}>
+        <h2
+          className={`text-3xl ${isDarkMode ? 'text-white' : 'text-[#000975]'} mb-6 font-medium cursor-pointer`}
+          onClick={handleOverallStatsClick}
+        >
+          Overall Stats
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 p-3">
-          <StatsCard icon={<FaChartBar />} title="Total Tests" value={stats.totalTests} />
-          <StatsCard icon={<FaUsers />} title="No of Students" value={stats.students} />
-          <StatsCard icon={<FaClipboardList />} title="No of Live Test" value={stats.liveTests} />
-          <StatsCard icon={<FaCheckCircle />} title="No of Completed Test" value={stats.completedTests} />
-          <StatsCard icon={<FaCheckCircle />} title="No of Upcoming Test" value={stats.upcomingTest} />
+          <StatsCard icon={<FaChartBar />} title="Total Tests" value={stats.totalTests} isDarkMode={isDarkMode} />
+          <StatsCard icon={<FaUsers />} title="No of Students" value={stats.students} isDarkMode={isDarkMode} />
+          <StatsCard icon={<FaClipboardList />} title="No of Live Test" value={stats.liveTests} isDarkMode={isDarkMode} />
+          <StatsCard icon={<FaCheckCircle />} title="No of Completed Test" value={stats.completedTests} isDarkMode={isDarkMode} />
+          <StatsCard icon={<FaCheckCircle />} title="No of Upcoming Test" value={stats.upcomingTest} isDarkMode={isDarkMode} />
         </div>
       </div>
 
       {/* Main Content Section */}
-      <div className="max-w-8xl mx-auto px-4 py-8">
+      <div className={`max-w-8xl mx-auto px-4 py-8 ${isDarkMode ? 'text-white' : ''}`}>
         {/* Tabs, Search, and Create Test Button */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex text-sm gap-4 ml-20">
@@ -182,7 +204,7 @@ const Dashboard = () => {
                 key={status}
                 className={`px-4 rounded-[10000px] py-1 ${
                   activeFilter === status ? 'bg-[#000975] text-white font-bold' : 'text-gray-600 hover:text-gray-900'
-                }`}
+                } ${isDarkMode ? 'text-white' : ''}`}
                 onClick={() => filterTests(status)}
               >
                 {status}
@@ -196,7 +218,7 @@ const Dashboard = () => {
               placeholder="Search"
               value={searchQuery}
               onChange={handleSearchChange}
-              className="px-10 py-2 rounded-full focus:outline-none focus:ring-1 focus:ring-blue-400 w-full ring-1 ring-blue-400"
+              className={`px-10 py-2 rounded-full focus:outline-none focus:ring-1 focus:ring-blue-400 w-full ring-1 ring-blue-400 ${isDarkMode ? 'bg-gray-800 text-white' : ''}`}
             />
           </div>
         </div>
@@ -208,7 +230,7 @@ const Dashboard = () => {
           <Typography color="error">{error}</Typography>
         ) : (
           <>
-            <div className="grid bg-white rounded-2xl grid-cols-1 md:grid-cols-3 p-7 ml-14 mr-12 gap-6">
+            <div className={`grid  rounded-2xl grid-cols-1 md:grid-cols-3 p-7 ml-14 mr-12 gap-6 ${isDarkMode ? 'bg-black' : 'bg-white'}`}>
               {activeFilter === 'All' && searchQuery === '' && <CreateTestCard />}
               {paginatedTests.length > 0 ? (
                 paginatedTests.map((test) => (
@@ -232,6 +254,7 @@ const Dashboard = () => {
                       test.overall_status === 'closed' ? 'Completed' :
                       (test.status || 'Upcoming')
                     }
+                    isDarkMode={isDarkMode}
                   />
                 ))
               ) : (
@@ -280,6 +303,8 @@ const Dashboard = () => {
           sx: {
             borderRadius: '24px', // Smooth curved corners for the modal
             padding: '16px',
+            backgroundColor: isDarkMode ? 'gray-800' : 'white',
+            color: isDarkMode ? 'white' : 'black',
           },
         }}
       >
@@ -317,6 +342,8 @@ const Dashboard = () => {
                     transform: 'scale(1.05)', // Slight zoom effect
                     boxShadow: '0px 8px 20px rgba(0, 0, 0, 0.15)', // Add shadow on hover
                   },
+                  backgroundColor: isDarkMode ? 'gray-800' : 'white',
+                  color: isDarkMode ? 'white' : 'black',
                 }}
                 onClick={() => {
                   navigate('/mcq/details');
@@ -347,6 +374,8 @@ const Dashboard = () => {
                     transform: 'scale(1.05)', // Slight zoom effect
                     boxShadow: '0px 8px 20px rgba(0, 0, 0, 0.15)', // Add shadow on hover
                   },
+                  backgroundColor: isDarkMode ? 'gray-800' : 'white',
+                  color: isDarkMode ? 'white' : 'black',
                 }}
                 onClick={() => {
                   navigate('/coding/details');
@@ -374,6 +403,16 @@ const Dashboard = () => {
           </Typography>
         </DialogActions>
       </Dialog>
+
+      {/* Toggle Button */}
+      {showToggle && (
+        <button
+          className="fixed bottom-4 right-4 bg-[#000a7500] text-transparent p-2 rounded-full"
+          onClick={toggleDarkMode}
+        >
+          Toggle
+        </button>
+      )}
     </div>
   );
 };

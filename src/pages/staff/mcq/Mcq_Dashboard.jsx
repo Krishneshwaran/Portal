@@ -47,6 +47,7 @@ const Mcq_Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sharingLink, setSharingLink] = useState("");
   const [shareModalOpen, setShareModalOpen] = useState(false);
+   const [isLibraryModalOpen, setIsLibraryModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [openFilterDialog, setOpenFilterDialog] = useState(false);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
@@ -264,6 +265,14 @@ const filterDuplicateQuestions = (questions) => {
     } finally {
       setPublishDialogOpen(false);
     }
+  };
+
+  const handleLibraryButtonClick = () => {
+    setIsLibraryModalOpen(true);
+  };
+
+  const handleLibraryModalClose = () => {
+    setIsLibraryModalOpen(false);
   };
 
   useEffect(() => {
