@@ -21,6 +21,7 @@ const StaffLogin = () => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+  console.log(process.env.REACT_APP_API_URL);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
