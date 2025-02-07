@@ -4,17 +4,8 @@ import axios from 'axios';
 import image from '../../assets/test_view_hero_img.png';
 import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa'; // Importing new icons
 import Navbar from "./Navbar";
-import { useTestContext } from './TestContext';
 
 const TestInstructions = () => {
-  const [testDetails, setTestDetails] = useState(() => {
-    const storedDetails = localStorage.getItem("testDetails");
-    return storedDetails ? JSON.parse(storedDetails) : {}; // Restore from localStorage
-  });
-  const [currentTest, setCurrentTest] = useState(() => {
-    const storedCurrentTest = localStorage.getItem("currentTest");
-    return storedCurrentTest ? JSON.parse(storedCurrentTest) : null; // Restore from localStorage
-  });
   const navigate = useNavigate();
   const location = useLocation();
   const { contestId } = useParams();
@@ -66,19 +57,17 @@ const TestInstructions = () => {
         withCredentials: true,
       });
 
-      // const formattedTests = response.data.map((test) => {
-      //   const { hours = 0, minutes = 0 } = test.testConfiguration?.duration || {};
-      //   const duration = (parseInt(hours) * 3600) + (parseInt(minutes) * 60);
-      //   const fullScreenMode = test.testConfiguration?.fullScreenMode || false;
-      //   const faceDetection = test.testConfiguration?.faceDetection || false;
-      //   const passPercentage = test.testConfiguration?.passPercentage || 0;
-
-      //   // localStorage.setItem(`testDuration_${test._id}`, duration);
-      //   // localStorage.setItem(`fullScreenMode_${test._id}`, fullScreenMode);
-      //   // localStorage.setItem(`faceDetection_${test._id}`, faceDetection);
-
-      return response.data.map((test) => {
+      const formattedTests = response.data.map((test) => {
         const { hours = 0, minutes = 0 } = test.testConfiguration?.duration || {};
+        const duration = (parseInt(hours) * 3600) + (parseInt(minutes) * 60);
+        const fullScreenMode = test.testConfiguration?.fullScreenMode || false;
+        const faceDetection = test.testConfiguration?.faceDetection || false;
+        const passPercentage = test.testConfiguration?.passPercentage || 0;
+
+        localStorage.setItem(`testDuration_${test._id}`, duration);
+        localStorage.setItem(`fullScreenMode_${test._id}`, fullScreenMode);
+        localStorage.setItem(`faceDetection_${test._id}`, faceDetection);
+
         return {
           testId: test._id,
           name: test.assessmentOverview?.name || "Unknown Test",
@@ -87,16 +76,22 @@ const TestInstructions = () => {
           endtime: test.assessmentOverview?.registrationEnd || "No Time",
           questions: parseInt(test.testConfiguration?.questions, 10) || 0,
           duration: `${hours} hours ${minutes} minutes`,
+          passPercentage: passPercentage,
           assessment_type: "mcq",
-          fullScreenMode: test.testConfiguration?.fullScreenMode || false,
-          faceDetection: test.testConfiguration?.faceDetection || false,
+          status: test.status,
+          fullScreenMode,
+          faceDetection,
           deviceRestriction: test.testConfiguration?.deviceRestriction || false,
           noiseDetection: test.testConfiguration?.noiseDetection || false,
-          passPercentage: test.testConfiguration?.passPercentage || 0,
-          shuffleOptions: test.testConfiguration?.shuffleOptions || false,
+          guidelines: test.assessmentOverview?.guidelines || "No guidelines available.",
+          resultVisibility: test.testConfiguration?.resultVisibility || "Host Control",
           shuffleQuestions: test.testConfiguration?.shuffleQuestions || false,
+          shuffleOptions: test.testConfiguration?.shuffleOptions || false,
+          sectionDetails: test.assessmentOverview?.sectionDetails || "No",
         };
       });
+
+      return formattedTests;
     } catch (err) {
       if (err.response?.status === 401) {
         // Redirect to login if unauthorized
@@ -109,98 +104,43 @@ const TestInstructions = () => {
   };
 
   useEffect(() => {
-    if (testDetails) {
-      localStorage.setItem("testDetails", JSON.stringify(testDetails));
-    }
-    if (currentTest) {
-      localStorage.setItem("currentTest", JSON.stringify(currentTest));
-    }
-  }, [testDetails, currentTest]); 
-
-  useEffect(() => {
     const studentId = localStorage.getItem("studentId");
-    const storedContestState = localStorage.getItem("contestState");
-    const storedTestDetails = localStorage.getItem("testDetails");
-  
-    const fetchAndSetTestDetails = async () => {
-      if (!studentId || !contestId) {
-        console.error("Student ID or Contest ID is missing!");
-        return;
-      }
-  
-      try {
-        // Fetch test details if not present or empty
-        const response = await fetchMcqTests(studentId);
-        if (response && response.length > 0) {
-          const parsedDetails = response.reduce((acc, test) => {
-            acc[test.testId] = test; // Use testId as the key
-            return acc;
-          }, {});
-  
-          setTestDetails(parsedDetails);
-          localStorage.setItem("testDetails", JSON.stringify(parsedDetails)); // Save to localStorage
-  
-          if (parsedDetails[contestId]) {
-            setCurrentTest(parsedDetails[contestId]); // Set current test
-          } else {
-            console.error("Contest ID not found in test details!");
-          }
-        } else {
-          console.error("No test details found for the student!");
-        }
-      } catch (error) {
-        console.error("Error fetching test details:", error);
-      }
-    };
-  
-    // Restore testDetails and currentTest from localStorage if available
-    if (storedTestDetails && Object.keys(JSON.parse(storedTestDetails)).length > 0) {
-      const parsedTestDetails = JSON.parse(storedTestDetails);
-      setTestDetails(parsedTestDetails);
-  
-      if (!currentTest && storedContestState) {
-        const { contest_id } = JSON.parse(storedContestState);
-        if (parsedTestDetails[contest_id]) {
-          setCurrentTest(parsedTestDetails[contest_id]); // Set current test
-        } else {
-          console.error("Contest ID not found in stored test details!");
-        }
-      }
-    } else {
-      // Fetch test details if not available
-      fetchAndSetTestDetails();
-    }
-  }, [contestId, currentTest]);  
+    if (studentId && contestId) {
+      localStorage.setItem("contestState", JSON.stringify({ contest_id: contestId, student_id: studentId }));
 
-  if (!currentTest) {
-    return <div className="flex items-center justify-center min-h-screen">
-      <p className="text-xl text-gray-700">Fetching test details, please wait...</p>
-    </div>; // Provide a better loading UI
-  }
-  
+      const fetchTests = async () => {
+        const tests = await fetchMcqTests(studentId);
+        setMcqTests(tests);
+      };
+
+      fetchTests();
+    }
+  }, [contestId]);
+
   const handleStartTest = async () => {
     const studentId = localStorage.getItem("studentId");
     if (!studentId) {
       alert("Student ID not found. Please log in again.");
       return;
     }
-  
+
     setLoading(true);
     try {
       if (assessment_type === "coding") {
         await start_codingTest(contestId, studentId);
         navigate(`/coding/${contestId}`, {
-          state: { contest_id: contestId, student_id: studentId },
+          state: { contest_id: contestId, student_id: studentId }
         });
       } else if (assessment_type === "mcq") {
+        const currentTest = mcqTests.find(test => test.testId === contestId);
         if (currentTest.sectionDetails === "Yes") {
           navigate(`/section-based-mcq/${contestId}`, {
-            state: { formData: { assessmentOverview: { sectionDetails: "Yes" } } },
+            state: { formData: { assessmentOverview: { sectionDetails: "Yes" } } }
           });
         } else {
           await start_mcqTest(contestId, studentId);
           navigate(`/mcq/${contestId}`, {
-            state: { contest_id: contestId, student_id: studentId },
+            state: { contest_id: contestId, student_id: studentId }
           });
         }
       }
@@ -209,13 +149,15 @@ const TestInstructions = () => {
     } finally {
       setLoading(false);
     }
-  };  
+  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
     return date.toLocaleDateString(undefined, options);
   };
+
+  const currentTest = mcqTests.find(test => test.testId === contestId);
 
   return (
     <div className="min-h-screen bg-gray-50">

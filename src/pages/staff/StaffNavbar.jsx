@@ -122,15 +122,15 @@ const StaffNavbar = () => {
         <div className="flex items-center ml-9 gap-8">
           <span
           onClick={() => handleLinkClick("/staffdashboard")}>
-            <img src={logo} alt="Logo" className="h-16" />
+            <img src={logo} alt="Logo" className="h-14 mb-4" />
           </span>
         </div>
         <div className="flex ml-32 items-center gap-8">
-          <nav className="flex gap-6 text-black mt-2">
+          <nav className="flex gap-6 text-black mb-2">
             <Tooltip title="Go to Home Dashboard">
               <span // Use <span> instead of <Link> to prevent direct navigation
                 className={`font-medium font-sans transition-all duration-300 relative cursor-pointer
-      ${activeLink === "/staffdashboard" ? "text-yellow-500 font-bold" : "text-[#000975]"}`}
+      ${activeLink === "/staffdashboard" ? "text-yellow-500 font-bold" : "text-[#111933]"}`}
                 onClick={() => handleLinkClick("/staffdashboard")}
               >
                 HOME
@@ -142,7 +142,7 @@ const StaffNavbar = () => {
               <span
                 to="/staffstudentprofile"
                 className={`font-medium font-sans transition-all duration-300 relative cursor-pointer
-                  ${activeLink === "/staffstudentprofile" ? "text-yellow-500 font-bold" : "text-[#000975]"}`}
+                  ${activeLink === "/staffstudentprofile" ? "text-yellow-500 font-bold" : "text-[#111933]"}`}
                 onClick={() => handleLinkClick("/staffstudentprofile")}
               >
                 STUDENT
@@ -155,7 +155,7 @@ const StaffNavbar = () => {
               <span
                 to="/library"
                 className={`font-medium font-sans transition-all duration-300 relative cursor-pointer
-      ${activeLink === "/library" ? "text-yellow-500 font-bold" : "text-[#000975]"}`}
+      ${activeLink === "/library" ? "text-yellow-500 font-bold" : "text-[#111933]"}`}
                 onClick={() => handleLinkClick("/library")}
               >
                 LIBRARY
@@ -174,7 +174,7 @@ const StaffNavbar = () => {
           >
 
             <button
-              className="py-1 px-7 bg-white border-2 border-[#efeeee] shadow-md shadow-blue-100 font-semibold text-[#000a75b2] rounded-full hover:bg-white w-full h-full flex items-center justify-center gap-2"
+              className="py-1 px-7 mb-2 bg-white border-2 border-[#efeeee] shadow-md shadow-blue-100 font-semibold text-[#111933] rounded-full hover:bg-white w-full h-full flex items-center justify-center gap-2"
               onClick={handleModalOpen}
             >
               Create Test <span><FaPlusCircle /></span>
@@ -183,9 +183,9 @@ const StaffNavbar = () => {
           </motion.div>
 
           <div className="flex items-center mr-2 gap-1"> {/* Reduced gap */}
-            <span className="mr-0 ml-2 text-xl">{username || "User"}</span> {/* Reduced margin */}
+            <span className="mb-2 text-xl text-[#111933]">{username || "User"}</span> {/* Reduced margin */}
             <button onClick={handleMenuOpen} className="p-1"> {/* Reduced padding */}
-              <img src={avatarImage} alt="Avatar" className="mt-0 rounded-full h-12 w-12" /> {/* Adjusted size */}
+              <img src={avatarImage} alt="Avatar" className="mb-2 rounded-full h-12 w-12" /> {/* Adjusted size */}
             </button>
           </div>
         </div>

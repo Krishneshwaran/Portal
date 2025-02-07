@@ -9,8 +9,8 @@ import McqLibrary from "../../../components/staff/McqSection/McqLibraryModal";
 import PublishDialog from "../../../components/staff/McqSection/PublishDialog";
 import ShareModal from "../../../components/staff/McqSection/ShareModal";
 import SelectTestQuestion from "../../../components/staff/McqSection/SelectTestQuestion";
-import Modal from "../../../components/staff/McqSection/Modal"; // Import the Modal component
-import ManualUpload from "../../../components/staff/McqSection/ManualUpload"; // Import the ManualUpload component
+import Modal from "../../../components/staff/McqSection/Modal";
+import ManualUpload from "../../../components/staff/McqSection/ManualUpload";
 
 const Mcq_sectionDetails = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,14 +44,15 @@ const Mcq_sectionDetails = () => {
   const [activeSectionIndex, setActiveSectionIndex] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [selectedQuestionsLocal, setSelectedQuestionsLocal] = useState([]);
-  const [currentSectionQuestions, setCurrentSectionQuestions] = useState([]); // Define the state
+  const [currentSectionQuestions, setCurrentSectionQuestions] = useState([]);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
     const storedSections = JSON.parse(sessionStorage.getItem("sections")) || [];
     const sectionsWithIds = storedSections.map(section => ({
       ...section,
-      id: section.id || Date.now()
+      id: section.id || Date.now(),
+      sectionDuration: parseInt(section.sectionDuration, 10) || 10 // Ensure sectionDuration is an integer
     }));
     setSections(sectionsWithIds);
 
@@ -90,7 +91,17 @@ const Mcq_sectionDetails = () => {
   const handleInputChange = (e, sectionIndex) => {
     const { name, value, type, checked } = e.target;
     const updatedSections = sections.map((section, index) =>
-      index === sectionIndex ? { ...section, [name]: type === "checkbox" ? checked : value } : section
+      index === sectionIndex
+        ? {
+            ...section,
+            [name]:
+              name === "sectionDuration"
+                ? parseInt(value, 10) // Convert to integer
+                : type === "checkbox"
+                ? checked
+                : value,
+          }
+        : section
     );
     setSections(updatedSections);
     sessionStorage.setItem("sections", JSON.stringify(updatedSections));
@@ -100,7 +111,7 @@ const Mcq_sectionDetails = () => {
     setIsModalOpen(true);
     setActiveSectionIndex(sectionIndex);
     setSelectedQuestionsLocal([]);
-    setCurrentSectionQuestions([]); // Reset current section questions
+    setCurrentSectionQuestions([]);
     setQuestions([]);
     setShowImage(true);
     setCurrentPage(1);
@@ -134,7 +145,7 @@ const Mcq_sectionDetails = () => {
       const formattedQuestions = section.selectedQuestions.map(q => ({
         question: q.question,
         options: q.options,
-        correctAnswer: q.correctAnswer || q.answer
+        correctAnswer: q.correctAnswer || q.answer,
       }));
 
       const response = await axios.post(
@@ -142,18 +153,18 @@ const Mcq_sectionDetails = () => {
         {
           sectionName: section.sectionName,
           numQuestions: section.numQuestions,
-          sectionDuration: section.sectionDuration,
+          sectionDuration: parseInt(section.sectionDuration, 10), // Ensure it's an integer
           markAllotment: section.markAllotment,
           passPercentage: section.passPercentage,
           timeRestriction: section.timeRestriction,
-          questions: formattedQuestions
+          questions: formattedQuestions,
         },
         {
           withCredentials: true,
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem("contestToken")}`
-          }
+            'Authorization': `Bearer ${localStorage.getItem("contestToken")}`,
+          },
         }
       );
 

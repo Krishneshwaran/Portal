@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { FaChartBar, FaUsers, FaClipboardList, FaCheckCircle, FaSearch } from 'react-icons/fa';
 import { Dialog, DialogTitle, DialogContent, IconButton, DialogActions, Typography, Grid, Box, Pagination } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import StatsCard from '../../components/staff/StatsCard';
 import TestCard from '../../components/staff/TestCard';
 import CreateTestCard from '../../components/staff/CreaTestCard';
 import Loader from '../../layout/Loader';
@@ -10,11 +9,16 @@ import mcq from '../../assets/mcq.png';
 import code from '../../assets/code.png';
 import api from '../../axiosConfig';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { format, utcToZonedTime } from 'date-fns-tz';
+import { format } from 'date-fns-tz';
 import { formatInTimeZone } from 'date-fns-tz';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import notest from '../../assets/testno.png';
+import dashboard1 from '../../assets/dashboard1.svg';
+import dashboard2 from '../../assets/dashboard2.svg';
+import dashboard3 from '../../assets/dashboard3.svg';
+import dashboard4 from '../../assets/dashboard4.svg';
+import graph from '../../assets/graph.svg';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -27,7 +31,7 @@ const Dashboard = () => {
     completedTests: 0,
     upcomingTest: 0,
   });
-
+  
   const [tests, setTests] = useState([]);
   const [mcqTests, setMcqTests] = useState([]);
   const [activeFilter, setActiveFilter] = useState('All');
@@ -177,22 +181,47 @@ const Dashboard = () => {
       {/* Toast Container */}
       <ToastContainer />
 
-      {/* Header Section */}
-      <div className={`bg-transparent mx-5 ml-16 mr-14 rounded-b-2xl p-6 mb-2 ${isDarkMode ? 'text-white' : ''}`}>
-        <h2
-          className={`text-3xl ${isDarkMode ? 'text-white' : 'text-[#000975]'} mb-6 font-medium cursor-pointer`}
-          onClick={handleOverallStatsClick}
-        >
-          Overall Stats
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 p-3">
-          <StatsCard icon={<FaChartBar />} title="Total Tests" value={stats.totalTests} isDarkMode={isDarkMode} />
-          <StatsCard icon={<FaUsers />} title="No of Students" value={stats.students} isDarkMode={isDarkMode} />
-          <StatsCard icon={<FaClipboardList />} title="No of Live Test" value={stats.liveTests} isDarkMode={isDarkMode} />
-          <StatsCard icon={<FaCheckCircle />} title="No of Completed Test" value={stats.completedTests} isDarkMode={isDarkMode} />
-          <StatsCard icon={<FaCheckCircle />} title="No of Upcoming Test" value={stats.upcomingTest} isDarkMode={isDarkMode} />
-        </div>
+      <div className="bg-transparent mx-5 ml-16 mr-14 rounded-b-2xl p-6 mb-2">
+      <h2 className="text-3xl text-[#111933] mb-6 font-medium cursor-text">
+        Overall Stats
+      </h2>
+
+      <div className="grid grid-cols-1 mb-11 mt-11 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        {[
+          { title: "Test Created", value: stats.totalTests, icon: dashboard1 },
+          { title: "No of Students", value: stats.students, icon: dashboard2 },
+          { title: "Live Test", value: stats.liveTests, icon: dashboard3 },
+          { title: "Completed Test", value: stats.completedTests, icon: dashboard4 },
+          { title: "Upcoming Test", value: stats.upcomingTest, icon: dashboard1 }
+        ].map(({ title, value, icon }, index) => (
+          <div
+            key={index}
+            className="relative bg-white rounded-lg shadow-lg p-4 max-w-[250px] w-full hover:shadow-xl transition duration-300"
+          >
+            {/* Top-right icon badge */}
+            <div className="absolute -top-5 -right-4 flex items-center justify-center w-14 h-14 bg-white rounded-full shadow-md">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden">
+                <img src={icon} alt={title} />
+              </div>
+            </div>
+
+            {/* Main content with vertical layout */}
+            <div className="flex flex-col items-start justify-between h-full">
+              {/* Stats and title */}
+              <div>
+                <p className="text-2xl font-medium text-[#111933]">{value}</p>
+                <p className="text-[#111933] text-md font-medium mt-1 whitespace-nowrap">{title}</p>
+              </div>
+
+              {/* Graph at the bottom */}
+              <div className="h-16 -mt-8">
+                <img src={graph} alt="Graph" className="w-full h-36 ml-16" />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
+    </div>
 
       {/* Main Content Section */}
       <div className={`max-w-8xl mx-auto px-4 py-8 ${isDarkMode ? 'text-white' : ''}`}>
@@ -203,7 +232,7 @@ const Dashboard = () => {
               <button
                 key={status}
                 className={`px-4 rounded-[10000px] py-1 ${
-                  activeFilter === status ? 'bg-[#000975] text-white font-bold' : 'text-gray-600 hover:text-gray-900'
+                  activeFilter === status ? 'bg-[#111933] text-white font-bold' : 'text-gray-600 hover:text-gray-900'
                 } ${isDarkMode ? 'text-white' : ''}`}
                 onClick={() => filterTests(status)}
               >
@@ -218,7 +247,7 @@ const Dashboard = () => {
               placeholder="Search"
               value={searchQuery}
               onChange={handleSearchChange}
-              className={`px-10 py-2 rounded-full focus:outline-none focus:ring-1 focus:ring-blue-400 w-full ring-1 ring-blue-400 ${isDarkMode ? 'bg-gray-800 text-white' : ''}`}
+              className={`px-10 py-2 rounded-full focus:outline-none focus:ring-1 focus:ring-[#111933] w-full ring-1 ring-[#111933] ${isDarkMode ? 'bg-gray-800 text-white' : ''}`}
             />
           </div>
         </div>

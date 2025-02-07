@@ -129,7 +129,7 @@ const AIGenerate = () => {
       navigate("/mcq/airesponse", { state: { questions } });
     } catch (error) {
       console.error("Error generating questions:", error);
-      setErrorMessage("Failed to generate questions. Please try again later.");
+      setErrorMessage(error.response.data.error || 'Failed to generate questions. Please try again later.');
       setSuccessMessage(null);
     } finally {
       setLoading(false);
@@ -147,13 +147,33 @@ const AIGenerate = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-8">
-      <div className="max-w-4xl mx-auto bg-white p-8 shadow-lg rounded-lg">
-        <h1 className="text-2xl font-bold mb-4">Question Generator AI</h1>
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="h-14 px-14 pb-10">
+          <div className="flex items-center gap-2 text-[#111933]">
+            <span className="opacity-60">Home</span>
+            <span>{">"}</span>
+            <span className="opacity-60">Assessment Overview</span>
+            <span>{">"}</span>
+            <span className="opacity-60">Test Configuration</span>
+            <span>{">"}</span>
+            <span onClick={() => window.history.back()} className="cursor-pointer opacity-60 hover:underline">
+              Add Questions
+            </span>
+            <span>{">"}</span>
+            <span >
+              AI Generator
+            </span>
+
+          </div>
+        </div>
+      <div className="max-w-4xl mx-auto bg-white p-8 shadow-lg rounded-2xl">
+        <h1 className="text-2xl font-bold mb-2">Question Generator AI</h1>
+        <p className="text-sm">Enter the below details and click generate to generate the questions.</p>
+        <hr className="mb-10 mt-5 border-1 border-gray-500" />
+        <form onSubmit={handleSubmit} className="space-y-6 md:mx-[15%] mb-10">
           {/* Topic */}
-          <div>
-            <label htmlFor="topic" className="block text-sm font-medium text-gray-700">
-              Topic
+          <div className="flex items-center justify-between">
+            <label htmlFor="topic" className="block text-md font-semibold text-gray-700">
+              Topic*
             </label>
             <input
               type="text"
@@ -162,14 +182,15 @@ const AIGenerate = () => {
               value={formData.topic}
               onChange={handleChange}
               required
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Enter the topic"
+              className="mt-1 block w-1/2 text-sm px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
 
           {/* Subtopic */}
-          <div>
-            <label htmlFor="subtopic" className="block text-sm font-medium text-gray-700">
-              Subtopic
+          <div className="flex items-center justify-between">
+            <label htmlFor="subtopic" className="block text-md font-semibold text-gray-700">
+              Sub-Topic*
             </label>
             <input
               type="text"
@@ -178,16 +199,17 @@ const AIGenerate = () => {
               value={formData.subtopic}
               onChange={handleChange}
               required
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Enter the sub-topic"
+              className="mt-1 block w-1/2 text-sm px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
 
           {/* Level */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Bloom's Taxonomy Levels
+          <div className="">
+            <label className="block text-md font-semibold text-gray-700 mb-5">
+              Bloom's Taxonomy Levels*
             </label>
-            <div className="mt-2 space-y-2">
+            <div className="mt-2 ml-5 space-y-2">
               {bloomLevels.map((level) => (
                 <div key={level.value} className="w-[30vw] h-8 flex justify-between items-center">
                   <div className="flex"><input
@@ -219,7 +241,7 @@ const AIGenerate = () => {
                       onChange={(e) =>
                         handleLevelPercentageChange(level.value, e.target.value)
                       }
-                      className="ml-4 w-20 px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                      className="ml-4 w-1/2 text-sm px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
                     />
                   )}
                 </div>
@@ -227,27 +249,28 @@ const AIGenerate = () => {
             </div>
           </div>
 
+
           {/* Question Type */}
-          <div>
-            <label htmlFor="question_type" className="block text-sm font-medium text-gray-700">
-              Type of Questions
+          <div className="flex items-center justify-between">
+            <label htmlFor="question_type" className="block text-md font-semibold text-gray-700">
+              Type of Questions*
             </label>
             <select
               id="question_type"
               name="question_type"
               value={formData.question_type}
               onChange={handleChange}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-              disabled // Disable the dropdown to enforce "Multiple Choice" as the only option
+              className="mt-1 block w-1/2 text-sm px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              disabled
             >
               <option value="Multiple Choice">Multiple Choice</option>
             </select>
           </div>
 
           {/* Number of Questions */}
-          <div>
-            <label htmlFor="num_questions" className="block text-sm font-medium text-gray-700">
-              Number of Questions
+          <div className="flex items-center justify-between">
+            <label htmlFor="num_questions" className="block text-md font-semibold text-gray-700">
+              Number of Questions*
             </label>
             <input
               type="number"
@@ -256,18 +279,20 @@ const AIGenerate = () => {
               value={formData.num_questions}
               onChange={handleChange}
               required
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Enter the no. of questions"
+              className="mt-1 block w-1/2 text-sm px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
 
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700"
-            disabled={loading} // Disable button while loading
+            className="w-full border-2 border-[#111933] text-[#111933] py-2 px-4 rounded-lg hover:bg-[#111933] hover:text-white hover:border-[#111933]"
+            disabled={loading}
           >
             {loading ? "Generating..." : "Generate Questions"}
           </button>
+
         </form>
 
         {/* Loading Spinner */}

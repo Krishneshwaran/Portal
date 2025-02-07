@@ -1,24 +1,26 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import {
-  Button,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  Button,
   Pagination,
 } from "@mui/material";
 import QuestionModal from "../../../components/staff/mcq/QuestionModal";
 import { jwtDecode } from "jwt-decode";
 import ShareModal from "../../../components/staff/mcq/ShareModal";
-import clockIcon from "../../../assets/icons/clock-icon.svg";
-import markIcon from "../../../assets/icons/mark-icon.svg";
-import questionIcon from "../../../assets/icons/question-icon.svg";
+import { Trash2 } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import StudentTable from "../../../components/staff/StudentTable";
-import { FaTrash } from "react-icons/fa";
+import clockIcon from "../../../assets/icons/clock-icon.svg";
+import markIcon from "../../../assets/icons/mark-icon-new.svg";
+import markIconmarks from "../../../assets/icons/mark-icon.svg";
+import questionIcon from "../../../assets/icons/question-icon.svg";
+import { useCallback } from "react";
 
 const Mcq_Dashboard = () => {
   const navigate = useNavigate();
@@ -35,22 +37,25 @@ const Mcq_Dashboard = () => {
     maximumMark: 0,
   });
   const [questions, setQuestions] = useState([]);
-  const [initialQuestions, setInitialQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [students, setStudents] = useState([]);
   const [selectedStudents, setSelectedStudents] = useState([]);
-  const [filters, setFilters] = useState({ collegename: [], dept: [], year: "" });
+  const [filters, setFilters] = useState({
+    collegename: [],
+    dept: [],
+    year: "",
+  });
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sharingLink, setSharingLink] = useState("");
   const [shareModalOpen, setShareModalOpen] = useState(false);
-   const [isLibraryModalOpen, setIsLibraryModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [openFilterDialog, setOpenFilterDialog] = useState(false);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+  const API_BASE_URL =
+    process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
   const itemsPerPage = 5;
   const initialFetch = useRef(true);
 
@@ -65,109 +70,64 @@ const Mcq_Dashboard = () => {
     };
 
     fetchStudents();
-  }, []);
-
+  }, [API_BASE_URL]); // Added API_BASE_URL to dependencies
 
   const duplicateToastShown = useRef(false); // ✅ Prevent duplicate messages
 
-  const fetchQuestions = async () => {
-    try {
-      const token = localStorage.getItem("contestToken");
-      if (!token) {
-        showToast("Unauthorized access. Please log in again.", "error");
-        return;
-      }
-  
-      const response = await axios.get(`${API_BASE_URL}/api/mcq/questions`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-  
-      const fetchedQuestions = response.data.questions.map((question) => ({
-        ...question,
-        correctAnswer: question.correctAnswer || question.answer || "No Answer Provided",
-      }));
-  
-      const duplicateCount = response.data.duplicateCount || 0;
-  
-      // ✅ Show warning only once per session
-      if (duplicateCount > 0 && !duplicateToastShown.current) {
-        showToast(`${duplicateCount} duplicate questions removed.`, "warning");
-        duplicateToastShown.current = true;
-      }
-  
-      if (duplicateCount === 0) {
-        duplicateToastShown.current = false; // Reset for future warnings
-      }
-  
-      setQuestions(fetchedQuestions);
-  
-      setDashboardStats((prev) => ({
-        ...prev,
-        totalQuestions: `${fetchedQuestions.length}/${localStorage.getItem("totalquestions") || 0}`,
-      }));
-  
-    } catch (error) {
-      console.error("Error fetching questions:", error.response?.data || error.message);
-      showToast("Failed to load questions. Please try again.", "error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  
-  
-  
+  // const fetchQuestions = async () => {
+  //   try {
+  //     const token = localStorage.getItem("contestToken");
+  //     if (!token) {
+  //       showToast("Unauthorized access. Please log in again.", "error");
+  //       return;
+  //     }
 
-const filterDuplicateQuestions = (questions) => {
-  const seenQuestions = new Set();
-  const filteredQuestions = [];
+  //     const response = await axios.get(`${API_BASE_URL}/api/mcq/questions`, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
 
-  questions.forEach((question) => {
-      const questionKey = `${question.question}-${question.options.join('-')}`;
-      if (!seenQuestions.has(questionKey)) {
-          seenQuestions.add(questionKey);
-          filteredQuestions.push(question);
-      }
-  });
+  //     const fetchedQuestions = response.data.questions.map((question) => ({
+  //       ...question,
+  //       correctAnswer:
+  //         question.correctAnswer || question.answer || "No Answer Provided",
+  //     }));
 
-  return { filteredQuestions };
-};
+  //     const duplicateCount = response.data.duplicateCount || 0;
 
+  //     // ✅ Show warning only once per session
+  //     if (duplicateCount > 0 && !duplicateToastShown.current) {
+  //       showToast(`${duplicateCount} duplicate questions removed.`, "warning");
+  //       duplicateToastShown.current = true;
+  //     }
 
+  //     if (duplicateCount === 0) {
+  //       duplicateToastShown.current = false; // Reset for future warnings
+  //     }
 
-  const handleFinish = async () => {
-    try {
-      const token = localStorage.getItem("contestToken");
-      if (!token) {
-        toast.error("Unauthorized access. Please log in again.");
-        return;
-      }
+  //     setQuestions(fetchedQuestions);
 
-      const response = await axios.post(
-        `${API_BASE_URL}/api/finish-contest`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      if (response.status === 200) {
-        toast.success("Contest finished successfully! Question IDs have been saved.");
-      } else {
-        toast.error("Failed to finish the contest. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error finishing contest:", error.response?.data || error.message);
-      toast.error("Failed to finish the contest. Please try again.");
-    }
-  };
+  //     setDashboardStats((prev) => ({
+  //       ...prev,
+  //       totalQuestions: `${fetchedQuestions.length}/${
+  //         localStorage.getItem("totalquestions") || 0
+  //       }`,
+  //     }));
+  //   } catch (error) {
+  //     console.error(
+  //       "Error fetching questions:",
+  //       error.response?.data || error.message
+  //     );
+  //     showToast("Failed to load questions. Please try again.", "error");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const showToast = (message, type = "info") => {
     toast[type](message);
   };
-  
-  
-  const handleDeleteQuestion = async (questionId) => { 
+
+  const handleDeleteQuestion = async (questionId) => {
     try {
       setIsDeleting(true);
       const token = localStorage.getItem("contestToken");
@@ -175,14 +135,14 @@ const filterDuplicateQuestions = (questions) => {
         showToast("Unauthorized access. Please log in again.", "error");
         return;
       }
-  
+
       const response = await axios.delete(
         `${API_BASE_URL}/api/mcq/delete-question/${questionId}/`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-  
+
       if (response.status === 200) {
         setQuestions((prevQuestions) =>
           prevQuestions.filter((question) => question._id !== questionId)
@@ -192,15 +152,16 @@ const filterDuplicateQuestions = (questions) => {
         showToast(response.data.error || "Failed to delete question.", "error");
       }
     } catch (error) {
-      console.error("Error deleting question:", error.response?.data || error.message);
+      console.error(
+        "Error deleting question:",
+        error.response?.data || error.message
+      );
       showToast("Failed to delete question. Please try again.", "error");
     } finally {
       setIsDeleting(false);
     }
   };
-  
-  
-  
+
   const handlePublish = async () => {
     try {
       const token = localStorage.getItem("contestToken");
@@ -251,72 +212,125 @@ const filterDuplicateQuestions = (questions) => {
         setShareModalOpen(true);
         toast.success("Questions published successfully!");
       } else {
-        toast.error(`Failed to publish questions: ${response.data.message || "Unknown error."}`);
+        toast.error(
+          `Failed to publish questions: ${
+            response.data.message || "Unknown error."
+          }`
+        );
       }
     } catch (error) {
       console.error("Error publishing questions:", error);
       if (error.response) {
-        toast.error(`Error: ${error.response.data.message || error.response.statusText}`);
+        toast.error(
+          `Error: ${error.response.data.message || error.response.statusText}`
+        );
       } else if (error.request) {
         toast.error("No response from the server. Please try again later.");
       } else {
-        toast.error("An error occurred while publishing questions. Please try again.");
+        toast.error(
+          "An error occurred while publishing questions. Please try again."
+        );
       }
     } finally {
       setPublishDialogOpen(false);
     }
   };
 
-  const handleLibraryButtonClick = () => {
-    setIsLibraryModalOpen(true);
-  };
+// Inside your component
+const fetchQuestions = useCallback(async () => {
+  try {
+    const token = localStorage.getItem("contestToken");
+    if (!token) {
+      showToast("Unauthorized access. Please log in again.", "error");
+      return;
+    }
 
-  const handleLibraryModalClose = () => {
-    setIsLibraryModalOpen(false);
-  };
+    const response = await axios.get(`${API_BASE_URL}/api/mcq/questions`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const totalMarks = localStorage.getItem("totalMarks");
-        const duration = JSON.parse(localStorage.getItem("duration"));
-        const passPercentage = localStorage.getItem("passPercentage");
-        const totalQuestions = localStorage.getItem("totalquestions");
+    const fetchedQuestions = response.data.questions.map((question) => ({
+      ...question,
+      correctAnswer:
+        question.correctAnswer || question.answer || "No Answer Provided",
+    }));
 
-        let selectedQuestionsCount = 0;
+    const duplicateCount = response.data.duplicateCount || 0;
 
-        const token = localStorage.getItem("contestToken");
-        if (token) {
-          const response = await axios.get(`${API_BASE_URL}/api/mcq/questions`, {
+    if (duplicateCount > 0 && !duplicateToastShown.current) {
+      showToast(`${duplicateCount} duplicate questions removed.`, "warning");
+      duplicateToastShown.current = true;
+    }
+
+    if (duplicateCount === 0) {
+      duplicateToastShown.current = false;
+    }
+
+    setQuestions(fetchedQuestions);
+
+    setDashboardStats((prev) => ({
+      ...prev,
+      totalQuestions: `${fetchedQuestions.length}/${
+        localStorage.getItem("totalquestions") || 0
+      }`,
+    }));
+  } catch (error) {
+    console.error(
+      "Error fetching questions:",
+      error.response?.data || error.message
+    );
+    showToast("Failed to load questions. Please try again.", "error");
+  } finally {
+    setIsLoading(false);
+  }
+}, [API_BASE_URL]); // Add dependencies if needed
+
+useEffect(() => {
+  const fetchDashboardData = async () => {
+    try {
+      const totalMarks = localStorage.getItem("totalMarks");
+      const duration = JSON.parse(localStorage.getItem("duration"));
+      const passPercentage = localStorage.getItem("passPercentage");
+      const totalQuestions = localStorage.getItem("totalquestions");
+
+      let selectedQuestionsCount = 0;
+
+      const token = localStorage.getItem("contestToken");
+      if (token) {
+        const response = await axios.get(
+          `${API_BASE_URL}/api/mcq/questions`,
+          {
             headers: { Authorization: `Bearer ${token}` },
-          });
-          selectedQuestionsCount = response.data.questions.length;
-        }
-
-        setDashboardStats((prev) => ({
-          ...prev,
-          totalMarks: totalMarks || 0,
-          totalDuration: duration
-            ? `${duration.hours.padStart(2, "0")}:${duration.minutes.padStart(
-                2,
-                "0"
-              )}:00`
-            : "00:00:00",
-          maximumMark: passPercentage || 0,
-          totalQuestions: `${selectedQuestionsCount}/${totalQuestions || 0}`,
-        }));
-
-        await fetchQuestions(initialFetch.current);
-        initialFetch.current = false;
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error.message);
-      } finally {
-        setIsLoading(false);
+          }
+        );
+        selectedQuestionsCount = response.data.questions.length;
       }
-    };
 
-    fetchDashboardData();
-  }, [formData, sections]);
+      setDashboardStats((prev) => ({
+        ...prev,
+        totalMarks: totalMarks || 0,
+        totalDuration: duration
+          ? `${duration.hours.padStart(2, "0")}:${duration.minutes.padStart(
+              2,
+              "0"
+            )}:00`
+          : "00:00:00",
+        maximumMark: passPercentage || 0,
+        totalQuestions: `${selectedQuestionsCount}/${totalQuestions || 0}`,
+      }));
+
+      await fetchQuestions();
+      initialFetch.current = false;
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  fetchDashboardData();
+}, [formData, sections, API_BASE_URL, fetchQuestions]); // Added fetchQuestions to dependencies
+
 
   const handleShareModalClose = () => {
     setShareModalOpen(false);
@@ -325,7 +339,7 @@ const filterDuplicateQuestions = (questions) => {
 
   const handleAddQuestion = async () => {
     setIsModalOpen(true);
-    await fetchQuestions(true);
+    await fetchQuestions();
   };
 
   const handleModalClose = () => {
@@ -337,7 +351,8 @@ const filterDuplicateQuestions = (questions) => {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen flex justify-center">
+    <div className="p-6 bg-[#ECF2FE] min-h-screen flex justify-center">
+      
       <ToastContainer
         position="top-center"
         autoClose={3000}
@@ -349,8 +364,26 @@ const filterDuplicateQuestions = (questions) => {
         draggable
         pauseOnHover
       />
-      <div className="max-w-5xl w-full">
-        <div className="mx-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-x-6 mb-8 mt-8 items-stretch justify-stretch">
+      <div className=" w-full">
+      <div className="h-14 px-14 pb-10">
+          <div className="flex items-center gap-2 text-[#111933]">
+            <span className="opacity-60">Home</span>
+            <span>{">"}</span>
+            <span className="opacity-60">Assessment Overview</span>
+            <span>{">"}</span>
+            <span className="opacity-60">Test Configuration</span>
+            <span>{">"}</span>
+            <span className="opacity-60">
+              Add Questions
+            </span>
+            <span>{">"}</span>
+            <span >
+              Question Dashboard
+            </span>
+
+          </div>
+        </div>
+        <div className="mx-40 max-w-[1200px] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-x-20 mb-8 mt-8 items-stretch justify-stretch">
           {[
             {
               label: "Total Questions",
@@ -370,34 +403,52 @@ const filterDuplicateQuestions = (questions) => {
             {
               label: "Maximum Mark",
               value: dashboardStats.maximumMark,
-              icon: markIcon,
+              icon: markIconmarks,
             },
           ].map((item, index) => (
-            <div className="bg-white text-[#000975] shadow-md rounded-lg p-5 relative flex flex-col items-center justify-center py-8">
+            <div
+              key={index}
+              className="bg-white text-[#111933] shadow-md font-semibold rounded-lg p-5 relative flex flex-col items-center justify-center py-8"
+            >
+              {" "}
+              {/* Added key prop */}
               <span className="absolute -top-4 -right-4 p-2 bg-white z-10 shadow-lg rounded-full">
-                <img src={item.icon} alt="" className="w-6" />
+                <img
+                  src={item.icon || "/placeholder.svg"}
+                  alt=""
+                  className="w-6"
+                />
               </span>
               <p className="text-xs"> {item.label} </p>
-              <p className="text-3xl"> {item.value} </p>
+              <p className="text-2xl"> {item.value} </p>
             </div>
           ))}
         </div>
 
-        <div className="flex justify-end mb-4">
-          <Button
-            onClick={handleAddQuestion}
-            variant="contained"
-            color="primary"
-          >
-            Add Question
-          </Button>
-        </div>
-
         {!isLoading && questions.length > 0 && (
-          <div className="mt-8 px-5 pt-4 pb-6 bg-white shadow-md text-[#000975] rounded-xl">
-            <h3 className="text-lg font-semibold mb-4">Questions</h3>
+          <div className="mt-8 ml-16 px-5 pt-4 pb-6 bg-white shadow-md text-[#111933] rounded-xl w-full max-w-[1400px] ">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-semibold mt-3">Questions</h2>
+              <Button
+                onClick={handleAddQuestion}
+                variant="contained"
+                style={{
+                  backgroundColor: "#111933",
+                  color: "white",
+                  borderRadius: "8px",
+                }}
+              >
+                Add Questions +
+              </Button>
+            </div>
+            {/* Horizontal Line Below the Heading */}
+            <hr className="border-t-2 border-gray-300 w-full mb-5" />
+
             {isLoading ? (
-              <p>Loading questions...</p>
+              <div className="text-center py-16">
+                <div className="w-8 h-8 border-4 border-[#FDC500] border-t-transparent rounded-full animate-spin mx-auto" />
+                <p className="mt-4 text-gray-600">Loading questions...</p>
+              </div>
             ) : (
               <ul className="space-y-4">
                 {questions
@@ -405,40 +456,46 @@ const filterDuplicateQuestions = (questions) => {
                   .map((question, index) => (
                     <li
                       key={index}
-                      className="flex items-center justify-between bg-[#fafdff] shadow-md rounded-lg p-4 border border-gray-300"
+                      className="flex items-center justify-between bg-[#fafdff] shadow-sm rounded-lg p-4 border border-gray-200"
                     >
-                      <div className="flex text-sm">
-                        <p className="">{question.question}</p>
-                      </div>
-                      <div className="flex items-center">
-                        <p className="font-semibold text-sm mr-1">Answer: </p>
-                        <span className="text-sm">{question.correctAnswer}</span>
+                      <p className="text-sm text-[#111933] flex-1 pr-4">
+                        {question.question}
+                      </p>
+                      <div className="flex items-center min-w-fit">
+                        <span className="text-sm font-semibold text-[#111933] mr-1">
+                          ANS:
+                        </span>
+                        <span className="text-sm text-[#111933]">
+                          {question.correctAnswer}
+                        </span>
                         <button
-                          className="ml-4 p-2 text-red-600 hover:text-red-800"
                           onClick={() => handleDeleteQuestion(question._id)}
+                          className="ml-4 p-2 text-red-600 hover:text-red-700 transition-colors"
+                          disabled={isDeleting}
                         >
-                          <FaTrash size={16} />
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </li>
                   ))}
               </ul>
             )}
-            <div className="flex justify-center mt-6">
+
+            <div className="mt-6 flex justify-center">
               <Pagination
                 count={Math.ceil(questions.length / itemsPerPage)}
                 page={page}
                 onChange={handlePageChange}
                 sx={{
-                  '& .MuiPaginationItem-root': {
-                    color: '#000975',
+                  "& .MuiPaginationItem-root": {
+                    color: "#111933",
                   },
-                  '& .MuiPaginationItem-root.Mui-selected': {
-                    backgroundColor: '#FDC500',
-                    color: '#fff',
+                  "& .MuiPaginationItem-root.Mui-selected": {
+                    backgroundColor: "#FDC500",
+                    color: "#fff",
                   },
-                  '& .MuiPaginationItem-root:hover': {
-                    backgroundColor: 'rgba(0, 9, 117, 0.1)',
+                  "& .MuiPaginationItem-root:hover": {
+                    backgroundColor: "rgba(17, 25, 51, 0.1)",
                   },
                 }}
               />
@@ -448,8 +505,8 @@ const filterDuplicateQuestions = (questions) => {
 
         {isLoading && (
           <div className="text-center mt-16">
-            <div className="spinner-border animate-spin inline-block w-8 h-8 border-4 rounded-full text-yellow-500" />
-            <p className="text-gray-600 mt-4">Loading questions...</p>
+            <div className="w-8 h-8 border-4 border-[#FDC500] border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="mt-4 text-gray-600">Loading questions...</p>
           </div>
         )}
 
@@ -458,30 +515,40 @@ const filterDuplicateQuestions = (questions) => {
             <p className="text-gray-600">
               No questions available in the database.
             </p>
-            <button
+            <Button
               onClick={() => navigate("/mcq/sectionDetails")}
-              className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+              variant="contained"
+              style={{ backgroundColor: "#111933", color: "white" }}
             >
               Add Sections and Questions
-            </button>
+            </Button>
           </div>
         )}
 
         {!isLoading && questions.length > 0 && (
-          <div className="flex justify-end mt-10">
-            <button
+          <div className="flex justify-end mr-20 mt-6">
+            <Button
               onClick={() => {
-                const [selected, total] = dashboardStats.totalQuestions.split('/').map(Number);
+                const [selected, total] = dashboardStats.totalQuestions
+                  .split("/")
+                  .map(Number);
                 if (selected < total) {
-                  toast.warning("Insufficient questions to publish! Please add more questions.");
+                  toast.warning(
+                    "Insufficient questions to publish! Please add more questions."
+                  );
                 } else {
                   setPublishDialogOpen(true);
                 }
               }}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+              variant="contained"
+              style={{
+                backgroundColor: "#111933",
+                color: "white",
+                borderRadius: "8px",
+              }}
             >
               Publish
-            </button>
+            </Button>
           </div>
         )}
 

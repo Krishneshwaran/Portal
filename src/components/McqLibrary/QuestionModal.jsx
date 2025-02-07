@@ -5,11 +5,18 @@ const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-lg w-4/5 max-w p-4 overflow-hidden transform transition-all duration-300">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold text-[#000975]">Add New Question</h2>
+        <div className="flex mb-4">
+         
+          <div className='w-full'>
+          <h2 className="text-lg font-semibold text-[#111933] pb-2">Add New Question</h2>
+          <h2 className="text-sm font-light  text-[#111933] pb-4">Choose how you’d like to add questions to your assessment. Select the method that works best for you to quickly build your test.</h2>
+          <div className='border-b-2 border-[#111933]  ' > </div> 
+          </div>
+          
+        
           <button
             onClick={() => setIsSingleQuestionModalOpen(false)}
-            className="text-[#000975] hover:text-black"
+            className="text-[#111933] hover:text-[#fc2c2c]"
           >
             <X className="w-5 h-5" />
           </button>
@@ -17,20 +24,21 @@ const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen
         <form onSubmit={handleSingleQuestionSubmit} className="space-y-4">
           <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-[#000975] mb-1">
+              <label className="block text-sm font-medium text-[#111933] mb-1">
                 Question <span className="text-red-500">*</span>
               </label>
               <textarea
                 name="question"
                 value={singleQuestionData.question}
                 onChange={handleSingleQuestionInputChange}
-                className="w-full p-2 rounded-lg border-2 border-gray-300 shadow-sm focus:border-gray-500 focus:ring focus:ring-gray-300"
+                style={{paddingBottom:'8.7rem'}}
+                className="w-full p-2  rounded-lg border-2 border-gray-300 shadow-sm focus:border-gray-500 focus:ring focus:ring-gray-300"
                 rows={2}
                 required
               />
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-[#000975] mb-1">
+              <label className="block text-sm font-medium text-[#111933] mb-1">
                 Choice
               </label>
               {['option1', 'option2', 'option3', 'option4'].map((optionKey, index) => (
@@ -49,7 +57,7 @@ const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen
           </div>
           <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-[#000975] mb-1">
+              <label className="block text-sm font-medium text-[#111933] mb-1">
                 Select correct answer <span className="text-red-500">*</span>
               </label>
               <select
@@ -70,7 +78,7 @@ const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen
               </select>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-[#000975] mb-1">
+              <label className="block text-sm font-medium text-[#111933] mb-1">
                 Difficulty Level <span className="text-red-500">*</span>
               </label>
               <select
@@ -86,7 +94,7 @@ const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen
               </select>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-[#000975] mb-1">
+              <label className="block text-sm font-medium text-[#111933] mb-1">
                 Tags
               </label>
               <input
@@ -97,13 +105,13 @@ const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen
                 className="w-full p-2 rounded-lg border-2 border-gray-300 shadow-sm focus:border-gray-500 focus:ring focus:ring-gray-300"
                 placeholder="e.g., math, algebra, geometry"
               />
-              <p className="mt-1 text-sm text-[#000975]">Separate tags with commas</p>
+              <p className="mt-1 text-sm text-[#111933]">Separate tags with commas</p>
             </div>
           </div>
-          <div style={{paddingLeft:'64rem'}}>
+          <div className="flex justify-center mt-4">
             <button
               type="submit"
-              className=" p-2  bg-[#FDC500]  rounded-lg border-[#fdc500] bg-opacity-40 text-[#000975] hover:bg-[#FDC500] focus:outline-none focus:ring focus:ring-blue-300"
+              className=" p-2  bg-[#111933]  rounded-lg   text-[#ffffff]  focus:outline-none focus:ring focus:ring-blue-300"
             >
               Submit
             </button>

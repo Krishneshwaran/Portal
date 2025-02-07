@@ -1,191 +1,147 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Container,
-  Typography,
-  TextField,
-  Button,
-  Grid,
-  Paper,
-  CircularProgress,
-  Alert,
-} from '@mui/material';
-import axios from 'axios';
+"use client";
+
+import { useState, useEffect } from "react";
+import axios from "axios";
+import ProfileIcon from "../../assets/Dashboard icon.png";
 
 const StaffProfile = () => {
   const [profile, setProfile] = useState({
-    name: '',
-    email: '',
-    password: '',
-    department: '',
-    staffId: '',
-    designation: '',
+    name: "",
+    email: "",
+    department: "",
+    collegename: "",
   });
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
 
-
-  // Fetch profile data from backend
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/api/staff/profile/`, {
-          withCredentials: true, // Include cookies for authentication
+          withCredentials: true,
         });
         setProfile(response.data);
         setLoading(false);
       } catch (err) {
-        setError('Failed to fetch staff profile data.');
+        setError("Failed to fetch staff profile data.");
         setLoading(false);
       }
     };
 
     fetchProfile();
-  }, []);
+  }, [API_BASE_URL]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setProfile((prevProfile) => ({
-      ...prevProfile,
-      [name]: value,
-    }));
-  };
+  // const handleChange = (e) => {
+  //   const { name, value } = e.target;
+  //   setProfile((prevProfile) => ({
+  //     ...prevProfile,
+  //     [name]: value,
+  //   }));
+  // };
 
-  const handleSave = async () => {
-    setSuccessMessage('');
-    setError('');
-    try {
-      await axios.put(`${API_BASE_URL}/api/staff/profile/`, profile, {
-        withCredentials: true,
-      });
-      setSuccessMessage('Profile updated successfully!');
-    } catch (err) {
-      setError('Failed to save staff profile data.');
-    }
-  };
+  // const handleSave = async () => {
+  //   setSuccessMessage("");
+  //   setError("");
+  //   try {
+  //     await axios.put(`${API_BASE_URL}/api/staff/profile/`, profile, {
+  //       withCredentials: true,
+  //     });
+  //     setSuccessMessage("Profile updated successfully!");
+  //   } catch (err) {
+  //     setError("Failed to save staff profile data.");
+  //   }
+  // };
 
   if (loading) {
     return (
-      <Container maxWidth="sm" sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
-        <CircularProgress />
-      </Container>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#111933]"></div>
+      </div>
     );
   }
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 4 }}>
-      <Paper
-        elevation={3}
-        sx={{
-          p: 4,
-          borderRadius: '10px',
-          backgroundColor: '#FFFFFF',
-          color: '#000975',
-        }}
-      >
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 'bold',
-            mb: 3,
-            color: '#000975',
-            textAlign: 'center',
-          }}
-        >
-          Staff Profile
-        </Typography>
+    <div className="max-w-6xl m-auto p-9 h-screen">
+      <div className="bg-white mt-10 rounded-lg shadow-lg overflow-hidden">
+        {/* Header Bar */}
+        <div className="h-12 bg-[#111933]"></div>
 
-        {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-        {successMessage && <Alert severity="success" sx={{ mb: 3 }}>{successMessage}</Alert>}
+        <div className="px-8 pb-8">
+          {/* Profile Image */}
+          <div className="flex justify-center mt-4">
+            <img
+              src={ProfileIcon || "/placeholder.svg"}
+              alt="Profile"
+              className="w-40 h-40 rounded-full"
+            />
+          </div>
 
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Name"
-              name="name"
-              value={profile.name}
-              onChange={handleChange}
-              variant="outlined"
-              InputLabelProps={{ style: { color: '#000975' } }}
-              InputProps={{ style: { color: '#000975' } }}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Email"
-              name="email"
-              value={profile.email}
-              onChange={handleChange}
-              variant="outlined"
-              type="email"
-              InputLabelProps={{ style: { color: '#000975' } }}
-              InputProps={{ style: { color: '#000975' } }}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Password"
-              name="password"
-              value={profile.password}
-              onChange={handleChange}
-              variant="outlined"
-              type="password"
-              InputLabelProps={{ style: { color: '#000975' } }}
-              InputProps={{ style: { color: '#000975' } }}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Department"
-              name="department"
-              value={profile.department}
-              onChange={handleChange}
-              variant="outlined"
-              InputLabelProps={{ style: { color: '#000975' } }}
-              InputProps={{ style: { color: '#000975' } }}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="College Name"
-              name="collegename"
-              value={profile.collegename}
-              onChange={handleChange}
-              variant="outlined"
-              InputLabelProps={{ style: { color: '#000975' } }}
-              InputProps={{ style: { color: '#000975' } }}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <Button
-              variant="contained"
-              onClick={handleSave}
-              sx={{
-                backgroundColor: '#FDC500',
-                color: '#000975',
-                textTransform: 'none',
-                fontWeight: 'bold',
-                borderRadius: '5px',
-                width: '100%',
-                '&:hover': {
-                  backgroundColor: '#000975',
-                  color: '#FFFFFF',
-                },
-              }}
-            >
-              Save Changes
-            </Button>
-          </Grid>
-        </Grid>
-      </Paper>
-    </Container>
+          {/* Alerts */}
+          {error && <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md">{error}</div>}
+          {successMessage && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 text-green-600 rounded-md">
+              {successMessage}
+            </div>
+          )}
+
+          {/* Form */}
+          <div className="space-y-4 mt-6">
+            <div className="grid grid-cols-3 gap-4 items-center">
+              <label className="text-[#111933] font-medium">Name</label>
+              <input
+                type="text"
+                disabled
+                name="name"
+                value={profile.name}
+                // onChange={handleChange}
+                className="col-span-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#111933] text-[#111933]"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 items-center">
+              <label className="text-[#111933] font-medium">College</label>
+              <input
+                type="text"
+                disabled
+                name="collegename"
+                value={profile.collegename}
+                // onChange={handleChange}
+                className="col-span-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#111933] text-[#111933]"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 items-center">
+              <label className="text-[#111933] font-medium">Department</label>
+              <input
+                type="text"
+                disabled
+                name="department"
+                value={profile.department}
+                // onChange={handleChange}
+                className="col-span-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#111933] text-[#111933]"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 items-center">
+              <label className="text-[#111933] font-medium">Email</label>
+              <input
+                type="email"
+                disabled
+                name="email"
+                value={profile.email}
+                // onChange={handleChange}
+                className="col-span-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#111933] text-[#111933]"
+              />
+            </div>
+
+           
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

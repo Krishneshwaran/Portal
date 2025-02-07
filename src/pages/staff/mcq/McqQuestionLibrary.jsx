@@ -169,6 +169,24 @@ const McqLibrary = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-8">
+      <div className="h-14 px-14 pb-10">
+          <div className="flex items-center gap-2 text-[#111933]">
+            <span className="opacity-60">Home</span>
+            <span>{">"}</span>
+            <span className="opacity-60">Assessment Overview</span>
+            <span>{">"}</span>
+            <span className="opacity-60">Test Configuration</span>
+            <span>{">"}</span>
+            <span onClick={() => window.history.back()} className="cursor-pointer opacity-60 hover:underline">
+              Add Questions
+            </span>
+            <span>{">"}</span>
+            <span >
+              Question Library
+            </span>
+
+          </div>
+        </div>
       <ToastContainer
         position="top-center"
         autoClose={3000}

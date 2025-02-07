@@ -18,10 +18,10 @@ const FiltersSidebar = ({ filters, toggleFilter, clearFilters, availableTags }) 
       color: '#000975',
     },
     textStyle: {
-      color: '#000975',
+      color: '#111933',
     },
     iconStyle: {
-      color: '#000975',
+      color: '#111933',
     },
   };
 
@@ -30,7 +30,7 @@ const FiltersSidebar = ({ filters, toggleFilter, clearFilters, availableTags }) 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-8">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold flex items-center gap-2" style={styles.textStyle}>
-            <FaFilter style={{ color: '#FDC500' }} />
+            <FaFilter style={{ color: '#ffcc00' }} />
             Filters
           </h3>
           {(filters.level.length > 0 || filters.tags.length > 0) && (

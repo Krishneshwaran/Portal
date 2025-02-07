@@ -43,7 +43,6 @@ import Mcq_createQuestion from './components/staff/mcq/Mcq_createQuestion';
 import Mcq_bulkUpload from './components/staff/mcq/Mcq_bulkUpload';
 import Mcq_Dashboard from './pages/staff/mcq/Mcq_Dashboard';
 import McqLibrary from './pages/staff/mcq/McqQuestionLibrary'
-import McqSectionLibrary from './pages/staff/mcq/McqSectionQuestionLibrary'
 import Student_report from './pages/staff/Student_report';
 import StudentResult from './pages/student/StudentResult';
 import QuestionsDisplay from './pages/staff/mcq/QuestionsDisplay';
@@ -55,10 +54,7 @@ import SectionBasedMcqAssessment from './pages/student/student_mcq/SectionBasedM
 import ScrollToTop from './ScrollToTop';
 import { TestProvider } from './pages/student/TestContext';
 import AddTest from './components/McqLibrary/AddTest';
-
 import CertificateVerification from './pages/staff/mcq/CertificateVerification';
-
-
 
 // Layout component for wrapping student routes 
 const StudentLayout = () => (
@@ -126,7 +122,7 @@ function App() {
           <Route path="mcq/aigenerator" element={<AIGenerate />} />
           <Route path="mcq/airesponse" element={<QuestionsDisplay />} />
           <Route path="/verify" element={<CertificateVerification />} />
-          
+
 
           {/* <Route path="/coding" element={<ContestDashboard />} /> */}
           {/* <Route path="/FileUpload" element={<FileUpload />} /> */}
@@ -136,7 +132,7 @@ function App() {
           {/* <Route path="/ManualPage/:contestId" element={<ManualPage />} /> */}
           {/* <Route path="/CreateContest" element={<CreateContest />} /> */}
           {/* <Route path="/StartContest" element={<StartContest />} /> */}
-          
+        
 
           <Route path="/library/coding" element={<QuestionDashboard />} />
           <Route path="/BulkUpload" element={<BulkUpload />} />
@@ -162,7 +158,6 @@ function App() {
         {/* <Route path='/UploadType' element = {<HomeTwo/>} />
         <Route path='/QuestionsDashboard' element = {<Dashboard/>}/>
         <Route path='/BulkUpload' element = {<Upload/>}/> */}
-
       </Routes>
     </Router>
     </TestProvider>

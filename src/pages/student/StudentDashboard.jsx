@@ -7,6 +7,7 @@ import NoExams from "../../assets/happy.png";
 import { Award } from 'lucide-react';
 import backgroundImage from '../../assets/pattern.png';
 import { useTestContext } from './TestContext';
+import Loader from '../../layout/Loader'; // Import the Loader component
 
 const StyledTabs = styled(Tabs)({
   backgroundColor: '#ffff',
@@ -58,9 +59,11 @@ const StudentDashboard = () => {
     email: "",
   });
   const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(true); // State to manage loading
   const itemsPerPage = 9;
 
   const fetchStudentData = async () => {
+    setIsLoading(true); // Set loading to true before fetching data
     try {
       const response = await axios.get(`${API_BASE_URL}/api/student/profile/`, {
         withCredentials: true,
@@ -103,6 +106,8 @@ const StudentDashboard = () => {
       setCompletedTests(completedTestsWithPublishStatus);
     } catch (error) {
       console.error("Error fetching student data:", error);
+    } finally {
+      setIsLoading(false); // Set loading to false after data is fetched
     }
   };
 
@@ -133,7 +138,7 @@ const StudentDashboard = () => {
         const noiseDetection = test.testConfiguration.noiseDetection;
         const fullScreenModeCount = test.testConfiguration.fullScreenModeCount; // Add noiseDetection
         const passPercentage = test.testConfiguration?.passPercentage || "0";
-  
+
         localStorage.setItem(`testDuration_${test.contestId}`, duration);
         localStorage.setItem(`fullScreenMode_${test.contestId}`, fullScreenMode);
         localStorage.setItem(`faceDetection_${test.contestId}`, faceDetection);
@@ -141,7 +146,7 @@ const StudentDashboard = () => {
         localStorage.setItem(`noiseDetection_${test.contestId}`, noiseDetection);
         localStorage.setItem(`fullScreenModeCount_${test.contestID}`,fullScreenModeCount); // Set noiseDetection in localStorage
         localStorage.setItem(`passPercentage_${test._id}`, passPercentage);
-  
+
         return {
           contestId: test.contestId,
           name: test.assessmentOverview?.name || "Unknown Test",
@@ -281,6 +286,7 @@ const StudentDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {isLoading && <Loader message="Fetching data..." />} {/* Show loader if isLoading is true */}
       <Container maxWidth="2xl" className="py-1 px-2 sm:px-4">
         <DashboardHeader className="bg-white mt-4 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${backgroundImage})`}}>
           <div className="flex flex-col sm:flex-row items-center gap-4">

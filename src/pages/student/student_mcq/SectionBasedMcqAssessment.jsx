@@ -7,7 +7,7 @@ import SectionBasedSidebar from "../../../components/staff/mcq/SectionBasedSideb
 import useDeviceRestriction from "../../../components/staff/mcq/useDeviceRestriction";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
 import FaceDetectionComponent from "../../../components/staff/mcq/useVideoDetection";
-import Legend from "../../../components/staff/mcq/Legend"; // Import the Legend component
+import Legend from "../../../components/staff/mcq/Legend";
 
 export default function SectionBasedMcqAssessment() {
   const { contestId } = useParams();
@@ -57,6 +57,7 @@ export default function SectionBasedMcqAssessment() {
   const lastWarningTime = useRef(Date.now());
   const [isFreezePeriodOver, setIsFreezePeriodOver] = useState(false);
   const [faceDetectionWarning, setFaceDetectionWarning] = useState('');
+  const [showPopup, setShowPopup] = useState(false); // Add this state for the popup
 
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
@@ -94,14 +95,12 @@ export default function SectionBasedMcqAssessment() {
         });
 
         setSections(parsedSections);
-        setTotalDuration(totalDuration); // Set the total test duration in seconds
+        setTotalDuration(totalDuration);
 
-        // Restore section remaining times from session storage
         const storedTimes = sessionStorage.getItem(`sectionRemainingTimes_${contestId}`);
         const initialRemainingTimes = storedTimes ? JSON.parse(storedTimes) : sectionDurations;
         setSectionRemainingTimes(initialRemainingTimes);
 
-        // Timer management
         const startTime = sessionStorage.getItem(`startTime_${contestId}`);
         if (startTime) {
           const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
@@ -361,18 +360,22 @@ export default function SectionBasedMcqAssessment() {
   };
 
   const handleFinish = useCallback(async () => {
+    // Save all selected answers across all sections
+    sections.forEach((section, sectionIndex) => {
+      section.questions.forEach((question, questionIndex) => {
+        sessionStorage.setItem(
+          `section_${sectionIndex}_question_${questionIndex}`,
+          JSON.stringify({
+            question,
+            selectedOption: selectedAnswers[sectionIndex]?.[questionIndex],
+          })
+        );
+      });
+    });
+
     try {
-      // Navigate through all sections and questions
-      for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
-        setCurrentSectionIndex(sectionIndex);
-        for (let questionIndex = 0; questionIndex < sections[sectionIndex].questions.length; questionIndex++) {
-          setCurrentQuestionIndex(questionIndex);
-          await new Promise((resolve) => setTimeout(resolve, 500)); // Wait for a short duration to ensure the question is rendered
-        }
-      }
-  
       const formattedAnswers = {};
-  
+
       sections.forEach((section, sectionIndex) => {
         formattedAnswers[section.sectionName] = {};
         section.questions.forEach((question, questionIndex) => {
@@ -380,48 +383,21 @@ export default function SectionBasedMcqAssessment() {
             selectedAnswers[sectionIndex]?.[questionIndex] || "notattended";
         });
       });
-  
+
       const resultVisibility = localStorage.getItem(`resultVisibility_${contestId}`);
       const isPublish = resultVisibility === "Immediate release";
-  
-      let correctAnswers = 0;
-      sections.forEach((section) => {
-        section.questions.forEach((question, questionIndex) => {
-          if (selectedAnswers[currentSectionIndex]?.[questionIndex] === question.correctAnswer) {
-            correctAnswers++;
-          }
-        });
-      });
-  
-      const passPercentage =
-        parseFloat(sessionStorage.getItem(`passPercentage_${contestId}`)) || 50;
-  
-      const totalQuestions = sections.reduce((total, section) => total + section.questions.length, 0);
-      const percentage = (correctAnswers / totalQuestions) * 100;
-      const grade = percentage >= passPercentage ? "Pass" : "Fail";
-  
-      console.log("Correct Answers:", correctAnswers);
-      console.log("Total Questions:", totalQuestions);
-      console.log("Percentage:", percentage);
-      console.log("Pass Percentage:", passPercentage);
-      console.log("Grade:", grade);
-  
-      const fullscreenWarning = sessionStorage.getItem(`fullscreenWarnings_${contestId}`);
-      const faceWarning = sessionStorage.getItem(`FaceDetectionCount_${contestId}`);
-  
+
       const payload = {
         contestId,
         studentId: localStorage.getItem("studentId"),
         answers: formattedAnswers,
         FullscreenWarning: fullscreenWarnings,
         NoiseWarning: noiseDetectionCount,
-        FaceWarning: faceWarning,
+        FaceWarning: sessionStorage.getItem(`FaceDetectionCount_${contestId}`),
         TabSwitchWarning: tabSwitchWarnings,
         isPublish: isPublish,
-        grade: grade,
-        passPercentage: passPercentage,
       };
-  
+
       const response = await axios.post(
         `${API_BASE_URL}/api/mcq/submit_assessment/`,
         payload,
@@ -432,24 +408,22 @@ export default function SectionBasedMcqAssessment() {
           withCredentials: true,
         }
       );
-  
+
       if (response.status === 200) {
+        setIsTestFinished(true);
         navigate("/studentdashboard");
+
+        // Clear session storage
+        sessionStorage.removeItem(`fullscreenWarnings_${contestId}`);
+        sessionStorage.removeItem(`tabSwitchWarnings_${contestId}`);
+        sessionStorage.removeItem(`keydownWarnings_${contestId}`);
+        sessionStorage.removeItem(`reloadWarnings_${contestId}`);
+        sessionStorage.removeItem(`inspectWarnings_${contestId}`);
+
+        localStorage.setItem(`testFinished_${contestId}`, "true");
+
+        alert("Test submitted successfully!");
       }
-  
-      console.log("Test submitted successfully:", response.data);
-      alert("Test submitted successfully!");
-  
-      setIsTestFinished(true);
-  
-      sessionStorage.removeItem(`fullscreenWarnings_${contestId}`);
-      sessionStorage.removeItem(`tabSwitchWarnings_${contestId}`);
-      sessionStorage.removeItem(`keydownWarnings_${contestId}`);
-      sessionStorage.removeItem(`reloadWarnings_${contestId}`);
-      sessionStorage.removeItem(`inspectWarnings_${contestId}`);
-  
-      // Store a flag indicating the test is finished
-      localStorage.setItem(`testFinished_${contestId}`, "true");
     } catch (error) {
       console.error("Error submitting test:", error);
       alert("Failed to submit the test.");
@@ -464,7 +438,7 @@ export default function SectionBasedMcqAssessment() {
     navigate,
     API_BASE_URL,
   ]);
-  
+
   useEffect(() => {
     if (remainingTime > 0) {
       const interval = setInterval(() => {
@@ -510,8 +484,7 @@ export default function SectionBasedMcqAssessment() {
       if (!isTestFinished && fullScreenMode) {
         e.preventDefault();
         e.returnValue = "";
-        addWarning("tabSwitch");
-        return "";
+        return e.returnValue;
       }
     };
     const handleBlur = () => {
@@ -550,7 +523,7 @@ export default function SectionBasedMcqAssessment() {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("blur", handleBlur);
       window.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("visibilitychange", handleVisibilityChange);
       clearInterval(focusCheckInterval);
     };
   }, [isTestFinished, fullScreenMode, addWarning]);
@@ -587,7 +560,6 @@ export default function SectionBasedMcqAssessment() {
   };
 
   useEffect(() => {
-    // Check if the test is already finished
     const isFinished = localStorage.getItem(`testFinished_${contestId}`) === "true";
     if (isFinished) {
       navigate("/studentdashboard");
@@ -623,7 +595,7 @@ export default function SectionBasedMcqAssessment() {
 
   return (
     <div
-      className="min-h-screen bg-gray-50 text-xs sm:text-sm md:text-base"
+      className="min-h-screen max-w-full bg-gray-50 text-xs sm:text-sm md:text-base"
       style={{
         userSelect: fullScreenMode ? "none" : "auto",
         WebkitUserSelect: fullScreenMode ? "none" : "auto",
@@ -641,8 +613,8 @@ export default function SectionBasedMcqAssessment() {
         httpEquiv="Content-Security-Policy"
         content="frame-ancestors 'none'"
       ></meta>
-      <div className="max-w-[1800px] max-h-[1540px] mx-auto p-3 sm:p-6">
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden mt-4 sm:mt-12">
+      <div className="max-w-[1900px] max-h-[1540px] mx-auto p-3 sm:p-6">
+        <div className="bg-white ">
           <SectionBasedHeader
             contestId={contestId}
             totalDuration={totalDuration}
@@ -677,7 +649,7 @@ export default function SectionBasedMcqAssessment() {
                 currentQuestionIndex={currentQuestionIndex}
                 onNext={handleNext}
                 onPrevious={handlePrevious}
-                onFinish={() => setShowConfirmModal(true)}
+                onFinish={() => setShowPopup(true)} // Update the finish button click handler
                 onAnswerSelect={handleAnswerSelect}
                 selectedAnswers={selectedAnswers}
                 onReviewMark={handleReviewMark}
@@ -709,202 +681,117 @@ export default function SectionBasedMcqAssessment() {
                     setCurrentSectionIndex(sectionIndex);
                     setCurrentQuestionIndex(questionIndex);
                   }}
-                  contestId={contestId} // Pass contestId as a prop
+                  contestId={contestId}
                 />
               </div>
             </div>
           </div>
         </div>
-
-        {showWarningModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
-              <div className="text-red-600 mb-4">
-                <svg
-                  className="w-12 h-12 mx-auto"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-center mb-4">
-                Warning #{fullscreenWarnings + tabSwitchWarnings}
-              </h3>
-              <p className="text-gray-600 text-center mb-6">
-                {tabSwitchWarnings > 0
-                  ? "You have switched tabs. Please return to the test tab to continue."
-                  : "You have exited fullscreen mode. Please return to fullscreen to continue the test."}
-              </p>
-              <button
-                onClick={handleFullscreenReEntry}
-                className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Return to Fullscreen
-              </button>
-            </div>
-          </div>
-        )}
-
-        {showConfirmModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
-              <h3 className="text-xl font-semibold text-center mb-4">
-                Submit Assessment
-              </h3>
-              <p className="text-gray-600 text-center mb-6">
-                Are you sure you want to submit your assessment? This action
-                cannot be undone.
-              </p>
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setShowConfirmModal(false)}
-                  className="flex-1 py-3 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    setShowConfirmModal(false);
-                    handleFinish();
-                  }}
-                  className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Submitting..." : "Confirm Submit"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        <Dialog
-          open={openDeviceRestrictionModal}
-          onClose={handleDeviceRestrictionModalClose}
-          aria-labelledby="device-restriction-modal-title"
-          aria-describedby="device-restriction-modal-description"
-        >
-          <DialogTitle id="device-restriction-modal-title">{"Device Restriction"}</DialogTitle>
-          <DialogContent>
-            <DialogContent id="device-restriction-modal-description">
-              This test cannot be taken on a mobile or tablet device.
-            </DialogContent>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleDeviceRestrictionModalClose} color="primary">
-              OK
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {showNoiseWarningModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
-              <div className="text-red-600 mb-4">
-                <svg
-                  className="w-12 h-12 mx-auto"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-center mb-4">
-                Noise Detected
-              </h3>
-              <p className="text-gray-600 text-center mb-6">
-                Noise has been detected. Please ensure a quiet environment to continue the test.
-              </p>
-              <button
-                onClick={() => setShowNoiseWarningModal(false)}
-                className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        )}
-
-        {faceDetection && (
-          <FaceDetectionComponent
-            contestId={contestId}
-            onWarning={handleFaceDetection}
-          />
-        )}
-
-        {faceDetectionWarning && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
-              <div className="text-red-600 mb-4">
-                <svg
-                  className="w-12 h-12 mx-auto"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-center mb-4">
-                Face Detection Warning
-              </h3>
-              <p className="text-gray-600 text-center mb-6">
-                {faceDetectionWarning}
-              </p>
-              <button
-                onClick={() => setFaceDetectionWarning('')}
-                className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
-      <style>
-        {`
-          @media (max-width: 640px) {
-            .question-nav {
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              gap: 0.5rem;
-            }
-            .question-nav .prev-button,
-            .question-nav .next-button {
-              order: 1;
-            }
-            .question-nav .finish-button {
-              order: 3;
-              margin-top: 0.5rem;
-            }
-          }
-          @media (min-width: 641px) {
-            .question-nav {
-              display: flex;
-              flex-direction: row;
-              gap: 1rem;
-            }
-          }
-        `}
-      </style>
+      <div className="fixed bottom-0 left-0 right-0 bg-white p-4 shadow-md flex justify-between items-center z-50">
+        <button
+          className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full flex items-center gap-2"
+          onClick={handlePrevious}
+          disabled={currentQuestionIndex === 0 && currentSectionIndex === 0}
+        >
+          ← Previous
+        </button>
+        <button
+          className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full flex items-center gap-2"
+          onClick={handleNext}
+          disabled={currentQuestionIndex === sections[currentSectionIndex].questions.length - 1 && currentSectionIndex === sections.length - 1}
+        >
+          Next →
+        </button>
+        <button
+          className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full"
+          onClick={() => setShowPopup(true)} // Update the finish button click handler
+          disabled={isSubmitting}
+        >
+          Finish
+        </button>
+      </div>
+
+      {/* Popup UI Code */}
+      {showPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white w-[600px] p-6 rounded-xl shadow-lg">
+            <h3 className="text-[#00296b] text-lg font-bold mb-4">
+              MCT Mock Test
+            </h3>
+            <p className="text-center text-sm mb-4">
+              You have gone through all the questions. <br />
+              Either browse through them once again or finish your assessment.
+            </p>
+            <div className="grid grid-cols-6 gap-2 mb-6">
+              {Array.from({ length: sections[currentSectionIndex].questions.length }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className={`w-10 h-10 flex items-center justify-center rounded-md text-white ${
+                    idx === currentQuestionIndex
+                      ? "bg-yellow-400"
+                      : selectedAnswers[currentSectionIndex]?.[idx]
+                      ? "bg-green-500"
+                      : "bg-red-500"
+                  }`}
+                >
+                  {idx + 1}
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-center items-center mb-4">
+              <div className="relative w-24 h-24">
+                <svg className="absolute inset-0 w-full h-full">
+                  <circle
+                    cx="50%"
+                    cy="50%"
+                    r="38"
+                    stroke="#E0E0E0"
+                    strokeWidth="8"
+                    fill="none"
+                  />
+                  <circle
+                    cx="50%"
+                    cy="50%"
+                    r="38"
+                    stroke="#00296B"
+                    strokeWidth="8"
+                    fill="none"
+                    strokeDasharray="238"
+                    strokeDashoffset={`${
+                      238 - (Object.keys(selectedAnswers[currentSectionIndex] || {}).length / sections[currentSectionIndex].questions.length) * 238
+                    }`}
+                    style={{
+                      transform: "rotate(-90deg)",
+                      transformOrigin: "center",
+                    }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <p className="text-[#00296b] font-bold text-xl">
+                    {Object.keys(selectedAnswers[currentSectionIndex] || {}).length}/{sections[currentSectionIndex].questions.length}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-between">
+              <button
+                className="border border-red-500 text-red-500 px-6 py-2 rounded-full"
+                onClick={() => setShowPopup(false)}
+              >
+                Close
+              </button>
+              <button
+                className="bg-[#fdc500] text-[#00296b] px-6 py-2 rounded-full"
+                onClick={handleFinish}
+              >
+                Finish
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

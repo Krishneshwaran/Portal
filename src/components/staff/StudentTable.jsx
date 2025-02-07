@@ -205,7 +205,7 @@ const StudentTable = ({
       </Box>
       <TableContainer component={Paper} sx={{ border: "1px solid #003366" }}>
         <Table>
-          <TableHead sx={{ backgroundColor: "navy", color: "white" }}>
+          <TableHead sx={{ backgroundColor: "#111933", color: "white" }}>
             <TableRow>
               <TableCell padding="checkbox" sx={{ width: 40 }}>
               <Checkbox

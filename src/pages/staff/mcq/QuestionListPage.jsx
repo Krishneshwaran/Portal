@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import McqTestQuestionList from '../../../components/McqLibrary/McqTestQuestionList';
 import TestQuestionDetails from '../../../components/McqLibrary/TestQuestionDetails';
@@ -91,7 +91,7 @@ const QuestionListPage = () => {
   const fetchAllTests = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/fetch-all-tests/`);
-      const tests = response.data.tests
+      const tests = response.data.tests;
       setTest(tests.filter((t) => t._id === test._id)[0]);
     } catch (error) {
       console.error("Error fetching tests:", error);
@@ -100,7 +100,7 @@ const QuestionListPage = () => {
 
   useEffect(() => {
     fetchAllTests();
-  }, [])
+  }, []);
 
   const handleSave = async () => {
     setLoading(true);
@@ -123,9 +123,9 @@ const QuestionListPage = () => {
       );
 
       if (response.status === 200) {
-        test.test_name = editedTest.test_name
-        test.level = editedTest.level
-        test.tags = editedTest.tags
+        test.test_name = editedTest.test_name;
+        test.level = editedTest.level;
+        test.tags = editedTest.tags;
         setIsEditing(false);
         setEditedTest({ ...editedTest, ...response.data });
         toast.success('Test details saved successfully');
@@ -348,6 +348,17 @@ const QuestionListPage = () => {
     document.body.removeChild(link);
   };
 
+  const inputRef = useRef(null);
+
+  const handleDrag = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const onButtonClick = () => {
+    inputRef.current.click();
+  };
+
   if (!test) {
     return <div>No test selected</div>;
   }
@@ -485,21 +496,21 @@ const QuestionListPage = () => {
                     <button
                       onClick={handleEdit}
                       className="bg-blue-500 text-white p-2 rounded-lg px-3 flex items-center"
-                      style={{ backgroundColor: '#000975' }}
+                      style={{ backgroundColor: '#00296b' }}
                     >
                       <FontAwesomeIcon icon={faEdit} />
                     </button>
                     <button
                       onClick={handleManualAdd}
                       className="bg-blue-500 text-white p-2 rounded-lg px-3 flex items-center"
-                      style={{ backgroundColor: '#000975' }}
+                      style={{ backgroundColor: '#00296b' }}
                     >
                       <FontAwesomeIcon icon={faPlus} />
                     </button>
                     <button
                       onClick={handleBulkUpload}
                       className="bg-blue-500 text-white p-2 rounded-lg px-3 flex items-center"
-                      style={{ backgroundColor: '#000975' }}
+                      style={{ backgroundColor: '#00296b' }}
                     >
                       <FontAwesomeIcon icon={faUpload} />
                     </button>
@@ -528,7 +539,7 @@ const QuestionListPage = () => {
           <div className='max-h-full py-4'>
             <div className="bg-white overflow-auto max-h-full rounded-xl shadow-xl max-w-2xl w-full p-6 transform transition-all duration-300 scale-100 opacity-100">
               <div className="flex justify-between items-center mb-2">
-                <h2 className="text-xl font-semibold text-[#000975]">
+                <h2 className="text-xl font-semibold text-[#00296b]">
                   Bulk Upload
                 </h2>
                 <button
@@ -538,27 +549,66 @@ const QuestionListPage = () => {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <p className="text-sm text-[#000975] mb-2">
+              <p className="text-sm text-[#00296b] mb-2">
                 Upload a CSV file containing multiple questions. Maximum file size: 5MB
               </p>
               <button
                 onClick={handleDownloadSample}
-                className="mb-2 w-full bg-[#E3E3E3] bg-opacity-70 text-[#000975] hover:bg-[#E3E3E3] hover:bg-opacity-100 py-2 px-4 rounded-md text-sm font-medium flex justify-between items-center"
+                className="mb-2 w-full bg-[#E3E3E3] bg-opacity-70 text-[#00296b] hover:bg-[#E3E3E3] hover:bg-opacity-100 py-2 px-4 rounded-md text-sm font-medium flex justify-between items-center"
               >
                 <span>Download Sample</span>
-                <Download className="w-5 h-5 text-[#000975]" />
+                <Download className="w-5 h-5 text-[#00296b]" />
               </button>
-              <input
-                type="file"
-                onChange={handleFileChange}
-                accept=".csv"
-                className="block w-full text-sm text-[#000975] file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-[#FDC500] border-[#] file:bg-opacity-40 file:text-[#000975] hover:file:bg-[#FDC500] hover:file:bg-opacity-100"
-              />
+              <div
+                className={`
+                  w-full
+                  border-2
+                  border-dashed
+                  rounded-lg
+                  p-6
+                  text-center
+                  transition-colors
+                  duration-300
+                  mb-2
+                  ${isDragActive
+                    ? 'border-[#FDC500] bg-[#FDC500] bg-opacity-10'
+                    : 'border-[#00296b] border-opacity-20'
+                  }
+                `}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={onDrop}
+                onClick={onButtonClick}
+              >
+                <input
+                  ref={inputRef}
+                  type="file"
+                  onChange={handleFileChange}
+                  accept=".csv"
+                  className="hidden"
+                />
+                <div className="flex flex-col items-center justify-center space-y-2">
+                  <FontAwesomeIcon icon={faUpload} className="w-10 h-10 text-[#00296b] opacity-50" />
+                  <p className="text-sm text-[#00296b]">
+                    Drag and drop CSV file here, or{' '}
+                    <span
+                      onClick={onButtonClick}
+                      className="text-[#FDC500] cursor-pointer hover:underline"
+                    >
+                      browse
+                    </span>
+                  </p>
+                  <p className="text-xs text-gray-500">CSV files only (max 5MB)</p>
+                </div>
+              </div>
+
               {uploadFile && (
                 <div className="mt-2">
                   <p>Selected file: {uploadFile.name}</p>
                 </div>
               )}
+
               {previewQuestions.length > 0 && (
                 <div className="mb-2">
                   <h3 className="text-lg font-bold mb-1">Preview</h3>
@@ -566,14 +616,14 @@ const QuestionListPage = () => {
                     <button
                       onClick={() => setPreviewQuestions(previewQuestions.map(q => ({ ...q, selected: true })))}
                       className="bg-blue-500 text-white p-2 rounded-full flex items-center"
-                      style={{ backgroundColor: '#000975' }}
+                      style={{ backgroundColor: '#00296b' }}
                     >
                       Select All
                     </button>
                     <button
                       onClick={() => setPreviewQuestions(previewQuestions.map(q => ({ ...q, selected: false })))}
                       className="bg-blue-500 text-white p-2 rounded-full flex items-center"
-                      style={{ backgroundColor: '#000975' }}
+                      style={{ backgroundColor: '#00296b' }}
                     >
                       Deselect All
                     </button>
@@ -603,7 +653,7 @@ const QuestionListPage = () => {
                       onChange={(event, value) => setCurrentPreviewPage(value)}
                       sx={{
                         '& .MuiPaginationItem-root': {
-                          color: '#000975',
+                          color: '#00296b',
                         },
                         '& .MuiPaginationItem-root.Mui-selected': {
                           backgroundColor: '#FDC500',
@@ -617,14 +667,16 @@ const QuestionListPage = () => {
                   </div>
                 </div>
               )}
+
               <button
                 onClick={handleFileUpload}
                 className="bg-blue-500 text-white p-2 flex items-center mt-2"
-                style={{ backgroundColor: '#000975', borderRadius: '9px' }}
+                style={{ backgroundColor: '#00296b', borderRadius: '9px' }}
                 disabled={loading}
               >
                 Upload
               </button>
+
               {error && (
                 <div className={`mt-2 p-2 rounded-md ${error.startsWith("Success")
                   ? "bg-green-50 text-green-700"
@@ -641,10 +693,10 @@ const QuestionListPage = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-filter backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-lg w-4/5 max-w p-4 overflow-hidden transform transition-all duration-300">
             <div className="flex justify-between items-center mb-2">
-              <h2 className="text-lg font-bold text-[#000975]">Add New Question</h2>
+              <h2 className="text-lg font-bold text-[#00296b]">Add New Question</h2>
               <button
                 onClick={handleCloseManualAddModal}
-                className="text-[#000975] hover:text-black"
+                className="text-[#00296b] hover:text-black"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -652,7 +704,7 @@ const QuestionListPage = () => {
             <form onSubmit={handleManualAddSubmit} className="space-y-2">
               <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-[#000975] mb-1">
+                  <label className="block text-sm font-medium text-[#00296b] mb-1">
                     Question <span className="text-red-500">*</span>
                   </label>
                   <textarea
@@ -665,7 +717,7 @@ const QuestionListPage = () => {
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-[#000975] mb-1">
+                  <label className="block text-sm font-medium text-[#00296b] mb-1">
                     Choice
                   </label>
                   {['option1', 'option2', 'option3', 'option4'].map((optionKey, index) => (
@@ -684,7 +736,7 @@ const QuestionListPage = () => {
               </div>
               <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-[#000975] mb-1">
+                  <label className="block text-sm font-medium text-[#00296b] mb-1">
                     Select correct answer <span className="text-red-500">*</span>
                   </label>
                   <select
@@ -705,7 +757,7 @@ const QuestionListPage = () => {
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-[#000975] mb-1">
+                  <label className="block text-sm font-medium text-[#00296b] mb-1">
                     Difficulty Level <span className="text-red-500">*</span>
                   </label>
                   <select
@@ -715,13 +767,14 @@ const QuestionListPage = () => {
                     className="w-full p-2 rounded-lg border-2 border-gray-300 shadow-sm focus:border-gray-500 focus:ring focus:ring-gray-300"
                     required
                   >
+                    <option value="">Select Level</option>
                     <option value="easy">Easy</option>
                     <option value="medium">Medium</option>
                     <option value="hard">Hard</option>
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-[#000975] mb-1">
+                  <label className="block text-sm font-medium text-[#00296b] mb-1">
                     Tags
                   </label>
                   <input
@@ -732,13 +785,13 @@ const QuestionListPage = () => {
                     className="w-full p-2 rounded-lg border-2 border-gray-300 shadow-sm focus:border-gray-500 focus:ring focus:ring-gray-300"
                     placeholder="e.g., math, algebra, geometry"
                   />
-                  <p className="mt-1 text-sm text-[#000975]">Separate tags with commas</p>
+                  <p className="mt-1 text-sm text-[#00296b]">Separate tags with commas</p>
                 </div>
               </div>
               <div style={{ paddingLeft: '64rem' }}>
                 <button
                   type="submit"
-                  className="p-2 bg-[#FDC500] rounded-lg border-[#fdc500] bg-opacity-40 text-[#000975] hover:bg-[#FDC500] focus:outline-none focus:ring focus:ring-blue-300"
+                  className="p-2 bg-[#FDC500] rounded-lg border-[#fdc500] bg-opacity-40 text-[#00296b] hover:bg-[#FDC500] focus:outline-none focus:ring focus:ring-blue-300"
                 >
                   Submit
                 </button>

@@ -48,7 +48,7 @@ export default function SectionBasedHeader({ contestId, totalDuration, sectionRe
   };
 
   return (
-    <div className="flex justify-between items-center mb-7 bg-gradient-to-r from-blue-50 to-white border-b border-gray-200 p-4">
+    <div className="flex justify-between max-w-full items-center mb-7 bg-white p-4">
       <div className="flex items-center gap-2">
         <h1 className="text-[#00296b] text-2xl ml-8 font-bold">MCQ ASSESSMENT</h1>
       </div>

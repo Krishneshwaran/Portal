@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import Legend from "./Legend";
 import SectionBasedQuestionNumbers from "./SectionBasedQuestionNumbers";
 
 export default function SectionBasedSidebar({
@@ -9,7 +8,7 @@ export default function SectionBasedSidebar({
   selectedAnswers,
   reviewStatus,
   onQuestionClick,
-  contestId, // Accept contestId as a prop
+  contestId,
 }) {
   const [sectionTimes, setSectionTimes] = useState(() => {
     const storedTimes = sessionStorage.getItem(`sectionTimes_${contestId}`);
@@ -18,6 +17,8 @@ export default function SectionBasedSidebar({
       isActive: false,
     }));
   });
+
+  const [openSections, setOpenSections] = useState(new Set([currentSectionIndex]));
 
   useEffect(() => {
     sessionStorage.setItem(`sectionTimes_${contestId}`, JSON.stringify(sectionTimes));
@@ -55,34 +56,72 @@ export default function SectionBasedSidebar({
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    return `${hours}h ${minutes}m ${secs}s`;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const toggleSection = (sectionIndex) => {
+    setOpenSections((prevOpenSections) => {
+      const newOpenSections = new Set(prevOpenSections);
+      if (newOpenSections.has(sectionIndex)) {
+        newOpenSections.delete(sectionIndex);
+      } else {
+        newOpenSections.forEach((index) => newOpenSections.delete(index));
+        newOpenSections.add(sectionIndex);
+      }
+      return newOpenSections;
+    });
+  };
+
+  const handleSectionClick = (sectionIndex) => {
+    onQuestionClick(sectionIndex, 0); // Navigate to the first question of the section
+    toggleSection(sectionIndex);
+  };
+
+  const getQuestionStatus = (sectionIndex, questionIndex) => {
+    if (reviewStatus[sectionIndex]?.[questionIndex]) return "review";
+    if (sectionIndex === currentSectionIndex && questionIndex === currentQuestionIndex) return "current";
+    if (selectedAnswers[sectionIndex]?.[questionIndex] !== undefined) return "answered";
+    return "notAnswered";
   };
 
   return (
-    <div className="w-[300px]">
-    
+    <div className="w-full p-4 space-y-6">
       {sections.map((section, sectionIndex) => {
         const remainingTime = sectionTimes[sectionIndex].remainingTime;
         const formattedTime = formatTime(remainingTime);
 
         return (
-          <div key={sectionIndex} className="mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[#00296b] font-medium">{section.sectionName}</h3>
-              <span className="text-gray-600">
-                Duration: {formattedTime}
-              </span>
+          <div key={sectionIndex} className="border-b border-gray-200 pb-4">
+            <div className="flex items-center justify-between mb-2">
+              <button
+                className="flex items-center text-[#00296b] font-medium hover:underline"
+                onClick={() => handleSectionClick(sectionIndex)}
+              >
+                <span>{section.sectionName}</span>
+                <svg
+                  className={`w-4 h-4 ml-2 ${openSections.has(sectionIndex) ? "transform rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 9l-7 7-7-7"
+                  ></path>
+                </svg>
+              </button>
+              <span className="text-gray-600">{formattedTime}</span>
             </div>
-            <SectionBasedQuestionNumbers
-              questionNumbers={section.questions.map((_, i) => i + 1)}
-              questionStatuses={section.questions.map((_, i) => {
-                if (reviewStatus[sectionIndex]?.[i]) return "review";
-                if (sectionIndex === currentSectionIndex && i === currentQuestionIndex) return "current";
-                if (selectedAnswers[sectionIndex]?.[i]) return "answered";
-                return "notAnswered";
-              })}
-              onQuestionClick={(index) => onQuestionClick(sectionIndex, index)}
-            />
+            {openSections.has(sectionIndex) && (
+              <SectionBasedQuestionNumbers
+                questionNumbers={section.questions.map((_, i) => i + 1)}
+                questionStatuses={section.questions.map((_, i) => getQuestionStatus(sectionIndex, i))}
+                onQuestionClick={(index) => onQuestionClick(sectionIndex, index)}
+              />
+            )}
           </div>
         );
       })}

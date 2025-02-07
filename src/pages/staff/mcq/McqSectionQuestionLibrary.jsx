@@ -5,9 +5,9 @@ import axios from 'axios';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import FiltersSidebar from '../../../components/McqLibrary/FiltersSidebar'; // Adjust the import path as needed
+import FiltersSidebar from '../../../components/McqSectionLibrary/FiltersSidebar'; // Adjust the import path as needed
 
-const McqLibrary = ({ onQuestionsSelected, activeSectionIndex }) => {
+const McqSectionLibrary = ({ onQuestionsSelected, activeSectionIndex }) => {
   const [questions, setQuestions] = useState([]);
   const [filteredQuestions, setFilteredQuestions] = useState([]);
   const [selectedQuestions, setSelectedQuestions] = useState([]);
@@ -262,4 +262,4 @@ const McqLibrary = ({ onQuestionsSelected, activeSectionIndex }) => {
   );
 };
 
-export default McqLibrary;
+export default McqSectionLibrary;

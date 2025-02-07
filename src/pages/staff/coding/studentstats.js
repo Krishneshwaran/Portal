@@ -6,7 +6,7 @@ import { Assessment, CheckCircle, Cancel, WatchLater, Search, Warning } from "@m
 import { FaUserCog, FaUniversity, FaRegAddressBook, FaMailBulk } from "react-icons/fa"
 import { useParams } from "react-router-dom"
 import ProfileBg from "../../../assets/profilebg.svg"
-import ProfileImg from "../../../assets/profile.svg"
+import ProfileImg from "../../../assets/Dashboard icon.png"
 import GoldBadge from "../../../assets/badges/Gold.png"
 import SilverBadge from "../../../assets/badges/Silver.png"
 import BronzeBadge from "../../../assets/badges/Bronze.png"
@@ -18,6 +18,9 @@ import ReactDOM from "react-dom"
 import html2canvas from "html2canvas"
 import jsPDF from "jspdf"
 import StudentReport from "../Student_report"
+import { LuDownload } from "react-icons/lu";
+import { FaEye } from "react-icons/fa";
+
 
 const EnhancedStudentDashboard = () => {
   const [openPopup, setOpenPopup] = useState(false)
@@ -142,10 +145,10 @@ const EnhancedStudentDashboard = () => {
   const badgeImage = getBadgeImage(averageScore)
 
   const StatCard = ({ icon: Icon, label, value }) => (
-    <div className="bg-[#FFCC0026] shadow-md rounded-lg p-6 space-y-2">
-      <Icon className="text-[#000066] text-2xl" />
-      <p className="m-0 text-xl font-bold text-[#000066]">{value}</p>
-      <p className="m-0 text-xs text-gray-600">{label}</p>
+    <div className="bg-white w-[30%] h-full shadow-md rounded-lg p-6 relative text-center">
+      <span className="p-1 absolute -right-3 -top-3 bg-white rounded-full"><Icon className="text-[#FFCC00]" /></span>
+      <p className="m-0 text-xs font-semibold text-[#111933] mb-3">{label}</p>
+      <p className="m-0 text-3xl font-semibold text-[#111933]">{value}</p>
     </div>
   )
 
@@ -168,53 +171,45 @@ const EnhancedStudentDashboard = () => {
     setCurrentPage(value)
   }
 
+  console.log(student);
+
+
   return (
-    <div className="min-h-screen bg-gray-100 py-10 px-4 sm:px-6 lg:px-20">
+    <div className="min-h-screen bg-gray-100  py-10 px-4 sm:px-6 lg:px-20">
       <div className="container-lg max-w-7xl mx-auto">
-        <div className="mb-8 grid grid-cols-1 md:grid-cols-[40%,57%] gap-8 h-full">
-          <div className="bg-white space-y-5 rounded-2xl shadow-md overflow-hidden h-full p-6">
-            <div className="relative">
+        <div className="mb-8 grid grid-cols-1 md:grid-cols-[30%,70%] gap-8 h-full">
+          <div className="bg-white flex items-center space-x-1 rounded-lg shadow-md overflow-hidden h-full p-2">
+            <div className="w-44">
               <img
-                src={ProfileBg}
-                alt="Profile Background"
-                className="w-full h-64"
+                src={ProfileImg}
+                alt="Profile"
+                className="w-full"
               />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <img
-                  src={ProfileImg}
-                  alt="Profile"
-                  className="w-60 h-60 mt-8 mr-2 rounded-full z-10"
-                />
-              </div>
             </div>
-            <div className="p-6 pt-0 flex flex-col items-center">
-              <h2 className="text-[#000066] text-2xl font-bold text-center mb-2">{student.name}</h2>
-              <p className="text-gray-600 text-center mb-6">{student.regno}</p>
-              <div className="space-y-4">
+            <div className="flex flex-col">
+              <h2 className="text-[#111933] text-2xl font-semibold text-start mb-2">{student.name}</h2>
+              <p className="text-start text-sm mb-6">{student.year} Year - {student.regno}</p>
+              <div className="space-y-2">
                 <div className="flex items-center">
-                  <FaMailBulk className="text-[#000066] mr-5" />
+                  {/* <FaMailBulk className="text-[#000066] mr-5" /> */}
                   <span className="text-sm">{student.email}</span>
                 </div>
                 <div className="flex items-center">
-                  <FaUserCog className="text-[#000066] mr-5" />
+                  {/* <FaUserCog className="text-[#000066] mr-5" /> */}
                   <span className="text-sm">{student.dept}</span>
                 </div>
                 <div className="flex items-center">
-                  <FaUniversity className="text-[#000066] mr-5" />
+                  {/* <FaUniversity className="text-[#000066] mr-5" /> */}
                   <span className="text-sm">{student.collegename}</span>
-                </div>
-                <div className="flex items-center">
-                  <FaRegAddressBook className="text-[#000066] mr-5" />
-                  <span className="text-sm">First Year</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl grid grid-cols-[40%,60%] p-6 h-full">
-            <div className="bg-white h-full flex flex-col pr-5 border-r-2 border-gray-300">
-              <h3 className="text-[#000066] text-xl font-bold mb-8 mt-4">Test Summary</h3>
-              <div className="space-y-4 flex-grow">
+          <div className="rounded-2xl grid grid-cols-[70%,30%] h-full">
+            <div className="h-full flex flex-col">
+              <h3 className="text-[#111933] text-xl text-center font-bold mb-8 mt-4">Test Summary</h3>
+              <div className="flex justify-between">
                 <StatCard icon={Assessment} label="Total Tests Attended" value={totalTests} />
                 <StatCard icon={CheckCircle} label="Completed" value={completedTests} />
                 {/* <StatCard icon={Cancel} label="Not Completed" value={totalTests - completedTests} /> */}
@@ -223,34 +218,17 @@ const EnhancedStudentDashboard = () => {
             </div>
 
             <div className="h-full flex flex-col justify-around align-center">
-              <div className="bg-white">
-                <div className="flex flex-col items-center justify-center">
-                  <CircularProgressWithLabel value={averageScore} />
-                  {/* <p className="mt-2 text-[#000066] font-semibold">Overall</p>
-                  <p className="text-xs text-blue-950 text-center mt-2">
-                    Embark on a journey to sharpen your analytical thinking and problem-solving skills with our logical
-                    reasoning
-                  </p> */}
-                </div>
-              </div>
-              <hr className="border-[1.5px] border-gray-300" />
-              <div className="bg-white rounded-2xl">
-                <h3 className="text-[#000066] text-center text-xl font-bold mb-4">Grade</h3>
-                <div className="flex justify-center">
-                  <img
-                    src={badgeImage}
-                    alt="Grade Badge"
-                    className="w-44 h-44"
-                  />
-                </div>
+              <div className="flex flex-col items-center justify-center">
+                <CircularProgressWithLabel value={averageScore} />
               </div>
             </div>
           </div>
         </div>
 
         <div className="bg-white p-4 lg:p-8 lg:px-10 rounded-2xl shadow-md">
-          <h2 className="text-2xl font-bold text-blue-950 mb-6">Assessment Details</h2>
-          <div className="flex shadow-md shadow-gray-200 border px-5 py-2 mb-5 rounded-xl space-x-3">
+          <h2 className="text-2xl font-bold text-[#111933] mb-3">Assessment Details</h2>
+          <p className="text-sm mb-5 text-[#111933]">Track the assessments report also view, and download.</p>
+          <div className="flex shadow-sm shadow-gray-200 border px-5 py-2 mb-5 rounded-xl space-x-3">
             <Search fontSize="large" className="text-gray-500" />
             <input
               type="text"
@@ -267,12 +245,12 @@ const EnhancedStudentDashboard = () => {
               <React.Fragment key={index}>
                 <div
                   key={index}
-                  className="lg:flex justify-between items-center text-center p-4 lg:p-2 rounded-lg hover:bg-blue-50"
+                  className="lg:flex justify-between items-center text-center p-4 lg:p-1 rounded-lg hover:bg-blue-50"
                 >
-                  <h3 className="text-normal">{assessment.name}</h3>
+                  <h3 className="text-normal font-medium text-[#111933]">{assessment.name}</h3>
                   <div className="flex items-center lg:justify-end justify-center space-x-4 mt-2 lg:m-0">
                     <button
-                      className="text-sm font-medium border border-gray-400 rounded px-4 py-2 bg-gray-200"
+                      className="text-sm flex items-center space-x-2 font-medium border border-[#111933] text-[#111933] rounded px-4 py-2 hover:bg-[#FFCC00] hover:border-[#FFCC00] hover:text-[#111933]"
                       onClick={() =>
                         handleViewReport(
                           assessment.contestStatus,
@@ -282,9 +260,10 @@ const EnhancedStudentDashboard = () => {
                       }
                     >
                       View Report
+                      <FaEye className="ml-2"/>
                     </button>
                     <button
-                      className="text-sm font-medium border border-yellow-500 rounded px-4 py-2 bg-[#FFCC0061]"
+                      className="text-sm flex items-center font-medium bg-[#111933] border-[#111933] text-white border hover:border-[#FFCC00] rounded px-4 py-2 hover:bg-[#FFCC00] hover:text-[#111933]"
                       onClick={() =>
                         handleDownloadReport(
                           assessment.contestStatus,
@@ -300,7 +279,7 @@ const EnhancedStudentDashboard = () => {
                           <div className="loading-ring"></div>
                         </div>
                       ) : (
-                        "Download"
+                        <>Download <LuDownload className="ml-2"/></>
                       )}
                     </button>
 
@@ -410,14 +389,14 @@ const EnhancedStudentDashboard = () => {
         </style>
 
         <div className="relative flex justify-center mt-6">
-          <small className="absolute text-md left-5 text-gray-400 font-bold">Show data {currentPage} to {Math.ceil(allAssessments.length / assessmentsPerPage)} of {allAssessments.length} entries</small>
+          <small className="absolute text-md left-5 text-gray-400 font-semibold">Show data {currentPage} to {Math.ceil(allAssessments.length / assessmentsPerPage)} of {allAssessments.length} entries</small>
           <Pagination
             count={Math.ceil(allAssessments.length / assessmentsPerPage)}
             page={currentPage}
             onChange={handlePageChange}
             sx={{
               "& .MuiPaginationItem-root": {
-                color: "#000975",
+                color: "#111933",
               },
               "& .MuiPaginationItem-root.Mui-selected": {
                 backgroundColor: "#FDC500",
@@ -436,44 +415,14 @@ const EnhancedStudentDashboard = () => {
 
 function CircularProgressWithLabel({ value }) {
   return (
-    // <Box sx={{ position: "relative", display: "inline-flex" }}>
-    //   <CircularProgress
-    //     sx={{
-    //       color: "#FDC500",
-    //       "& .MuiCircularProgress-circle": {
-    //         strokeLinecap: "round",
-    //       },
-    //     }}
-    //     thickness={8}
-    //     size={120}
-    //     variant="determinate"
-    //     value={value}
-    //   />
-    //   <Box
-    //     sx={{
-    //       top: 0,
-    //       left: 0,
-    //       bottom: 0,
-    //       right: 0,
-    //       position: "absolute",
-    //       display: "flex",
-    //       alignItems: "center",
-    //       justifyContent: "center",
-    //     }}
-    //   >
-    //     <Typography variant="h4" component="div" color="#FDC500" fontWeight="bold">
-    //       {`${Math.round(value)}%`}
-    //     </Typography>
-    //   </Box>
-    // </Box>
-    <div className="flex flex-col flex-1 p-8 items-center justify-center">
+    <div className="flex flex-col flex-1 p-2 items-center justify-center">
       {/* progress */}
       <div className="relative">
         <CircularProgress
           variant="determinate"
           value={100}
           size={120}
-          sx={{ color: "#fff5cc" }}
+          sx={{ color: "#fff5cc", backgroundColor: 'white', borderRadius: '50%' }}
           thickness={8}
         />
         <div className="absolute z-10 w-full h-full top-0">
@@ -485,16 +434,12 @@ function CircularProgressWithLabel({ value }) {
             thickness={8}
           />
         </div>
-        <div className="rounded-full text-blue-900 font-bold absolute top-0 h-full w-full flex items-center justify-center">
+        <div className="rounded-full text-[#111933] font-bold absolute top-0 h-full w-full flex items-center justify-center">
           {value}%
         </div>
       </div>
 
-      <p className="text-[#000975] mt-3 mb-1 font-bold"> Overall </p>
-      <p className="text-xs text-center">
-        Embark on a journey to sharpen your analytical thinking and
-        problem-solving skills with our "Logical Reasoning"
-      </p>
+      <button className="text-[#111933] mt-3 text-md mb-1 font-semibold">Overall Stats {'>'}</button>
     </div>
   )
 }

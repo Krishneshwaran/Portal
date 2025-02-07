@@ -38,17 +38,19 @@ const TestCard = ({
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Not specified';
-    try { 
+    try {
       const date = new Date(dateString);
       return new Intl.DateTimeFormat('en-US', {
         dateStyle: 'medium',
         timeStyle: 'short',
+        timeZone: 'Asia/Kolkata',
       }).format(date);
     } catch (error) {
       console.error('Date formatting error:', error);
       return 'Invalid date';
     }
   };
+  
 
   const handleCardClick = (e) => {
     e.preventDefault();
@@ -101,8 +103,11 @@ const TestCard = ({
               </div>
               <div className="flex bg-white py-1 px-2 border rounded-full items-center gap-1">
                 <Clock className="w-3 h-3" />
-                <span className="text-xs whitespace-nowrap">{new Date(test?.starttime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                <span className="text-xs whitespace-nowrap">
+                  {new Date(test?.starttime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })}
+                </span>
               </div>
+
               <div className="flex bg-white py-1 px-2 border rounded-full items-center gap-1">
                 <GiDuration className="w-3 h-3" />
                 <span className="text-xs">

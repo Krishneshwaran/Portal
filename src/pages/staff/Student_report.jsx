@@ -20,6 +20,7 @@ import gradeA from "../../assets/badges/grade_a.png";
 import gradeB from "../../assets/badges/grade_b.png";
 import gradeC from "../../assets/badges/grade_c.png";
 import gradeD from "../../assets/badges/grade_d.png";
+import Loader from "../../layout/Loader";
 
 
 const StudentReport = ({ contestId: propContestId, regno: propRegno, hideDetails }) => {
@@ -69,7 +70,7 @@ const StudentReport = ({ contestId: propContestId, regno: propRegno, hideDetails
     fetchStudentReport();
 }, [contestId, regno]);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <Loader/>;
   if (error) return <div>{error}</div>;
   if (!testData) return <div>No data available.</div>;
 
@@ -90,7 +91,7 @@ const StudentReport = ({ contestId: propContestId, regno: propRegno, hideDetails
     if (isNaN(start) || isNaN(end)) {
       throw new Error(
         "Invalid date format. Please provide valid ISO date strings."
-      );
+      );  
     }
 
     // Ensure the end time is not earlier than the start time

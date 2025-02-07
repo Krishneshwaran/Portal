@@ -43,7 +43,7 @@ const McqTestQuestionList = ({ testId, setSelectedQuestion, currentPage, totalPa
         toast.error("Error fetching questions."); // Add error toast
       } else {
         setQuestions(response.data.questions);
-        toast.success("Questions fetched successfully!"); // Add success toast
+        ; // Add success toast
       }   
 
       setLoading(false);

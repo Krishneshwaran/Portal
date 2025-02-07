@@ -6,8 +6,7 @@ import QuestionsList from '../../../components/McqLibrary/QuestionsList';
 import QuestionModal from '../../../components/McqLibrary/QuestionModal';
 import ImportModal from '../../../components/McqLibrary/ImportModal';
 import QuestionDetails from '../../../components/McqLibrary/QuestionDetails';
-import ConfirmationModal from '../../../components/McqLibrary/ConfirmationModal';
-import TotalQuestions from '../../../components/McqLibrary/TotalQuestions'; // Import the TotalQuestions component
+import ConfirmationModal from '../../../components/McqLibrary/ConfirmationModal'; 
 
 const Mcq = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -264,15 +263,20 @@ const Mcq = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-[#ECF2FE]">
+      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h3 className="font-semibold text-2xl mb-3 text-[#111933]">Question Library</h3>
+      <h4 className="font-light text-lg mb-3 text-[#111933]">Select and preview question from your collection</h4>
+      <div className="flex  items-center mb-6 border-b-2 border-[#11193380]"></div>
       <div className=""> 
  
 </div>
         <div className="flex flex-col lg:flex-row gap-6"> {/* Reduced gap from 8 to 4 */}
+        
         <div>
-            <TotalQuestions totalQuestions={filteredQuestions.length} />
-            <div className="mt-4"> {/* Add margin-top to create space */}
+          
+            
+            <div > {/* Add margin-top to create space */}
               <FiltersSidebar
                 filters={filters}
                 toggleFilter={toggleFilter}
@@ -284,6 +288,7 @@ const Mcq = () => {
           </div>
           <div className="flex-1">
             <Header
+            totalQuestions={filteredQuestions.length}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               setIsModalOpen={setIsModalOpen}

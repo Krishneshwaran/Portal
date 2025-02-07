@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { MdOutlinePublish } from "react-icons/md";
 import {
   Dialog,
   DialogTitle,
@@ -14,22 +15,27 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Checkbox,
-  TablePagination,
   Paper,
   Box,
-  Menu,
-  MenuItem,
   Pagination,
+  MenuItem,
+  IconButton,
+  Typography,
+  Chip,
 } from "@mui/material";
-import { parseISO, isAfter } from 'date-fns';
+import FilterListIcon from "@mui/icons-material/FilterList";
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer, toast } from 'react-toastify';
+import { parseISO, isAfter } from 'date-fns';
+import CloseIcon from '@mui/icons-material/Close';
+import { IoCloseCircleOutline } from "react-icons/io5";
+import { FaCheckCircle } from "react-icons/fa";
 //img imports
 import heroImg from "../../../assets/test_view_hero_img.png";
 import StudentTable from "../../../components/staff/StudentTable";
 import Loader from "../../../layout/Loader"; // Import the Loader component
 import { XCircle } from 'lucide-react';
+import DownloadContestData from "../../../components/staff/report/DownloadContestData"; // Import the DownloadContestData component
 
 function formatDateTime(dateString) {
   const date = new Date(dateString);
@@ -46,22 +52,6 @@ function formatDateTime(dateString) {
 
   return `${day} ${month} ${year}, ${hours}:${minutes} ${period}`;
 }
-
-const textFieldStyle = {
-  borderRadius: '80px', // Rounded corners
-  '& .MuiOutlinedInput-root': {
-    '& fieldset': {
-      borderColor: '#6267e8', // Default border color
-    },
-    '&:hover fieldset': {
-      borderColor: '#6267e8', // Hover border color
-    },
-    '&.Mui-focused fieldset': {
-      borderColor: '#6267e8', // Focus border color
-      borderWidth: 2,
-    },
-  },
-};
 
 const RulesAndRegulations = ({ assessmentOverview }) => {
   // Function to parse the guidelines and identify bullet points or notations
@@ -90,9 +80,12 @@ const RulesAndRegulations = ({ assessmentOverview }) => {
     <section className="flex p-6 shadow-sm flex-1 bg-[#ffffff] mb-6 rounded-lg">
       {/* rules and regulations */}
       <div className="mb-6 flex-[2] mr-12">
-        <p className="text-2xl font-semibold text-[#00296B] mb-2">
+        <p className="text-2xl font-semibold text-[#111933] mb-2">
           {" "}
           Rules and Regulations{" "}
+        </p>
+        <p className="text-md font-semibold ml-6 text-[#111933] mb-2">
+          Instructions: Read carefully; contact the Department for clarifications.
         </p>
         {items.length > 0 ? (
           <ul className="list-disc list-inside ml-7">
@@ -114,10 +107,9 @@ const RulesAndRegulations = ({ assessmentOverview }) => {
 
 const ViewTest = () => {
   const themeButtonStyle =
-    "px-5 p-2 rounded-full bg-[#FFCC0061] border-[#FFCC00] border-[1px] mx-2 hover:bg-[#FFCC0090]";
+    "px-5 p-2 rounded-xl bg-transparent border-[#111933] border-[1px] mx-2 hover:bg-[#b6c5f7]";
 
-  const studentsPerPage = 5;
-
+  const [showDownload, setShowDownload] = useState(false);
   const { contestId } = useParams();
   const [sortConfig, setSortConfig] = useState({ key: "", direction: "" });
   const [openFilterDialog, setOpenFilterDialog] = useState(false);
@@ -127,39 +119,36 @@ const ViewTest = () => {
   const [popupFunction, setPopupFunction] = useState();
   const [page, setPage] = useState(0); // Ensure pagination starts at page 0
 
-  const paginate = (pageNumber) => setPage(pageNumber);
   const navigate = useNavigate(); // Used for navigation
   const [testDetails, setTestDetails] = useState(null);
   const [error, setError] = useState(null);
   const [students, setStudents] = useState([]);
+  const [filteredStudents, setFilteredStudents] = useState([]); // Define filteredStudents
   const [isEditing, setIsEditing] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [filters, setFilters] = useState({
-    collegename: "",
-    dept: "",
-    year: "",
+    collegename: [],
+    dept: [],
+    year: [],
     status: "",
     searchText: "",
   }); // Extended filters
-  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
-  const [dialogStudents, setDialogStudents] = useState([]); // To store all students for the dialog
   const [dialogFilters, setDialogFilters] = useState({
     collegename: "",
     dept: "",
     year: "",
-  });
-  const [filteredDialogStudents, setFilteredDialogStudents] = useState([]);
-  const [filteredStudents, setFilteredStudents] = useState([]);
+  }); // Define dialogFilters
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [dialogStudents, setDialogStudents] = useState([]); // To store all students for the dialog
+  const [filteredDialogStudents, setFilteredDialogStudents] = useState([]); // Define filteredDialogStudents
   const [rowsPerPage, setRowsPerPage] = useState(10); // Set rowsPerPage to 10
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
-  const [isPublishing, setIsPublishing] = useState(false); // Button disable state
   const [isPublished, setIsPublished] = useState(false); // Result published state
-  const [downloadAnchorEl, setDownloadAnchorEl] = useState(null); // To manage download menu
-  const [studentReports, setStudentReports] = useState({}); // To store correct answers for students
   const [loading, setLoading] = useState(true); // Set initial loading state to true
   const [modalOpen, setModalOpen] = useState(false); // State to manage modal
-  const [startedModalOpen, setStartedModalOpen] = useState(false); // State to manage modal for "Started" status
+  const [showDeletePopup, setShowDeletePopup] = useState(false); // State for delete confirmation popup
+  const [showPublishPopup, setShowPublishPopup] = useState(false); // State for publish confirmation popup
 
   const assessmentOverview = testDetails?.assessmentOverview || {};
   const isRegistrationPeriodOver = assessmentOverview?.registrationEnd
@@ -180,7 +169,7 @@ const ViewTest = () => {
     if (!confirmPublish) return;
 
     try {
-      setIsPublishing(true); // Disable button during API call
+      setIsPublished(true); // Disable button during API call
 
       // Debugging: Log the contestId and full URL
       console.log("Contest ID:", contestId);
@@ -205,113 +194,10 @@ const ViewTest = () => {
         "An error occurred while publishing the results. Please try again."
       );
     } finally {
-      setIsPublishing(false); // Re-enable the button
+      setIsPublished(false); // Re-enable the button
     }
   };
 
-  const handleDownloadAll = () => {
-    // Ensure student data is available
-    if (
-      !testDetails?.student_details ||
-      testDetails.student_details.length === 0
-    ) {
-      toast.error("No student data available to download");
-      return;
-    }
-
-    // Create CSV
-    const headers = [
-      "Name",
-      "Registration Number",
-      "Department",
-      "College Name",
-      "Year",
-      "Status",
-      "Correct Answers",
-    ];
-
-    const csvContent = [
-      headers.join(","),
-      ...testDetails.student_details.map((student) =>
-        [
-          `"${student.name || ""}"`,
-          `"${student.regno || ""}"`,
-          `"${student.dept || ""}"`,
-          `"${student.collegename || ""}"`,
-          `"${student.year || ""}"`,
-          `"${student.status || ""}"`,
-          `"${studentReports[student.regno] || "N/A"}"`,
-        ].join(",")
-      ),
-    ].join("\n");
-
-    // Trigger download
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute(
-      "download",
-      `all_students_${new Date().toISOString().split("T")[0]}.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleDownloadByStatus = (status) => {
-    const filteredData = testDetails?.student_details.filter(
-      (student) => student.status.toLowerCase() === status.toLowerCase()
-    );
-
-    if (filteredData.length === 0) {
-      toast.error(`No students found with status: ${status}`);
-      return;
-    }
-
-    const headers = [
-      "Name",
-      "Registration Number",
-      "Department",
-      "College Name",
-      "Year",
-      "Status",
-      "Correct Answers",
-    ];
-
-    const csvContent = [
-      headers.join(","),
-      ...filteredData.map((student) =>
-        [
-          `"${student.name || ""}"`,
-          `"${student.regno || ""}"`,
-          `"${student.dept || ""}"`,
-          `"${student.collegename || ""}"`,
-          `"${student.year || ""}"`,
-          `"${student.status || ""}"`,
-          `"${studentReports[student.regno] || "N/A"}"`,
-        ].join(",")
-      ),
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute(
-      "download",
-      `students_${status.toLowerCase().replace(/\s+/g, "_")}_${
-        new Date().toISOString().split("T")[0]
-      }.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  // Fetch Test Details
   useEffect(() => {
     const fetchTestDetails = async () => {
       try {
@@ -345,22 +231,7 @@ const ViewTest = () => {
     };
 
     if (contestId) fetchTestDetails();
-  }, [contestId]);
-
-  // Fetch All Students
-  const fetchStudents = async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/api/student/`);
-      const updatedStudents = response.data.map((student) => ({
-        ...student,
-        year: student.year || "N/A", // Ensure year always has a value
-      }));
-      setStudents(updatedStudents);
-      setFilteredStudents(updatedStudents);
-    } catch (error) {
-      console.error("Failed to fetch students:", error);
-    }
-  };
+  }, [contestId, API_BASE_URL]);
 
   useEffect(() => {
     const fetchAllStudents = async () => {
@@ -368,8 +239,7 @@ const ViewTest = () => {
         const response = await axios.get(`${API_BASE_URL}/api/student/`);
         const updatedStudents = response.data.map((student) => ({
           ...student,
-          year: student.year || "N/A",
-          status: student.status || "Unknown",
+          year: student.year || "N/A", // Ensure year always has a value
         }));
         setDialogStudents(updatedStudents); // Set the data for the dialog
         setFilteredDialogStudents(updatedStudents); // Initialize the filtered data
@@ -379,7 +249,7 @@ const ViewTest = () => {
     };
 
     if (publishDialogOpen) fetchAllStudents();
-  }, [publishDialogOpen]);
+  }, [publishDialogOpen, API_BASE_URL]);
 
   // Handle Input Change
   const handleInputChange = (e, field, section) => {
@@ -449,9 +319,11 @@ const ViewTest = () => {
         );
       }
 
-      // Filter by Year
-      if (filters.year) {
-        filtered = filtered.filter((student) => student.year === filters.year);
+      // Filter by Year (Roman numerals)
+      if (filters.year.length > 0) {
+        filtered = filtered.filter((student) =>
+          filters.year.includes(student.year)
+        );
       }
 
       // Search Text Filter (only for student name)
@@ -461,45 +333,30 @@ const ViewTest = () => {
         );
       }
 
+      // Filter by College Name
+      if (filters.collegename.length > 0) {
+        filtered = filtered.filter((student) =>
+          filters.collegename.some((college) =>
+            student.collegename.toLowerCase().includes(college.toLowerCase())
+          )
+        );
+      }
+
+      // Filter by Department
+      if (filters.dept.length > 0) {
+        filtered = filtered.filter((student) =>
+          filters.dept.some((dept) =>
+            student.dept.toLowerCase().includes(dept.toLowerCase())
+          )
+        );
+      }
+
       setFilteredStudents(filtered);
       setPage(0); // Reset to the first page when filters change
     };
 
     applyFilters();
   }, [filters, students]);
-
-  useEffect(() => {
-    const applyDialogFilters = () => {
-      let filtered = [...dialogStudents]; // Define filtered variable
-
-      // Filter by College Name
-      if (dialogFilters.collegename) {
-        filtered = filtered.filter((student) =>
-          student.collegename
-            .toLowerCase()
-            .includes(dialogFilters.collegename.toLowerCase())
-        );
-      }
-
-      // Filter by Department
-      if (dialogFilters.dept) {
-        filtered = filtered.filter((student) =>
-          student.dept.toLowerCase().includes(dialogFilters.dept.toLowerCase())
-        );
-      }
-
-      // Filter by Year
-      if (dialogFilters.year) {
-        filtered = filtered.filter(
-          (student) => student.year === dialogFilters.year
-        );
-      }
-
-      setFilteredDialogStudents(filtered);
-    };
-
-    applyDialogFilters();
-  }, [dialogFilters, dialogStudents]);
 
   // Manage Selected Students
   const handleSelectAll = (e) => {
@@ -518,10 +375,12 @@ const ViewTest = () => {
     );
   };
 
-  const handleDeleteStudent = (index) => {
+  const handleStudentRemove = (regno) => {
     setTestDetails((prevDetails) => {
       const updatedDetails = { ...prevDetails };
-      updatedDetails.visible_to.splice(index, 1);
+      updatedDetails.visible_to = updatedDetails.visible_to.filter(
+        (studentRegno) => studentRegno !== regno
+      );
       return updatedDetails;
     });
   };
@@ -573,6 +432,9 @@ const ViewTest = () => {
     }
   };
 
+  if (error) return <div>{error}</div>;
+  if (loading) return <Loader />; // Render the Loader component while loading
+
   const handleViewClick = (student) => {
     if (student.status.toLowerCase() === "yet to start") {
       setModalOpen(true);
@@ -592,7 +454,6 @@ const ViewTest = () => {
 
   const {
     testConfiguration,
-    visible_to,
     student_details,
     sections,
   } = testDetails || {};
@@ -607,6 +468,50 @@ const ViewTest = () => {
     indexOfFirstStudent,
     indexOfLastStudent
   );
+
+  // Filter Dialog Functions
+  const handleFilterDialogOpen = () => {
+    setOpenFilterDialog(true);
+  };
+
+  const handleFilterDialogClose = () => {
+    setOpenFilterDialog(false);
+  };
+
+  const toggleFilter = (filterType, value) => {
+    setFilters((prevFilters) => {
+      let newFilters = { ...prevFilters };
+      if (filterType === "collegename") {
+        newFilters.collegename = newFilters.collegename.includes(value)
+          ? newFilters.collegename.filter((college) => college !== value)
+          : [...newFilters.collegename, value];
+      } else if (filterType === "dept") {
+        newFilters.dept = newFilters.dept.includes(value)
+          ? newFilters.dept.filter((dept) => dept !== value)
+          : [...newFilters.dept, value];
+      } else if (filterType === "year") {
+        newFilters.year = newFilters.year.includes(value)
+          ? newFilters.year.filter((year) => year !== value)
+          : [...newFilters.year, value];
+      }
+      return newFilters;
+    });
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      collegename: [],
+      dept: [],
+      year: [],
+      status: "",
+      searchText: "",
+    });
+    setOpenFilterDialog(false);
+  };
+
+  const applyFilters = () => {
+    setOpenFilterDialog(false);
+  };
 
   return (
     <div className="min-h-screen relative">
@@ -632,7 +537,7 @@ const ViewTest = () => {
           <p className="text-xl mt-1 w-[90%] self-center"> {popup} </p>
           <div className="flex space-x-2 mt-8">
             <button
-              className="px-5 p-2 rounded-lg flex-1 bg-[#00296B61] border-[#00296B] border-[1px] hover:bg-[#00296B90]"
+              className="px-5 p-2 rounded-lg flex-1 bg-[#11193361] border-[#111933] border-[1px] hover:bg-[#11193390]"
               onClick={() => popupFunction()}
             >
               Okay
@@ -646,25 +551,125 @@ const ViewTest = () => {
           </div>
         </div>
       </div>
-      <div className="p-6 bg-gray-100 min-h-full">
-        {/* Previous Page Button
-      <div className="mb-4 flex flex-row justify-between items-center">
-        <Button
-          variant="outlined"
-          color="primary"
-          onClick={handleGoToStaffDashboard}
-          startIcon={<span>&larr;</span>} // Add a left arrow icon
-          className="px-4 py-2 rounded-full"
-          sx={{ borderRadius: "24px", textTransform: "none" }}
-        >
-          Back
-        </Button>
 
-      </div> */}
+      {showDeletePopup && (
+  <div className="fixed inset-0 bg-[#0000005a] flex items-center justify-center z-50 backdrop-blur-sm">
+    <div className="bg-white p-8 w-[500px] rounded-xl shadow-lg text-center">
+      {/* Warning Icon */}
+      <div className="text-red-600 mb-4">
+        <svg
+          className="w-14 h-14 mx-auto"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
+        </svg>
+      </div>
+
+      {/* Title */}
+      <h2 className="text-2xl font-semibold text-red-600">Warning</h2>
+
+      {/* Description */}
+      <p className="text-lg text-gray-700 mt-2">
+        Are you sure you want to delete the assessment?
+      </p>
+
+      {/* Warning Message */}
+      <p className="text-sm text-red-500 mt-2">
+        <strong>Note:</strong> This action cannot be undone.
+      </p>
+
+      {/* Buttons */}
+      <div className="flex justify-center mt-6 space-x-32">
+        <button
+          className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded-lg transition"
+          onClick={() => setShowDeletePopup(false)}
+        >
+          Cancel
+        </button>
+        <button
+          className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
+          onClick={() => {
+            handleDeleteContest();
+            setShowDeletePopup(false);
+          }}
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+{showPublishPopup && (
+  <div className="fixed inset-0 bg-[#0000005a] flex items-center justify-center z-50 backdrop-blur-sm">
+    <div className="bg-white p-8 w-[500px] rounded-xl shadow-lg text-center">
+      {/* Title with Icon */}
+      <div className="flex items-center justify-center space-x-3">
+        <svg
+          className="w-8 h-8 text-green-500"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+        <h2 className="text-2xl font-semibold">Confirm Publish</h2>
+      </div>
+
+      {/* Description */}
+      <p className="text-md text-gray-700 mt-4">
+        Are you sure you want to publish the assessment? Once published, it will be visible to all participants.
+      </p>
+
+      {/* Warning Message */}
+      <p className="text-sm text-red-500 mt-2">
+        <strong>Note:</strong> This action cannot be undone.
+      </p>
+
+      {/* Buttons */}
+      <div className="flex justify-center mt-6 space-x-44">
+        
+        <button
+          className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded-lg transition"
+          onClick={() => setShowPublishPopup(false)}
+        >
+          Cancel
+        </button>
+        <button
+          className="px-6 py-2 bg-[#111933] hover:bg-blue-900 text-white rounded-lg transition"
+          onClick={() => {
+            handlePublish();
+            setShowPublishPopup(false);
+          }}
+        >
+          Yes, Publish
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+      <div className="p-14 bg-blue-50 min-h-full">
         {/* Header Section */}
-        <section className="flex p-6 shadow-sm flex-1 bg-white mb-6 rounded-lg text-[#00296B] items-start">
+        <section className="flex p-6 shadow-sm flex-1 bg-white mb-6 rounded-lg text-[#111933] items-start">
           {/* details */}
-          <div className="flex-1 flex flex-col mr-12 justify-between">
+          <div className="flex-1 p-2 flex flex-col mr-12 justify-between">
             <div className="mb-6">
               <p className="text-2xl font-semibold mb-2">
                 {assessmentOverview?.name}{" "}
@@ -674,247 +679,424 @@ const ViewTest = () => {
               </p>
             </div>
 
-            <div className="mt-4">
-              <table className="min-w-full bg-white border border-gray-300">
-                <thead>
+            <div className="mt-4 border-2  rounded-lg">
+              <table className="min-w-full bg-white rounded-lg overflow-hidden">
+                {/* Table Header */}
+                <thead className="bg-[#111933] text-white">
                   <tr>
                     {[
                       "Registration Start",
-                      "Registration End",
                       "Total Duration",
                       "Total Attendees",
+                      "Registration End",
                     ].map((title, index) => (
-                      <th key={index} className="py-2 px-4 border-b">
+                      <th
+                        key={index}
+                        className={`relative font-normal py-2 px-6 text-center ${
+                          index === 0 ? "rounded-tl-lg" : index === 3 ? "rounded-tr-lg" : ""
+                        }`}
+                      >
                         {title}
+                        {index !== 0 && (
+                          <span
+                            className="absolute top-1/2 -translate-y-1/2 left-0 h-3/4 w-[1px] bg-gray-200"
+                            style={{ marginTop: "0.001rem", marginBottom: "2rem" }}
+                          ></span>
+                        )}
                       </th>
                     ))}
                   </tr>
                 </thead>
+                {/* Table Body */}
                 <tbody>
-                  <tr className="text-center">
-                    <td className="py-2 px-4 border-b">
+                  <tr className="border-b border-gray-300 hover:bg-gray-100">
+                    <td className="py-3 px-6 text-center ">
                       {formatDateTime(assessmentOverview?.registrationStart)}
                     </td>
-                    <td className="py-2 px-4 border-b">
-                      {formatDateTime(assessmentOverview?.registrationEnd)}
-                    </td>
-                    <td className="py-2 px-4 border-b">
+                    <td className="py-3 px-6 text-center ">
                       {`${testConfiguration?.duration?.hours}:${testConfiguration?.duration?.minutes} hrs`}
                     </td>
-                    <td className="py-2 px-4 border-b">
+                    <td className="py-3 px-6 text-center">
                       {student_details?.length || 0}
                     </td>
+                    <td className="py-3 px-6 text-center">
+                      {formatDateTime(assessmentOverview?.registrationEnd)}
+                    </td>
                   </tr>
+                  {/* Add more rows as needed */}
                 </tbody>
               </table>
             </div>
           </div>
 
           {/* hero img */}
-          <img src={heroImg} className="w-[200px] ml-1 lg:w-[250px]" />
+          <img src={heroImg} alt="Hero" className="w-[200px] ml-1 lg:w-[250px]" />
         </section>
-
-        {/* Test Configuration Section
-      {testConfiguration && (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-bold mb-4">Test Configuration</h2>
-          <div>
-            <strong>Questions:</strong> {testConfiguration?.questions}
-          </div>
-          <div>
-            <strong>Duration:</strong> {testConfiguration?.duration?.hours}{" "}
-            hours {testConfiguration?.duration?.minutes} minutes
-          </div>
-          <div>
-            <strong>Full Screen Mode:</strong>{" "}
-            {testConfiguration?.fullScreenMode ? "Enabled" : "Disabled"}
-          </div>
-          <div>
-            <strong>Face Detection:</strong>{" "}
-            {testConfiguration?.faceDetection ? "Enabled" : "Disabled"}
-          </div>
-          <div>
-            <strong>Device Restriction:</strong>{" "}
-            {testConfiguration?.deviceRestriction ? "Enabled" : "Disabled"}
-          </div>
-          <div>
-            <strong>Noise Detection:</strong>{" "}
-            {testConfiguration?.noiseDetection ? "Enabled" : "Disabled"}
-          </div>
-          <div>
-            <strong>Pass Percentage:</strong>{" "}
-            {testConfiguration?.passPercentage}%
-          </div>
-        </div>
-      )} */}
 
         <section className="flex space-x-6 flex-1 mb-6">
-          {/* Questions & Section Details */}
-          <div className="flex-1 flex flex-col text-center bg-white text-[#00296B] border-[1px] border-gray-200 rounded-md pb-2">
-            <p className="bg-[#ffcc005f] rounded-tl-md rounded-tr-md p-2 text-[#000975] text-lg font-semibold">
-              Questions & Section Details
-            </p>
-            <div className="flex flex-col space-y-1 p-4">
-              <div className="flex items-center">
-                <i className="bi bi-question-circle text-sm font-bold"></i>{" "}
-                <p className="font-semibold ml-1">No.of.Questions</p>:{" "}
-                <p>{testConfiguration?.questions || 0}</p>
-              </div>
-              {sections?.length > 0 && (
-                <div className="flex items-center">
-                  <i className="bi bi-grid-1x2 text-sm font-bold"></i>{" "}
-                  <p className="font-semibold ml-1">No.of.Sections</p>:{" "}
-                  <p>{sections?.length || 0}</p>
-                </div>
-              )}
-              <div className="flex items-center">
-                <i className="bi bi-clipboard-data text-sm font-bold"></i>{" "}
-                <p className="font-semibold ml-1">Total Marks</p>:{" "}
-                <p>{testConfiguration?.totalMarks || 0}</p>
-              </div>
-            </div>
-          </div>
+          {/* Progress Details */}
+          <div className="flex-1 flex flex-col items-center bg-white text-[#111933] border border-gray-300 rounded-xl shadow-md">
+  {/* Header */}
+  <p className="bg-[#111933] rounded-t-xl py-3 text-[#ffffff] text-lg font-medium w-full text-center">
+    Progress Details
+  </p>
 
-          {/* Sections & Questions Table */}
-          <div className="flex-1 flex flex-col text-center bg-white text-[#00296B] border-[1px] border-gray-200 rounded-md pb-2">
-            <p className="bg-[#ffcc005f] rounded-tl-md rounded-tr-md p-2 text-[#000975] text-lg font-semibold">
-              Sections & Questions
-            </p>
-            <div className="grid grid-cols-2 items-center font-semibold p-4">
-              <p className="text-center p-2 border-r-[1px] border-[#00296b] border-b-[1px]">
-                Sections
-              </p>
-              <p className="text-center p-2 border-b-[1px] border-[#00296b]">
-                Questions
-              </p>
-            </div>
-            {(sections ?? []).length === 0 ? (
-              <div className="flex flex-1 items-center justify-center p-4">
-                <p className="text-center font-semibold">
-                  !! No Sections here to Display !!
-                </p>
-              </div>
-            ) : (
-              <>
-                {sections?.map((section, index) => (
-                  <div key={index} className="grid grid-cols-2 flex-1 items-stretch">
-                    <p className="text-center border-r-[1px] border-[#00296b] border-b-[1px] flex items-center justify-center p-2">
-                      {section.sectionName}
-                    </p>
-                    <p className="text-center border-b-[1px] border-[#00296b] flex items-center justify-center p-2">
-                      {section.numQuestions}
-                    </p>
-                  </div>
-                ))}
-                <div className="grid grid-cols-2 flex-1 items-stretch">
-                  <p className="text-center border-r-[1px] border-[#00296b] flex items-center justify-center p-2">
-                    Total
-                  </p>
-                  <p className="text-center flex items-center justify-center p-2">
-                    {testConfiguration?.questions || 0}
-                  </p>
-                </div>
-              </>
-            )}
-          </div>
+  {/* Body */}
+  <div className="flex flex-col w-full px-6 py-6 space-y-4">
+    <div className="flex justify-between items-center w-full">
+      <p className="font-light">Assigned</p>
+      <p className="font-light">{student_details.length}</p>
+    </div>
+    <div className="flex justify-between items-center w-full">
+      <p className="font-light">Yet to Complete</p>
+      <p className="font-light">{student_details.filter(student => student.status === 'Yet to Complete').length}</p>
+    </div>
+    <div className="flex justify-between items-center w-full">
+      <p className="font-light">Completed</p>
+      <p className="font-light">{student_details.filter(student => student.status === 'Completed').length}</p>
+    </div>
+  </div>
+</div>
 
-          {/* Proctoring Enabled */}
-          <div className="flex-1 flex flex-col text-center bg-white text-[#00296B] border-[1px] border-gray-200 rounded-md pb-2">
-            <p className="bg-[#ffcc005f] rounded-tl-md rounded-tr-md p-2 text-[#000975] text-lg font-semibold">
-              Proctoring Enabled
+
+  {/* Question & Section Details */}
+  <div className="flex-1 flex flex-col items-center bg-white text-[#111933] border border-gray-300 rounded-xl shadow-md">
+  {/* Header */}
+  <p className="bg-[#111933] rounded-t-xl py-3 text-[#ffffff] text-lg font-medium w-full text-center">
+    Question & Section Details
+  </p>
+
+  {/* Body */}
+  <div className="flex flex-col w-full px-6 py-6 space-y-6 ">
+    <div className="flex justify-between items-center w-full">
+      <p className="font-light">No. of Questions</p>
+      <p className="font-light">{testConfiguration?.questions || 0}</p>
+    </div>
+    {sections?.length > 0 && (
+      <div className="flex justify-between items-center w-full">
+        <p className="font-light">No. of Sections</p>
+        <p className="font-light">{sections?.length || 0}</p>
+      </div>
+    )}
+    <div className="flex justify-between items-center w-full">
+      <p className="font-light">Total Marks</p>
+      <p className="font-light">{testConfiguration?.totalMarks || 0}</p>
+    </div>
+  </div>
+</div>
+
+
+  
+
+  {/* Sections & Questions Table */}
+  <div className="flex-1 flex flex-col text-center bg-white text-[#111933] border-[1px] border-gray-200 rounded-md pb-2">
+    <p className="bg-[#111933] rounded-tl-md rounded-tr-md p-2 text-[#ffffff] text-lg font-normal">
+      Sections & Questions
+    </p>
+    <div className="grid grid-cols-2 items-center font-semibold p-4">
+      <p className="text-center p-2 border-r-[1px] border-[#111933] border-b-[1px]">
+        Sections
+      </p>
+      <p className="text-center p-2 border-b-[1px] border-[#111933]">
+        Questions
+      </p>
+    </div>
+    {(sections ?? []).length === 0 ? (
+      <div className="flex flex-1 items-center justify-center p-4">
+        <p className="text-center font-semibold">
+          !! No Sections here to Display !!
+        </p>
+      </div>
+    ) : (
+      <>
+        {sections?.map((section, index) => (
+          <div key={index} className="grid grid-cols-2 flex-1 items-stretch">
+            <p className="text-center border-r-[1px] border-[#111933] border-b-[1px] flex items-center justify-center p-2">
+              {section.sectionName}
             </p>
-            {[
-              {
-                title: "Full Screen Mode",
-                value: testConfiguration?.fullScreenMode ? "Enabled" : "Disabled",
-                enabled: testConfiguration?.fullScreenMode,
-                icon: "fullscreen-icon", // Replace with appropriate icon class
-              },
-              {
-                title: "Face Detection",
-                value: testConfiguration?.faceDetection ? "Enabled" : "Disabled",
-                enabled: testConfiguration?.faceDetection,
-                icon: "face-detection-icon", // Replace with appropriate icon class
-              },
-              {
-                title: "Device Restriction",
-                value: testConfiguration?.deviceRestriction ? "Enabled" : "Disabled",
-                enabled: testConfiguration?.deviceRestriction,
-                icon: "device-restriction-icon", // Replace with appropriate icon class
-              },
-              {
-                title: "Noise Detection",
-                value: testConfiguration?.noiseDetection ? "Enabled" : "Disabled",
-                enabled: testConfiguration?.noiseDetection,
-                icon: "noise-detection-icon", // Replace with appropriate icon class
-              },
-            ].map((configParam) => (
-              <div className="flex justify-between p-2 w-[85%] self-center">
-                <p> {configParam.title} </p>{" "}
-                <label className="relative inline-flex items-center cursor-pointer ml-auto">
-                  <input
-                    type="checkbox"
-                    checked={configParam.enabled}
-                    disabled
-                    className="sr-only peer"
-                  />
-                  <div className="w-10 h-5 cursor-auto bg-gray-300 rounded-full peer-focus:ring-2 peer-focus:ring-amber-400 peer-checked:bg-amber-400 transition-all duration-300">
-                    <div
-                      className={`absolute left-0.5 top-1 h-4 w-4 bg-white rounded-full shadow-md transition-transform duration-300 ${
-                        configParam.enabled ? "translate-x-5" : "translate-x-0"
-                      }`}
-                    ></div>
-                  </div>
-                </label>
-              </div>
-            ))}
+            <p className="text-center border-b-[1px] border-[#111933] flex items-center justify-center p-2">
+              {section.numQuestions}
+            </p>
           </div>
-        </section>
+        ))}
+        <div className="grid grid-cols-2 flex-1 items-stretch">
+          <p className="text-center border-r-[1px] border-[#111933] flex items-center justify-center p-2">
+            Total
+          </p>
+          <p className="text-center flex items-center justify-center p-2">
+            {testConfiguration?.questions || 0}
+          </p>
+        </div>
+      </>
+    )}
+  </div>
+
+  {/* Proctoring Enabled */}
+  <div className="flex-1 flex flex-col text-center bg-white text-[#111933] border-[1px] border-gray-200 rounded-md pb-2">
+    <p className="bg-[#111933] rounded-tl-md rounded-tr-md p-2 text-[#ffffff] text-lg font-normal">
+      Proctoring Enabled
+    </p>
+    {[
+      {
+        title: "Full Screen Mode",
+        value: testConfiguration?.fullScreenMode ? "Enabled" : "Disabled",
+        enabled: testConfiguration?.fullScreenMode,
+        icon: "fullscreen-icon", // Replace with appropriate icon class
+      },
+      {
+        title: "Face Detection",
+        value: testConfiguration?.faceDetection ? "Enabled" : "Disabled",
+        enabled: testConfiguration?.faceDetection,
+        icon: "face-detection-icon", // Replace with appropriate icon class
+      },
+      {
+        title: "Device Restriction",
+        value: testConfiguration?.deviceRestriction ? "Enabled" : "Disabled",
+        enabled: testConfiguration?.deviceRestriction,
+        icon: "device-restriction-icon", // Replace with appropriate icon class
+      },
+      {
+        title: "Noise Detection",
+        value: testConfiguration?.noiseDetection ? "Enabled" : "Disabled",
+        enabled: testConfiguration?.noiseDetection,
+        icon: "noise-detection-icon", // Replace with appropriate icon class
+      },
+    ].map((configParam) => (
+      <div className="flex justify-between p-2 w-[85%] self-center">
+        <p> {configParam.title} </p>{" "}
+        <label className="relative inline-flex items-center cursor-pointer ml-auto">
+          <input
+            type="checkbox"
+            checked={configParam.enabled}
+            disabled
+            className="sr-only peer"
+          />
+          <div className="w-10 h-5 cursor-auto bg-gray-300 rounded-full peer-focus:ring-2 peer-focus:ring-blue-900 peer-checked:bg-[#111933] transition-all duration-300">
+            <div
+              className={`absolute left-0.5 top-1 h-4 w-4 bg-white rounded-full shadow-md transition-transform duration-300 ${
+                configParam.enabled ? "translate-x-5" : "translate-x-0"
+              }`}
+            ></div>
+          </div>
+        </label>
+      </div>
+    ))}
+  </div>
+</section>
+
 
         <RulesAndRegulations assessmentOverview={assessmentOverview} />
         {/* Visible To Section */}
         {student_details && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-xl font-semibold text-[#00296B] mb-4">
+            <h2 className="text-xl font-semibold text-[#111933] mb-4">
               Students
             </h2>
 
-            {/* <div className="mb-4 flex gap-2">
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleDownloadAll}
-            >
-              Download All
-            </Button>
+            {/* Filter Button */}
+            <div className="flex justify-end">
+              <button className="bg-[#111933] text-white font-medium mb-5 px-5 border rounded-xl"
+                onClick={handleFilterDialogOpen}>
+                <span className="pr-1">Filter</span><FilterListIcon />
+              </button>
+            </div>
 
-            <Button
-              variant="contained"
-              color="secondary"
-              onClick={(e) => setDownloadAnchorEl(e.currentTarget)}
+            {/* Filter Dialog */}
+            <Dialog
+              open={openFilterDialog}
+              onClose={handleFilterDialogClose}
+              fullWidth
+              maxWidth="md"
+              PaperProps={{
+                style: {
+                  width: '800px', // Increased width
+                  height: '530px', // Reduced height
+                  borderRadius: 15, // Rounded edges for the filter dialog
+                  backgroundColor: '#fff', // White background for the dialog
+                },
+              }}
+              BackdropProps={{
+                className: "fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm",
+              }}
+              TransitionProps={{ unmountOnExit: true }} // Remove sliding effect
             >
-              Download by Status
-            </Button>
+              <DialogTitle sx={{ fontWeight: "bold", mb: 1, color: "#111933", display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                Filter Options
+                <IconButton onClick={handleFilterDialogClose} sx={{ color: "#111933" }}>
+                  <CloseIcon />
+                </IconButton>
+              </DialogTitle>
+              <DialogContent sx={{ paddingTop: 0 }}>
+                <Typography
+                  variant="h6"
+                  sx={{ mb: 1, fontWeight: "bold", color: "#111933" }}
+                >
+                  Department
+                </Typography>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
+                  {["AI&ML", "IT", "CSE", "AI&DS", "Mech", "EEE", "ECE", "CSD", "CST", "AERO", "MCT", "CIVIL", "Others"].map(
+                    (dept) => (
+                      <Chip
+                        key={dept}
+                        label={dept}
+                        clickable
+                        onClick={() => toggleFilter("dept", dept)}
+                        sx={{
+                          cursor: "pointer",
+                          backgroundColor: filters.dept.includes(dept)
+                            ? "#111933"
+                            : "rgba(225, 235, 255, 0.8)", // Light blue with low opacity
+                          color: filters.dept.includes(dept) ? "#fff" : "#111933",
+                          width: 'auto', // Allow width to adjust based on content
+                          height: '35px', // Adjusted height
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center', // Center the text
+                          borderRadius: '15px', // Rounded corners
+                          whiteSpace: 'nowrap', // Prevent text wrapping
+                          overflow: 'hidden', // Hide overflow text
+                          textOverflow: 'ellipsis', // Show ellipsis for overflow text
+                          "&:hover": {
+                            backgroundColor: "#111933", // Change to #111933 on hover
+                            color: "#fff", // Change text color to white on hover
+                          },
+                        }}
+                      />
+                    )
+                  )}
+                </Box>
 
-            <Menu
-              anchorEl={downloadAnchorEl}
-              open={Boolean(downloadAnchorEl)}
-              onClose={() => setDownloadAnchorEl(null)}
-            >
-              <MenuItem onClick={() => handleDownloadByStatus("Completed")}>
-                Download Completed
-              </MenuItem>
-              <MenuItem onClick={() => handleDownloadByStatus("Started")}>
-                Download Started
-              </MenuItem>
-              <MenuItem onClick={() => handleDownloadByStatus("Yet to Start")}>
-                Download Yet to Start
-              </MenuItem>
-            </Menu>
-          </div> */}
+                <Typography
+                  variant="h6"
+                  sx={{ mt: 2, mb: 1, fontWeight: "bold", color: "#111933" }}
+                >
+                  Institution
+                </Typography>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
+                  {["SNSCT", "SNSCE", "SNS Spine", "SNS Nursing", "SNS Pharmacy", "SNS Health Science", "SNS Academy", "SNS Physiotherapy"].map(
+                    (college) => (
+                      <Chip
+                        key={college}
+                        label={college}
+                        clickable
+                        onClick={() => toggleFilter("collegename", college)}
+                        sx={{
+                          cursor: "pointer",
+                          backgroundColor: filters.collegename.includes(college)
+                            ? "#111933"
+                            : "rgba(225, 235, 255, 0.8)", // Light blue with low opacity
+                          color: filters.collegename.includes(college) ? "#fff" : "#111933",
+                          width: 'auto', // Allow width to adjust based on content
+                          height: '40px', // Adjusted height
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center', // Center the text
+                          borderRadius: '15px', // Rounded corners
+                          whiteSpace: 'nowrap', // Prevent text wrapping
+                          overflow: 'hidden', // Hide overflow text
+                          textOverflow: 'ellipsis', // Show ellipsis for overflow text
+                          "&:hover": {
+                            backgroundColor: "#111933", // Change to #111933 on hover
+                            color: "#fff", // Change text color to white on hover
+                          },
+                        }}
+                      />
+                    )
+                  )}
+                </Box>
+
+                <Typography
+                  variant="h6"
+                  sx={{ mt: 2, mb: 1, fontWeight: "bold", color: "#111933" }}
+                >
+                  Year
+                </Typography>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
+                  {["I", "II", "III", "IV"].map((year) => (
+                    <Chip
+                      key={year}
+                      label={year}
+                      clickable
+                      onClick={() => toggleFilter("year", year)}
+                      sx={{
+                        cursor: "pointer",
+                        backgroundColor: filters.year.includes(year)
+                          ? "#111933"
+                          : "rgba(225, 235, 255, 0.8)", // Light blue with low opacity
+                        color: filters.year.includes(year) ? "#fff" : "#111933",
+                        width: 'auto', // Allow width to adjust based on content
+                        height: '35px', // Adjusted height
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center', // Center the text
+                        borderRadius: '15px', // Rounded corners
+                        whiteSpace: 'nowrap', // Prevent text wrapping
+                        overflow: 'hidden', // Hide overflow text
+                        textOverflow: 'ellipsis', // Show ellipsis for overflow text
+                        "&:hover": {
+                          backgroundColor: "#111933", // Change to #111933 on hover
+                          color: "#fff", // Change text color to white on hover
+                        },
+                      }}
+                    />
+                  ))}
+                </Box>
+              </DialogContent>
+              <DialogActions>
+                <Button
+                  onClick={clearFilters}
+                  variant="outlined"
+                  sx={{
+                    color: "#111933",
+                    borderColor: "#111933",
+                    borderRadius: '10px', // Slightly curved
+                    width: '150px', // Adjusted width
+                    height: '40px', // Adjusted height
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    whiteSpace: "nowrap",
+                    gap: '8px',
+                    "&:hover": {
+                      backgroundColor: "#fff",
+                      color: "#111933",
+                    },
+                  }}
+                >
+                  <div className="rounded-full border border-[#111933] p-[2px]">
+                    <IoCloseCircleOutline className="text-[#111933]"/>
+                  </div>
+
+                  Clear Filter
+                </Button>
+                <Button
+                  onClick={applyFilters}
+                  variant="contained"
+                  sx={{
+                    backgroundColor: "#111933",
+                    color: "#fff",
+                    borderRadius: '10px', // Slightly curved
+                    width: '150px', // Adjusted width
+                    height: '40px', // Adjusted height
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    whiteSpace: 'nowrap',
+                    gap: '8px',
+                    "&:hover": {
+                      backgroundColor: "#111933",
+                    },
+                  }}
+                >
+                  <div className="rounded-full border border-white ">
+                    <FaCheckCircle className="text-white"/>
+                  </div>
+                  Apply Filters
+                </Button>
+              </DialogActions>
+            </Dialog>
 
             {/* Filter Section */}
             <Box mb={2} display="flex" gap={2}>
+              {/* Search Field */}
               <TextField
                 label="Search"
                 variant="outlined"
@@ -922,17 +1104,58 @@ const ViewTest = () => {
                 name="searchText"
                 value={filters.searchText || ""}
                 onChange={handleFilterChange}
-                sx={textFieldStyle}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '50px', // Fully rounded corners
+                    height: '40px', // Reduced field height
+                    padding: '0 16px', // Adjust padding for better alignment
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'gray', // Gray border color
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'darkgray', // Border color on hover
+                  },
+                  '& .MuiInputLabel-root': {
+                    top: '-5px', // Adjust label alignment
+                    fontSize: '0.9rem', // Smaller font for label
+                    color: 'gray', // Gray label color
+                  },
+                  '& .MuiInputLabel-shrink': {
+                    top: '0px', // Adjust shrink label position
+                  },
+                }}
               />
+
+              {/* Filter by Year */}
               <TextField
                 label="Filter by Year"
                 select
-                defaultValue="All"
                 fullWidth
                 name="year"
                 value={filters.year || ""}
                 onChange={handleFilterChange}
-                sx={textFieldStyle}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '50px', // Fully rounded corners
+                    height: '40px', // Reduced field height
+                    padding: '0 16px', // Adjust padding for better alignment
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'gray', // Gray border color
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'darkgray', // Border color on hover
+                  },
+                  '& .MuiInputLabel-root': {
+                    top: '-5px', // Adjust label alignment
+                    fontSize: '0.9rem', // Smaller font for label
+                    color: 'gray', // Gray label color
+                  },
+                  '& .MuiInputLabel-shrink': {
+                    top: '0px', // Adjust shrink label position
+                  },
+                }}
               >
                 <MenuItem key={"All"} value={""}>
                   All
@@ -950,15 +1173,36 @@ const ViewTest = () => {
                   IV
                 </MenuItem>
               </TextField>
+
+              {/* Filter by Status */}
               <TextField
                 label="Filter by Status"
                 select
-                defaultValue="All"
                 fullWidth
                 name="status"
                 value={filters.status || ""}
                 onChange={handleFilterChange}
-                sx={textFieldStyle}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '50px', // Fully rounded corners
+                    height: '40px', // Reduced field height
+                    padding: '0 16px', // Adjust padding for better alignment
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'gray', // Gray border color
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'darkgray', // Border color on hover
+                  },
+                  '& .MuiInputLabel-root': {
+                    top: '-5px', // Adjust label alignment
+                    fontSize: '0.9rem', // Smaller font for label
+                    color: 'gray', // Gray label color
+                  },
+                  '& .MuiInputLabel-shrink': {
+                    top: '0px', // Adjust shrink label position
+                  },
+                }}
               >
                 <MenuItem key="All" value={""}>
                   All
@@ -978,7 +1222,7 @@ const ViewTest = () => {
             {/* Students Table */}
             <TableContainer component={Paper} sx={{ borderRadius: "10px" }}>
               <Table>
-                <TableHead sx={{ backgroundColor: "#00296B", color: "white" }}>
+                <TableHead sx={{ backgroundColor: "#111933", color: "white" }}>
                   <TableRow>
                     <TableCell
                       sx={{
@@ -1046,75 +1290,62 @@ const ViewTest = () => {
                         Status
                       </p>
                     </TableCell>
-                    {!isEditing && (
-                      <TableCell
-                        sx={{
-                          color: "white",
-                          textAlign: "center",
-                          padding: "15px 0px",
-                        }}
-                      >
-                        Actions
-                      </TableCell>
-                    )}
-                    {isEditing && (
-                      <TableCell
-                        sx={{
-                          color: "white",
-                          textAlign: "center",
-                          padding: "15px 0px",
-                        }}
-                      >
-                        Actions
-                      </TableCell>
-                    )}
+                    <TableCell
+                      sx={{
+                        color: "white",
+                        textAlign: "center",
+                        padding: "15px 0px",
+                      }}
+                    >
+                      Actions
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {currentStudents.map((student) => (
                     <TableRow key={student.regno}>
                       <TableCell sx={{ position: "relative", textAlign: "center" }}>
-                      {isEditing && (
+                        {isEditing && (
+                          <button
+                            onClick={() => handleStudentRemove(student.regno)}
+                            style={{
+                              position: "absolute",
+                              left: "20px", // Adjust as needed
+                              top: "50%",
+                              transform: "translateY(-50%)",
+                            }}
+                          >
+                            <XCircle className="text-red-500" />
+                          </button>
+                        )}
+                        <span>{student.name}</span>
+                      </TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>
+                        {student.regno}
+                      </TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>
+                        {student.dept}
+                      </TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>
+                        {student.collegename}
+                      </TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>
+                        {student.year}
+                      </TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>
+                        {student.status}
+                      </TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>
                         <button
-                          onClick={() => handleDeleteStudent(student.regno)}
-                          style={{
-                            position: "absolute",
-                            left: "20px", // Adjust as needed
-                            top: "50%",
-                            transform: "translateY(-50%)"
-                          }}
-                                                                     >
-                          <XCircle className="text-red-500" />
+                          className="text-red-500 ml-2"
+                          onClick={() => handleViewClick(student)}
+                        >
+                          View
                         </button>
-                      )}
-                      <span>{student.name}</span>
-                    </TableCell>
-                    <TableCell sx={{ textAlign: "center" }}>
-                      {student.regno}
-                    </TableCell>
-                    <TableCell sx={{ textAlign: "center" }}>
-                      {student.dept}
-                    </TableCell>
-                    <TableCell sx={{ textAlign: "center" }}>
-                      {student.collegename}
-                    </TableCell>
-                    <TableCell sx={{ textAlign: "center" }}>
-                      {student.year}
-                    </TableCell>
-                    <TableCell sx={{ textAlign: "center" }}>
-                      {student.status}
-                    </TableCell>
-                    <TableCell sx={{ textAlign: "center" }}>
-                      <button
-                        className="text-red-500 ml-2"
-                        onClick={() => handleViewClick(student)}
-                      >
-                        View
-                      </button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
               </Table>
             </TableContainer>
 
@@ -1126,11 +1357,11 @@ const ViewTest = () => {
                   onChange={handlePageChange}
                   sx={{
                     '& .MuiPaginationItem-root': {
-                      color: '#000975', // Text color for pagination items
+                      color: '#111933', // Text color for pagination items
                     },
                     '& .MuiPaginationItem-root.Mui-selected': {
                       backgroundColor: '#FDC500', // Background color for selected item
-                      color: '#fff', // Text color for the selected item
+                      color: '#111933', // Text color for the selected item
                     },
                     '& .MuiPaginationItem-root:hover': {
                       backgroundColor: 'rgba(0, 9, 117, 0.1)', // Hover effect
@@ -1145,7 +1376,7 @@ const ViewTest = () => {
               {isEditing && (
                 <button
                   onClick={() => setPublishDialogOpen(true)}
-                  className=" bg-[#00296b] rounded-lg text-white px-4 py-2"
+                  className=" bg-[#111933] rounded-lg text-white px-4 py-2"
                 >
                   Add Student
                 </button>
@@ -1153,7 +1384,7 @@ const ViewTest = () => {
 
               {isEditing && (
                 <button
-                  className={`bg-green-500 text-white px-4 py-2 rounded-lg flex items-center justify-center ${
+                  className={`bg-blue-900 text-white px-4 py-2 rounded-lg flex items-center justify-center ${
                     loading ? "cursor-not-allowed opacity-50" : ""
                   }`}
                   onClick={handleSave}
@@ -1185,7 +1416,7 @@ const ViewTest = () => {
                   className={themeButtonStyle}
                   onClick={() => {
                     setPopup("Are you sure you want to close the Assessment?");
-                    setPopupFunction((prevfunction) => () => handleCloseSession());
+                    setPopupFunction(() => handleCloseSession());
                     setShowPopup(true);
                   }}
                 >
@@ -1195,18 +1426,21 @@ const ViewTest = () => {
             )}
             <button
               className={themeButtonStyle}
-              onClick={() => {
-                setPopup("Are you sure you want to delete the Assessment?");
-                setPopupFunction((prevfunction) => () => handleDeleteContest());
-                setShowPopup(true);
-              }}
+              onClick={() => setShowDeletePopup(true)}
             >
               Delete Assessment
             </button>
+            <button
+              className={themeButtonStyle}
+              onClick={() => setShowDownload(true)}
+            >
+              Download Contest Data
+            </button>
           </div>
 
-          <button className={themeButtonStyle} onClick={handlePublish}>
-            Publish Assessment
+          <button className="px-7 p-1 rounded-lg bg-[#111933] border-[#111933] text-white border-[1px] mx-2 hover:bg-[#12204b] flex items-center" onClick={() => setShowPublishPopup(true)}>
+            <span className="mr-2">Publish Assessment</span>
+            <MdOutlinePublish />
           </button>
         </div>
 
@@ -1218,8 +1452,8 @@ const ViewTest = () => {
               students={dialogStudents}
               selectedStudents={selectedStudents}
               setSelectedStudents={setSelectedStudents}
-              filters={filters}
-              setFilters={setFilters}
+              filters={dialogFilters}
+              setFilters={setDialogFilters}
               sortConfig={sortConfig}
               setSortConfig={setSortConfig}
               page={page}
@@ -1254,8 +1488,12 @@ const ViewTest = () => {
         </Dialog>
 
         {/* Blur Background when Modal is Open */}
-        {(modalOpen || startedModalOpen) && (
+        {modalOpen && (
           <div className="fixed inset-0 backdrop-blur-sm z-40"></div>
+        )}
+
+        {showDownload && (
+          <DownloadContestData contestId={contestId} contestName={assessmentOverview?.name} />
         )}
       </div>
     </div>

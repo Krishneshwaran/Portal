@@ -33,7 +33,6 @@ export default function SectionBasedQuestion({
   );
   const [showPopup, setShowPopup] = useState(false);
   const [shuffledOptions, setShuffledOptions] = useState([]);
-  const [allQuestions, setAllQuestions] = useState([]);
 
   const studentEmail = localStorage.getItem("studentEmail") || "SNSGROUPS.COM";
 
@@ -48,22 +47,6 @@ export default function SectionBasedQuestion({
   useEffect(() => {
     setSelectedOption(selectedAnswers[currentSectionIndex]?.[currentQuestionIndex] || null);
   }, [selectedAnswers, currentSectionIndex, currentQuestionIndex]);
-
-  // Fetch all questions when the popup is displayed
-  useEffect(() => {
-    if (showPopup) {
-      const allQuestions = sections.flatMap((section, sectionIndex) =>
-        section.questions.map((question, questionIndex) => ({
-          sectionName: section.sectionName,
-          question,
-          questionIndex,
-          sectionIndex,
-          selectedOption: selectedAnswers[sectionIndex]?.[questionIndex] || null,
-        }))
-      );
-      setAllQuestions(allQuestions);
-    }
-  }, [showPopup, sections, selectedAnswers]);
 
   const handleOptionSelect = (option) => {
     setSelectedOption(option);
@@ -168,7 +151,7 @@ export default function SectionBasedQuestion({
         ))}
       </div>
 
-      <div className="flex justify-between mt-8">
+      {/* <div className="flex justify-between mt-8">
         <button
           className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full flex items-center gap-2"
           onClick={onPrevious}
@@ -201,11 +184,11 @@ export default function SectionBasedQuestion({
             Next →
           </button>
         )}
-      </div>
+      </div> */}
 
       {showPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white w-[800px] p-6 rounded-xl shadow-lg">
+          <div className="bg-white w-[600px] p-6 rounded-xl shadow-lg">
             <h3 className="text-[#00296b] text-lg font-bold mb-4">
               MCT Mock Test
             </h3>
@@ -213,24 +196,19 @@ export default function SectionBasedQuestion({
               You have gone through all the questions. <br />
               Either browse through them once again or finish your assessment.
             </p>
-            <div className="space-y-4 mb-6">
-              {sections.map((section, sectionIndex) => (
-                <div key={sectionIndex} className="mb-4">
-                  <h4 className="text-[#00296b] font-bold">{section.sectionName}</h4>
-                  <div className="grid grid-cols-6 gap-2">
-                    {section.questions.map((_, questionIndex) => (
-                      <div
-                        key={questionIndex}
-                        className={`w-10 h-10 flex items-center justify-center rounded-md text-white ${
-                          selectedAnswers[sectionIndex]?.[questionIndex]
-                            ? "bg-green-500"
-                            : "bg-red-500"
-                        }`}
-                      >
-                        {questionIndex + 1}
-                      </div>
-                    ))}
-                  </div>
+            <div className="grid grid-cols-6 gap-2 mb-6">
+              {Array.from({ length: totalQuestions }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className={`w-10 h-10 flex items-center justify-center rounded-md text-white ${
+                    idx === currentQuestionIndex
+                      ? "bg-yellow-400"
+                      : selectedAnswers[currentSectionIndex]?.[idx]
+                      ? "bg-green-500"
+                      : "bg-red-500"
+                  }`}
+                >
+                  {idx + 1}
                 </div>
               ))}
             </div>
@@ -254,7 +232,7 @@ export default function SectionBasedQuestion({
                     fill="none"
                     strokeDasharray="238"
                     strokeDashoffset={`${
-                      238 - (Object.keys(selectedAnswers).flat().length / allQuestions.length) * 238
+                      238 - (Object.keys(selectedAnswers[currentSectionIndex] || {}).length / totalQuestions) * 238
                     }`}
                     style={{
                       transform: "rotate(-90deg)",
@@ -264,7 +242,7 @@ export default function SectionBasedQuestion({
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <p className="text-[#00296b] font-bold text-xl">
-                    {Object.keys(selectedAnswers).flat().length}/{allQuestions.length}
+                    {Object.keys(selectedAnswers[currentSectionIndex] || {}).length}/{totalQuestions}
                   </p>
                 </div>
               </div>

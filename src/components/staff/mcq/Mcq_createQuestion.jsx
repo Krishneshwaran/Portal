@@ -174,8 +174,26 @@ const Mcq_createQuestion = () => {
   };
 
   return (
-    <div className="bg-gray-100 h-full py-8">
-      <div className="max-w-7xl mx-auto bg-white p-8 rounded-lg shadow-2xl">
+    <div className="bg-[#ECF2FE] h-full py-8">
+      <div className="h-14 px-14 pb-10">
+          <div className="flex items-center gap-2 text-[#111933]">
+            <span className="opacity-60">Home</span>
+            <span>{">"}</span>
+            <span className="opacity-60">Assessment Overview</span>
+            <span>{">"}</span>
+            <span className="opacity-60">Test Configuration</span>
+            <span>{">"}</span>
+            <span onClick={() => window.history.back()} className="cursor-pointer opacity-60 hover:underline">
+              Add Questions
+            </span>
+            <span>{">"}</span>
+            <span >
+              Create Questions
+            </span>
+
+          </div>
+        </div>
+      <div className="max-w-[1500px] mx-auto bg-white p-8 rounded-lg shadow-2xl">
         <ToastContainer
           position="top-center"
           autoClose={3000}

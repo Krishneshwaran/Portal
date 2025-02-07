@@ -10,7 +10,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 //img imports
-import loginScattered from '../../assets/login image.png'
+import loginScattered from '../../assets/login-image.png'
 import snsLogo from '../../assets/Institution.png'
 
 const StudentLogin = ({ onLogin }) => {
