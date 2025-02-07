@@ -181,12 +181,12 @@ const Dashboard = () => {
       {/* Toast Container */}
       <ToastContainer />
 
-      <div className="bg-transparent mx-5 ml-16 mr-14 rounded-b-2xl p-6 mb-2">
+      <div className="bg-transparent mx-5 ml-16 mr-14 rounded-b-2xl p-6 ">
       <h2 className="text-3xl text-[#111933] mb-6 font-medium cursor-text">
         Overall Stats
       </h2>
 
-      <div className="grid grid-cols-1 mb-11 mt-11 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 mt-11 sm:grid-cols-2 lg:grid-cols-5 gap-6">
         {[
           { title: "Test Created", value: stats.totalTests, icon: dashboard1 },
           { title: "No of Students", value: stats.students, icon: dashboard2 },

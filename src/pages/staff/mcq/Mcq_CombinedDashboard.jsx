@@ -13,7 +13,6 @@ import SelectTestQuestion from "../../../components/staff/McqSection/SelectTestQ
 import Modal from "../../../components/staff/McqSection/Modal"
 import ManualUpload from "../../../components/staff/McqSection/ManualUpload"
 import { jwtDecode } from "jwt-decode"
-import Mcq_sectionDetails from "./Mcq_sectionDetails"
 import LibraryModal from "../../../components/staff/mcq/McqLibraryModal"
 import CreateManuallyIcon from "../../../assets/createmanually.svg"
 import BulkUploadIcon from "../../../assets/bulkupload.svg"

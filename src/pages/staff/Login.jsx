@@ -3,13 +3,11 @@ import { useNavigate, Link } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { Mail, Lock } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import loginScattered from '../../assets/login-image.png';
-import snsLogo from '../../assets/Institution.png';
-import DTimg from '../../assets/SNS-DT Logo.png'
-
+import DTimg from '../../assets/SNS-DT Logo.png';
 
 const StaffLogin = () => {
   const navigate = useNavigate();
@@ -56,6 +54,12 @@ const StaffLogin = () => {
     }
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleLogin(e);
+    }
+  };
+
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
       <ToastContainer />
@@ -64,12 +68,9 @@ const StaffLogin = () => {
       <div className="relative bg-white shadow-lg rounded-2xl flex max-w-6xl w-full">
 
         {/* Left Side - Login Form */}
-        <div className="flex flex-1 flex-col justify-center mt-10 p-20">
+        <form onKeyDown={handleKeyDown} className="flex flex-1 flex-col justify-center mt-10 p-20">
           {/* SNS Logo */}
-
           <img src={DTimg} className="w-[150px] absolute top-5 left-5" alt="SNS Institutions Logo" />
-
-
 
           <h1 className="text-2xl font-Urbanist mb-2 text-[#111933]">Welcome back!</h1>
           <p className="text-md text-gray-500 mb-6">Please enter your details</p>
@@ -78,13 +79,12 @@ const StaffLogin = () => {
           <div className="relative mb-4">
             <label className="text-sm font-Urbanist mb-1">Username</label>
             <div className="flex items-center border rounded-lg p-3 shadow-sm">
-
               <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="flex-1 focus:outline-none text-sm  placeholder-gray-400"
+                className="flex-1 focus:outline-none text-sm placeholder-gray-400"
                 placeholder="test@example.com"
                 required
               />
@@ -130,7 +130,7 @@ const StaffLogin = () => {
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>
-        </div>
+        </form>
 
         {/* Right Side - Image and Text */}
         <div className="flex flex-1 bg-[#ffcc00] justify-center items-center flex-col text-[#111933] p-10">
@@ -144,7 +144,6 @@ const StaffLogin = () => {
         </div>
       </div>
     </div>
-
   );
 };
 
