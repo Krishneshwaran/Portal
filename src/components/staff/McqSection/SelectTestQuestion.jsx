@@ -242,7 +242,7 @@ const SelectTestQuestion = ({ onClose, onQuestionsSelected }) => {
               )}
               <button
                 onClick={handleSubmit}
-                className="mt-4 w-full bg-blue-500 text-white py-2 px-4 rounded-lg"
+                className="mt-4 w-full bg-black text-white py-2 px-4 rounded-lg"
               >
                 Save Selected Questions
               </button>

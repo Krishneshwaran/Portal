@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import axios from "axios"
@@ -44,6 +42,7 @@ const Mcq_CombinedDashboard = () => {
   const [selectedQuestionsLocal, setSelectedQuestionsLocal] = useState([])
   const [currentSectionQuestions, setCurrentSectionQuestions] = useState([])
   const [isLibraryModalOpen, setIsLibraryModalOpen] = useState(false)
+  const [visibleSections, setVisibleSections] = useState([])
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"
 
   useEffect(() => {
@@ -258,6 +257,14 @@ const Mcq_CombinedDashboard = () => {
     }
   }
 
+  const toggleQuestionsVisibility = (sectionIndex) => {
+    setVisibleSections((prev) =>
+      prev.includes(sectionIndex)
+        ? prev.filter((index) => index !== sectionIndex)
+        : [...prev, sectionIndex]
+    )
+  }
+
   const handleShareModalClose = () => {
     setShareModalOpen(false)
     navigate(`/staffdashboard`)
@@ -371,6 +378,19 @@ const Mcq_CombinedDashboard = () => {
     setActiveComponent(null)
   }
 
+  const handleRemoveQuestion = (sectionIndex, questionIndex) => {
+    const updatedSections = sections.map((section, index) =>
+      index === sectionIndex
+        ? {
+            ...section,
+            selectedQuestions: section.selectedQuestions.filter((_, qIndex) => qIndex !== questionIndex),
+          }
+        : section,
+    )
+    setSections(updatedSections)
+    sessionStorage.setItem("sections", JSON.stringify(updatedSections))
+  }
+
   useEffect(() => {
     const fetchStudents = async () => {
       try {
@@ -387,17 +407,17 @@ const Mcq_CombinedDashboard = () => {
   const paginate = (pageNumber) => setCurrentPage(pageNumber)
 
   const handleLibraryButtonClick = () => {
-    setIsLibraryModalOpen(true);
-  };
+    setIsLibraryModalOpen(true)
+  }
 
   const handleLibraryModalClose = () => {
-    setIsLibraryModalOpen(false);
-  };
+    setIsLibraryModalOpen(false)
+  }
 
   const updateSection = (id, updatedSection) => {
-    const updatedSections = sections.map((section) => (section.id === id ? updatedSection : section));
-    setSections(updatedSections);
-  };
+    const updatedSections = sections.map((section) => (section.id === id ? updatedSection : section))
+    setSections(updatedSections)
+  }
 
   return (
     <div className="min-h-[calc(100vh-95px)] bg-[#ECF2FE] p-6">
@@ -414,7 +434,7 @@ const Mcq_CombinedDashboard = () => {
                   <span>{">"}</span>
                   <span className="opacity-60">Test Configuration</span>
                   <span>{">"}</span>
-                  <span >Add Sections</span>
+                  <span>Add Sections</span>
                 </div>
               </div>
               <div className="flex justify-end mb-4">
@@ -427,9 +447,19 @@ const Mcq_CombinedDashboard = () => {
               </div>
 
               {sections.map((section, sectionIndex) => (
-                <div key={section.id} className="bg-white rounded-lg shadow-sm p-6">
+                <div key={section.id} className="bg-white rounded-lg shadow-sm p-6 mb-8">
                   <div className="flex justify-between items-start mb-4">
-                    <h2 className="text-lg font-semibold text-[#111933]">Section {sections.length - sectionIndex}</h2>
+                    <h2 className="text-lg font-semibold text-[#111933]">
+                      Section {sections.length - sectionIndex}
+                    </h2>
+                    {section.selectedQuestions.length > 0 && (
+                      <button
+                        onClick={() => toggleQuestionsVisibility(sectionIndex)}
+                        className="text-blue-500 underline"
+                      >
+                        {visibleSections.includes(sectionIndex) ? "Hide Questions" : "Show Questions"}
+                      </button>
+                    )}
                   </div>
                   <p className="text-sm text-gray-500 mb-6">
                     This section allows you to configure the structure and conditions of the test
@@ -495,8 +525,36 @@ const Mcq_CombinedDashboard = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex  mt-6">
-                  {sectionIndex !== sections.length - 1 && (
+                  {visibleSections.includes(sectionIndex) && (
+                    <div className="mt-4">
+                      <h3 className="text-md font-semibold text-[#111933] mb-2">Questions:</h3>
+                      <table className="min-w-full bg-white border border-gray-200">
+                        <thead>
+                          <tr>
+                            <th className="py-2 px-4 border-b">Question</th>
+                            <th className="py-2 px-4 border-b">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {section.selectedQuestions.map((question, qIndex) => (
+                            <tr key={qIndex}>
+                              <td className="py-2 px-4 border-b">{question.question}</td>
+                              <td className="py-2 px-4 border-b">
+                                <button
+                                  onClick={() => handleRemoveQuestion(sectionIndex, qIndex)}
+                                  className="text-red-500"
+                                >
+                                  Remove
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  <div className="flex mt-6">
+                    {sectionIndex !== sections.length - 1 && (
                       <button
                         onClick={() => handleDeleteSection(sectionIndex)}
                         className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
@@ -505,18 +563,18 @@ const Mcq_CombinedDashboard = () => {
                       </button>
                     )}
                     <div className="ml-auto space-x-4">
-                    <button
-                      onClick={() => handleAddQuestion(sectionIndex)}
-                      className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-                    >
-                      Add Questions +
-                    </button>
-                    <button
-                      onClick={() => handleSaveQuestions(sectionIndex)}
-                      className="px-4 py-2 bg-[#111933] text-white rounded-md hover:bg-[#2a3958]"
-                    >
-                      Submit
-                    </button>
+                      <button
+                        onClick={() => handleAddQuestion(sectionIndex)}
+                        className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                      >
+                        Add Questions +
+                      </button>
+                      <button
+                        onClick={() => handleSaveQuestions(sectionIndex)}
+                        className="px-4 py-2 bg-[#111933] text-white rounded-md hover:bg-[#2a3958]"
+                      >
+                        Submit
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -544,7 +602,7 @@ const Mcq_CombinedDashboard = () => {
                   <span>{">"}</span>
                   <span className="opacity-60">Test Configuration</span>
                   <span>{">"}</span>
-                  <span >Add Questions</span>
+                  <span>Add Questions</span>
                 </div>
               </div>
               <h3 className="text-2xl mx-10 text-[#111933] font-bold mb-2 text-left">

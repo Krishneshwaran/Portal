@@ -22,6 +22,7 @@ import {
   IconButton,
   Typography,
   Chip,
+  Skeleton,
 } from "@mui/material";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import 'react-toastify/dist/ReactToastify.css';
@@ -30,12 +31,10 @@ import { parseISO, isAfter } from 'date-fns';
 import CloseIcon from '@mui/icons-material/Close';
 import { IoCloseCircleOutline } from "react-icons/io5";
 import { FaCheckCircle } from "react-icons/fa";
-//img imports
+import { XCircle } from 'lucide-react';
 import heroImg from "../../../assets/test_view_hero_img.png";
 import StudentTable from "../../../components/staff/StudentTable";
-import Loader from "../../../layout/Loader"; // Import the Loader component
-import { XCircle } from 'lucide-react';
-import DownloadContestData from "../../../components/staff/report/DownloadContestData"; // Import the DownloadContestData component
+import DownloadContestData from "../../../components/staff/report/DownloadContestData";
 
 function formatDateTime(dateString) {
   const date = new Date(dateString);
@@ -54,16 +53,11 @@ function formatDateTime(dateString) {
 }
 
 const RulesAndRegulations = ({ assessmentOverview }) => {
-  // Function to parse the guidelines and identify bullet points or notations
   const parseGuidelines = (guidelines) => {
     if (!guidelines) return [];
 
-    // Split the guidelines by new lines
     const lines = guidelines.split('\n');
-
-    // Identify bullet points or notations
     const items = lines.map((line) => {
-      // Check if the line starts with a bullet point or notation
       const match = line.match(/^(\d+\.|\d+\)|\*|\-|\+)\s(.*)/);
       if (match) {
         return { type: match[1], content: match[2] };
@@ -78,7 +72,6 @@ const RulesAndRegulations = ({ assessmentOverview }) => {
 
   return (
     <section className="flex p-6 shadow-sm flex-1 bg-[#ffffff] mb-6 rounded-lg">
-      {/* rules and regulations */}
       <div className="mb-6 flex-[2] mr-12">
         <p className="text-2xl font-semibold text-[#111933] mb-2">
           {" "}
@@ -117,13 +110,13 @@ const ViewTest = () => {
   const [popup, setPopup] = useState("some popup message");
   const [showPopup, setShowPopup] = useState(false);
   const [popupFunction, setPopupFunction] = useState();
-  const [page, setPage] = useState(0); // Ensure pagination starts at page 0
+  const [page, setPage] = useState(0);
 
-  const navigate = useNavigate(); // Used for navigation
+  const navigate = useNavigate();
   const [testDetails, setTestDetails] = useState(null);
   const [error, setError] = useState(null);
   const [students, setStudents] = useState([]);
-  const [filteredStudents, setFilteredStudents] = useState([]); // Define filteredStudents
+  const [filteredStudents, setFilteredStudents] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [filters, setFilters] = useState({
@@ -132,23 +125,24 @@ const ViewTest = () => {
     year: [],
     status: "",
     searchText: "",
-  }); // Extended filters
+  });
   const [dialogFilters, setDialogFilters] = useState({
     collegename: "",
     dept: "",
     year: "",
-  }); // Define dialogFilters
+  });
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
-  const [dialogStudents, setDialogStudents] = useState([]); // To store all students for the dialog
-  const [filteredDialogStudents, setFilteredDialogStudents] = useState([]); // Define filteredDialogStudents
-  const [rowsPerPage, setRowsPerPage] = useState(10); // Set rowsPerPage to 10
+  const [dialogStudents, setDialogStudents] = useState([]);
+  const [filteredDialogStudents, setFilteredDialogStudents] = useState([]);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
-  const [isPublished, setIsPublished] = useState(false); // Result published state
-  const [loading, setLoading] = useState(true); // Set initial loading state to true
-  const [modalOpen, setModalOpen] = useState(false); // State to manage modal
-  const [showDeletePopup, setShowDeletePopup] = useState(false); // State for delete confirmation popup
-  const [showPublishPopup, setShowPublishPopup] = useState(false); // State for publish confirmation popup
+  const [isPublished, setIsPublished] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [showPublishPopup, setShowPublishPopup] = useState(false);
+  const [showClosePopup, setShowClosePopup] = useState(false); // New state for close popup
 
   const assessmentOverview = testDetails?.assessmentOverview || {};
   const isRegistrationPeriodOver = assessmentOverview?.registrationEnd
@@ -162,28 +156,25 @@ const ViewTest = () => {
       return;
     }
 
-    // Confirm before publishing
     const confirmPublish = window.confirm(
       "Are you sure you want to publish the results?"
     );
     if (!confirmPublish) return;
 
     try {
-      setIsPublished(true); // Disable button during API call
+      setIsPublished(true);
 
-      // Debugging: Log the contestId and full URL
       console.log("Contest ID:", contestId);
       console.log(
         "API URL:",
         `${API_BASE_URL}/api/mcq/publish-result/${contestId}/`
       );
 
-      // API call to publish results
       const response = await axios.post(
         `${API_BASE_URL}/api/mcq/publish-result/${contestId}/`
       );
       if (response.status === 200) {
-        setIsPublished(true); // Mark as published
+        setIsPublished(true);
         toast.success("Results published successfully.");
       } else {
         toast.error("Failed to publish results. Please try again.");
@@ -194,7 +185,7 @@ const ViewTest = () => {
         "An error occurred while publishing the results. Please try again."
       );
     } finally {
-      setIsPublished(false); // Re-enable the button
+      setIsPublished(false);
     }
   };
 
@@ -206,7 +197,6 @@ const ViewTest = () => {
         );
         setTestDetails(response.data);
 
-        // Safely handle optional student_details
         const updatedStudents = (response.data.student_details || []).map(
           (student) => ({
             ...student,
@@ -217,7 +207,6 @@ const ViewTest = () => {
         setStudents(updatedStudents);
         setFilteredStudents(updatedStudents);
 
-        // Safely handle optional testConfiguration
         const passPercentage = response.data.testConfiguration?.passPercentage;
         if (passPercentage !== undefined) {
           sessionStorage.setItem("passPercentage", passPercentage);
@@ -226,7 +215,7 @@ const ViewTest = () => {
         setError("Failed to fetch test details");
         console.error(err);
       } finally {
-        setLoading(false); // Stop the loading animation
+        setLoading(false);
       }
     };
 
@@ -239,10 +228,10 @@ const ViewTest = () => {
         const response = await axios.get(`${API_BASE_URL}/api/student/`);
         const updatedStudents = response.data.map((student) => ({
           ...student,
-          year: student.year || "N/A", // Ensure year always has a value
+          year: student.year || "N/A",
         }));
-        setDialogStudents(updatedStudents); // Set the data for the dialog
-        setFilteredDialogStudents(updatedStudents); // Initialize the filtered data
+        setDialogStudents(updatedStudents);
+        setFilteredDialogStudents(updatedStudents);
       } catch (error) {
         console.error("Failed to fetch all students:", error);
       }
@@ -251,7 +240,6 @@ const ViewTest = () => {
     if (publishDialogOpen) fetchAllStudents();
   }, [publishDialogOpen, API_BASE_URL]);
 
-  // Handle Input Change
   const handleInputChange = (e, field, section) => {
     const { value, checked, type } = e.target;
     setTestDetails((prevDetails) => {
@@ -268,7 +256,6 @@ const ViewTest = () => {
     });
   };
 
-  // Handle Save Changes
   const handleSave = async () => {
     try {
       console.log("Updated Test Data:", testDetails);
@@ -286,32 +273,28 @@ const ViewTest = () => {
       );
       toast.success("Test details updated successfully");
 
-      // Wait for a moment to show the animation before refreshing
       setTimeout(() => {
-        window.location.reload(); // Refresh the page
+        window.location.reload();
       }, 1500);
     } catch (err) {
       setTimeout(() => {
-        window.location.reload(); // Refresh the page
+        window.location.reload();
       }, 1500);
       console.error("Error:", err);
     } finally {
-      setLoading(false); // Stop the loading animation
+      setLoading(false);
     }
   };
 
-  // Handle Filter Changes
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prevFilters) => ({ ...prevFilters, [name]: value }));
   };
 
-  // Apply Filters
   useEffect(() => {
     const applyFilters = () => {
       let filtered = [...students];
 
-      // Filter by Status
       if (filters.status) {
         filtered = filtered.filter(
           (student) =>
@@ -319,21 +302,18 @@ const ViewTest = () => {
         );
       }
 
-      // Filter by Year (Roman numerals)
       if (filters.year.length > 0) {
         filtered = filtered.filter((student) =>
           filters.year.includes(student.year)
         );
       }
 
-      // Search Text Filter (only for student name)
       if (filters.searchText) {
         filtered = filtered.filter((student) =>
           student.name.toLowerCase().includes(filters.searchText.toLowerCase())
         );
       }
 
-      // Filter by College Name
       if (filters.collegename.length > 0) {
         filtered = filtered.filter((student) =>
           filters.collegename.some((college) =>
@@ -342,7 +322,6 @@ const ViewTest = () => {
         );
       }
 
-      // Filter by Department
       if (filters.dept.length > 0) {
         filtered = filtered.filter((student) =>
           filters.dept.some((dept) =>
@@ -352,13 +331,12 @@ const ViewTest = () => {
       }
 
       setFilteredStudents(filtered);
-      setPage(0); // Reset to the first page when filters change
+      setPage(0);
     };
 
     applyFilters();
   }, [filters, students]);
 
-  // Manage Selected Students
   const handleSelectAll = (e) => {
     if (e.target.checked) {
       setSelectedStudents(filteredStudents.map((student) => student.regno));
@@ -392,7 +370,7 @@ const ViewTest = () => {
         ...updatedDetails.visible_to,
         ...selectedStudents,
       ]);
-      updatedDetails.visible_to = Array.from(newVisibleTo); // Avoid duplicates
+      updatedDetails.visible_to = Array.from(newVisibleTo);
       return updatedDetails;
     });
     setPublishDialogOpen(false);
@@ -405,7 +383,7 @@ const ViewTest = () => {
       navigate("/staffdashboard", {
         state: {
           toastMessage: "Assessment session has been closed.",
-          testStatus: "closed", // This triggers Dashboard re-fetch
+          testStatus: "closed",
         },
       });
     } catch (error) {
@@ -414,7 +392,6 @@ const ViewTest = () => {
     }
   };
 
-  // Handle Delete Contest
   const handleDeleteContest = async () => {
     try {
       await axios.delete(
@@ -433,7 +410,6 @@ const ViewTest = () => {
   };
 
   if (error) return <div>{error}</div>;
-  if (loading) return <Loader />; // Render the Loader component while loading
 
   const handleViewClick = (student) => {
     if (student.status.toLowerCase() === "yet to start") {
@@ -449,9 +425,6 @@ const ViewTest = () => {
     setModalOpen(false);
   };
 
-  if (error) return <div>{error}</div>;
-  if (loading) return <Loader />; // Render the Loader component while loading
-
   const {
     testConfiguration,
     student_details,
@@ -459,7 +432,7 @@ const ViewTest = () => {
   } = testDetails || {};
 
   const handlePageChange = (event, value) => {
-    setPage(value - 1); // Adjust page value to be zero-based
+    setPage(value - 1);
   };
 
   const indexOfLastStudent = (page + 1) * rowsPerPage;
@@ -469,7 +442,6 @@ const ViewTest = () => {
     indexOfLastStudent
   );
 
-  // Filter Dialog Functions
   const handleFilterDialogOpen = () => {
     setOpenFilterDialog(true);
   };
@@ -553,12 +525,107 @@ const ViewTest = () => {
       </div>
 
       {showDeletePopup && (
+        <div className="fixed inset-0 bg-[#0000005a] flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-white p-8 w-[600px] max-w-full rounded-xl shadow-lg text-center">
+            <div className="text-red-600 mb-4">
+              <svg
+                className="w-14 h-14 mx-auto"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-semibold text-red-600">Warning</h2>
+            <p className="text-lg text-gray-700 mt-2">
+              Are you sure you want to delete the assessment?
+            </p>
+            <p className="text-sm text-red-500 mt-2">
+              <strong>Note:</strong> This action cannot be undone.
+            </p>
+            <div className="flex justify-center mt-6 space-x-32">
+              <button
+                className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded-lg transition"
+                onClick={() => setShowDeletePopup(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
+                onClick={() => {
+                  handleDeleteContest();
+                  setShowDeletePopup(false);
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPublishPopup && (
+        <div className="fixed inset-0 bg-[#0000005a] flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-white p-8 w-[600px] max-w-full rounded-xl shadow-lg text-center">
+            <div className="flex items-center justify-center space-x-3">
+              <svg
+                className="w-8 h-8 text-green-500"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              <h2 className="text-2xl font-semibold">Confirm Publish</h2>
+            </div>
+            <p className="text-md text-gray-700 mt-4">
+              Are you sure you want to publish the assessment? Once published, it will be visible to all participants.
+            </p>
+            <p className="text-sm text-red-500 mt-2">
+              <strong>Note:</strong> This action cannot be undone.
+            </p>
+            <div className="flex justify-center mt-6 space-x-44">
+              <button
+                className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded-lg transition"
+                onClick={() => setShowPublishPopup(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-6 py-2 bg-[#111933] hover:bg-blue-900 text-white rounded-lg transition"
+                onClick={() => {
+                  handlePublish();
+                  setShowPublishPopup(false);
+                }}
+              >
+                Yes, Publish
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+{showClosePopup && (
   <div className="fixed inset-0 bg-[#0000005a] flex items-center justify-center z-50 backdrop-blur-sm">
-    <div className="bg-white p-8 w-[500px] rounded-xl shadow-lg text-center">
+    <div className="bg-white p-8 w-[600px] max-w-full rounded-xl shadow-lg text-center">
+      
       {/* Warning Icon */}
       <div className="text-red-600 mb-4">
         <svg
-          className="w-14 h-14 mx-auto"
+          className="w-16 h-16 mx-auto"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -572,116 +639,61 @@ const ViewTest = () => {
         </svg>
       </div>
 
-      {/* Title */}
-      <h2 className="text-2xl font-semibold text-red-600">Warning</h2>
-
-      {/* Description */}
-      <p className="text-lg text-gray-700 mt-2">
-        Are you sure you want to delete the assessment?
-      </p>
-
       {/* Warning Message */}
+      <h2 className="text-2xl font-semibold text-red-600">Warning</h2>
+      <p className="text-lg text-gray-700 mt-2">
+        Are you sure you want to close the assessment?
+      </p>
       <p className="text-sm text-red-500 mt-2">
         <strong>Note:</strong> This action cannot be undone.
       </p>
 
       {/* Buttons */}
-      <div className="flex justify-center mt-6 space-x-32">
+      <div className="flex justify-center mt-6 space-x-40">
         <button
           className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded-lg transition"
-          onClick={() => setShowDeletePopup(false)}
+          onClick={() => setShowClosePopup(false)}
         >
           Cancel
         </button>
         <button
           className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
           onClick={() => {
-            handleDeleteContest();
-            setShowDeletePopup(false);
+            handleCloseSession();
+            setShowClosePopup(false);
           }}
         >
-          Delete
+          Close
         </button>
       </div>
-    </div>
-  </div>
-)}
-
-
-{showPublishPopup && (
-  <div className="fixed inset-0 bg-[#0000005a] flex items-center justify-center z-50 backdrop-blur-sm">
-    <div className="bg-white p-8 w-[500px] rounded-xl shadow-lg text-center">
-      {/* Title with Icon */}
-      <div className="flex items-center justify-center space-x-3">
-        <svg
-          className="w-8 h-8 text-green-500"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-        <h2 className="text-2xl font-semibold">Confirm Publish</h2>
-      </div>
-
-      {/* Description */}
-      <p className="text-md text-gray-700 mt-4">
-        Are you sure you want to publish the assessment? Once published, it will be visible to all participants.
-      </p>
-
-      {/* Warning Message */}
-      <p className="text-sm text-red-500 mt-2">
-        <strong>Note:</strong> This action cannot be undone.
-      </p>
-
-      {/* Buttons */}
-      <div className="flex justify-center mt-6 space-x-44">
-        
-        <button
-          className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded-lg transition"
-          onClick={() => setShowPublishPopup(false)}
-        >
-          Cancel
-        </button>
-        <button
-          className="px-6 py-2 bg-[#111933] hover:bg-blue-900 text-white rounded-lg transition"
-          onClick={() => {
-            handlePublish();
-            setShowPublishPopup(false);
-          }}
-        >
-          Yes, Publish
-        </button>
-      </div>
+      
     </div>
   </div>
 )}
 
 
       <div className="p-14 bg-blue-50 min-h-full">
-        {/* Header Section */}
         <section className="flex p-6 shadow-sm flex-1 bg-white mb-6 rounded-lg text-[#111933] items-start">
-          {/* details */}
           <div className="flex-1 p-2 flex flex-col mr-12 justify-between">
             <div className="mb-6">
-              <p className="text-2xl font-semibold mb-2">
-                {assessmentOverview?.name}{" "}
-              </p>
-              <p className="text-sm text-black break-words text-justify">
-                {assessmentOverview?.description}
-              </p>
+              {loading ? (
+                <Skeleton variant="text" width={200} height={30} />
+              ) : (
+                <p className="text-2xl font-semibold mb-2">
+                  {assessmentOverview?.name}{" "}
+                </p>
+              )}
+              {loading ? (
+                <Skeleton variant="text" width={400} height={20} />
+              ) : (
+                <p className="text-sm text-black break-words text-justify">
+                  {assessmentOverview?.description}
+                </p>
+              )}
             </div>
 
-            <div className="mt-4 border-2  rounded-lg">
+            <div className="mt-4 border-2 rounded-lg">
               <table className="min-w-full bg-white rounded-lg overflow-hidden">
-                {/* Table Header */}
                 <thead className="bg-[#111933] text-white">
                   <tr>
                     {[
@@ -707,201 +719,227 @@ const ViewTest = () => {
                     ))}
                   </tr>
                 </thead>
-                {/* Table Body */}
                 <tbody>
                   <tr className="border-b border-gray-300 hover:bg-gray-100">
                     <td className="py-3 px-6 text-center ">
-                      {formatDateTime(assessmentOverview?.registrationStart)}
+                      {loading ? (
+                        <Skeleton variant="text" width={150} height={20} />
+                      ) : (
+                        formatDateTime(assessmentOverview?.registrationStart)
+                      )}
                     </td>
                     <td className="py-3 px-6 text-center ">
-                      {`${testConfiguration?.duration?.hours}:${testConfiguration?.duration?.minutes} hrs`}
+                      {loading ? (
+                        <Skeleton variant="text" width={100} height={20} />
+                      ) : (
+                        `${testConfiguration?.duration?.hours}:${testConfiguration?.duration?.minutes} hrs`
+                      )}
                     </td>
                     <td className="py-3 px-6 text-center">
-                      {student_details?.length || 0}
+                      {loading ? (
+                        <Skeleton variant="text" width={50} height={20} />
+                      ) : (
+                        student_details?.length || 0
+                      )}
                     </td>
                     <td className="py-3 px-6 text-center">
-                      {formatDateTime(assessmentOverview?.registrationEnd)}
+                      {loading ? (
+                        <Skeleton variant="text" width={150} height={20} />
+                      ) : (
+                        formatDateTime(assessmentOverview?.registrationEnd)
+                      )}
                     </td>
                   </tr>
-                  {/* Add more rows as needed */}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* hero img */}
           <img src={heroImg} alt="Hero" className="w-[200px] ml-1 lg:w-[250px]" />
         </section>
 
         <section className="flex space-x-6 flex-1 mb-6">
-          {/* Progress Details */}
           <div className="flex-1 flex flex-col items-center bg-white text-[#111933] border border-gray-300 rounded-xl shadow-md">
-  {/* Header */}
-  <p className="bg-[#111933] rounded-t-xl py-3 text-[#ffffff] text-lg font-medium w-full text-center">
-    Progress Details
-  </p>
-
-  {/* Body */}
-  <div className="flex flex-col w-full px-6 py-6 space-y-4">
-    <div className="flex justify-between items-center w-full">
-      <p className="font-light">Assigned</p>
-      <p className="font-light">{student_details.length}</p>
-    </div>
-    <div className="flex justify-between items-center w-full">
-      <p className="font-light">Yet to Complete</p>
-      <p className="font-light">{student_details.filter(student => student.status === 'Yet to Complete').length}</p>
-    </div>
-    <div className="flex justify-between items-center w-full">
-      <p className="font-light">Completed</p>
-      <p className="font-light">{student_details.filter(student => student.status === 'Completed').length}</p>
-    </div>
-  </div>
-</div>
-
-
-  {/* Question & Section Details */}
-  <div className="flex-1 flex flex-col items-center bg-white text-[#111933] border border-gray-300 rounded-xl shadow-md">
-  {/* Header */}
-  <p className="bg-[#111933] rounded-t-xl py-3 text-[#ffffff] text-lg font-medium w-full text-center">
-    Question & Section Details
-  </p>
-
-  {/* Body */}
-  <div className="flex flex-col w-full px-6 py-6 space-y-6 ">
-    <div className="flex justify-between items-center w-full">
-      <p className="font-light">No. of Questions</p>
-      <p className="font-light">{testConfiguration?.questions || 0}</p>
-    </div>
-    {sections?.length > 0 && (
-      <div className="flex justify-between items-center w-full">
-        <p className="font-light">No. of Sections</p>
-        <p className="font-light">{sections?.length || 0}</p>
-      </div>
-    )}
-    <div className="flex justify-between items-center w-full">
-      <p className="font-light">Total Marks</p>
-      <p className="font-light">{testConfiguration?.totalMarks || 0}</p>
-    </div>
-  </div>
-</div>
-
-
-  
-
-  {/* Sections & Questions Table */}
-  <div className="flex-1 flex flex-col text-center bg-white text-[#111933] border-[1px] border-gray-200 rounded-md pb-2">
-    <p className="bg-[#111933] rounded-tl-md rounded-tr-md p-2 text-[#ffffff] text-lg font-normal">
-      Sections & Questions
-    </p>
-    <div className="grid grid-cols-2 items-center font-semibold p-4">
-      <p className="text-center p-2 border-r-[1px] border-[#111933] border-b-[1px]">
-        Sections
-      </p>
-      <p className="text-center p-2 border-b-[1px] border-[#111933]">
-        Questions
-      </p>
-    </div>
-    {(sections ?? []).length === 0 ? (
-      <div className="flex flex-1 items-center justify-center p-4">
-        <p className="text-center font-semibold">
-          !! No Sections here to Display !!
-        </p>
-      </div>
-    ) : (
-      <>
-        {sections?.map((section, index) => (
-          <div key={index} className="grid grid-cols-2 flex-1 items-stretch">
-            <p className="text-center border-r-[1px] border-[#111933] border-b-[1px] flex items-center justify-center p-2">
-              {section.sectionName}
+            <p className="bg-[#111933] rounded-t-xl py-3 text-[#ffffff] text-lg font-medium w-full text-center">
+              Progress Details
             </p>
-            <p className="text-center border-b-[1px] border-[#111933] flex items-center justify-center p-2">
-              {section.numQuestions}
+            <div className="flex flex-col w-full px-6 py-6 space-y-4">
+              <div className="flex justify-between items-center w-full">
+                <p className="font-light">Assigned</p>
+                {loading ? (
+                  <Skeleton variant="text" width={50} height={20} />
+                ) : (
+                  <p className="font-light">{student_details.length}</p>
+                )}
+              </div>
+              <div className="flex justify-between items-center w-full">
+                <p className="font-light">Yet to Complete</p>
+                {loading ? (
+                  <Skeleton variant="text" width={50} height={20} />
+                ) : (
+                  <p className="font-light">{student_details.filter(student => student.status === 'Yet to Complete').length}</p>
+                )}
+              </div>
+              <div className="flex justify-between items-center w-full">
+                <p className="font-light">Completed</p>
+                {loading ? (
+                  <Skeleton variant="text" width={50} height={20} />
+                ) : (
+                  <p className="font-light">{student_details.filter(student => student.status === 'Completed').length}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 flex flex-col items-center bg-white text-[#111933] border border-gray-300 rounded-xl shadow-md">
+            <p className="bg-[#111933] rounded-t-xl py-3 text-[#ffffff] text-lg font-medium w-full text-center">
+              Question & Section Details
             </p>
+            <div className="flex flex-col w-full px-6 py-6 space-y-6 ">
+              <div className="flex justify-between items-center w-full">
+                <p className="font-light">No. of Questions</p>
+                {loading ? (
+                  <Skeleton variant="text" width={50} height={20} />
+                ) : (
+                  <p className="font-light">{testConfiguration?.questions || 0}</p>
+                )}
+              </div>
+              {sections?.length > 0 && (
+                <div className="flex justify-between items-center w-full">
+                  <p className="font-light">No. of Sections</p>
+                  {loading ? (
+                    <Skeleton variant="text" width={50} height={20} />
+                  ) : (
+                    <p className="font-light">{sections?.length || 0}</p>
+                  )}
+                </div>
+              )}
+              <div className="flex justify-between items-center w-full">
+                <p className="font-light">Total Marks</p>
+                {loading ? (
+                  <Skeleton variant="text" width={50} height={20} />
+                ) : (
+                  <p className="font-light">{testConfiguration?.totalMarks || 0}</p>
+                )}
+              </div>
+            </div>
           </div>
-        ))}
-        <div className="grid grid-cols-2 flex-1 items-stretch">
-          <p className="text-center border-r-[1px] border-[#111933] flex items-center justify-center p-2">
-            Total
-          </p>
-          <p className="text-center flex items-center justify-center p-2">
-            {testConfiguration?.questions || 0}
-          </p>
-        </div>
-      </>
-    )}
-  </div>
 
-  {/* Proctoring Enabled */}
-  <div className="flex-1 flex flex-col text-center bg-white text-[#111933] border-[1px] border-gray-200 rounded-md pb-2">
-    <p className="bg-[#111933] rounded-tl-md rounded-tr-md p-2 text-[#ffffff] text-lg font-normal">
-      Proctoring Enabled
-    </p>
-    {[
-      {
-        title: "Full Screen Mode",
-        value: testConfiguration?.fullScreenMode ? "Enabled" : "Disabled",
-        enabled: testConfiguration?.fullScreenMode,
-        icon: "fullscreen-icon", // Replace with appropriate icon class
-      },
-      {
-        title: "Face Detection",
-        value: testConfiguration?.faceDetection ? "Enabled" : "Disabled",
-        enabled: testConfiguration?.faceDetection,
-        icon: "face-detection-icon", // Replace with appropriate icon class
-      },
-      {
-        title: "Device Restriction",
-        value: testConfiguration?.deviceRestriction ? "Enabled" : "Disabled",
-        enabled: testConfiguration?.deviceRestriction,
-        icon: "device-restriction-icon", // Replace with appropriate icon class
-      },
-      {
-        title: "Noise Detection",
-        value: testConfiguration?.noiseDetection ? "Enabled" : "Disabled",
-        enabled: testConfiguration?.noiseDetection,
-        icon: "noise-detection-icon", // Replace with appropriate icon class
-      },
-    ].map((configParam) => (
-      <div className="flex justify-between p-2 w-[85%] self-center">
-        <p> {configParam.title} </p>{" "}
-        <label className="relative inline-flex items-center cursor-pointer ml-auto">
-          <input
-            type="checkbox"
-            checked={configParam.enabled}
-            disabled
-            className="sr-only peer"
-          />
-          <div className="w-10 h-5 cursor-auto bg-gray-300 rounded-full peer-focus:ring-2 peer-focus:ring-blue-900 peer-checked:bg-[#111933] transition-all duration-300">
-            <div
-              className={`absolute left-0.5 top-1 h-4 w-4 bg-white rounded-full shadow-md transition-transform duration-300 ${
-                configParam.enabled ? "translate-x-5" : "translate-x-0"
-              }`}
-            ></div>
+          <div className="flex-1 flex flex-col text-center bg-white text-[#111933] border-[1px] border-gray-200 rounded-md pb-2">
+            <p className="bg-[#111933] rounded-tl-md rounded-tr-md p-2 text-[#ffffff] text-lg font-normal">
+              Sections & Questions
+            </p>
+            <div className="grid grid-cols-2 items-center font-semibold p-4">
+              <p className="text-center p-2 border-r-[1px] border-[#111933] border-b-[1px]">
+                Sections
+              </p>
+              <p className="text-center p-2 border-b-[1px] border-[#111933]">
+                Questions
+              </p>
+            </div>
+            {loading ? (
+              <div className="flex flex-1 items-center justify-center p-4">
+                <Skeleton variant="rectangular" width="100%" height={100} />
+              </div>
+            ) : (
+              (sections ?? []).length === 0 ? (
+                <div className="flex flex-1 items-center justify-center p-4">
+                  <p className="text-center font-semibold">
+                    !! No Sections here to Display !!
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {sections?.map((section, index) => (
+                    <div key={index} className="grid grid-cols-2 flex-1 items-stretch">
+                      <p className="text-center border-r-[1px] border-[#111933] border-b-[1px] flex items-center justify-center p-2">
+                        {section.sectionName}
+                      </p>
+                      <p className="text-center border-b-[1px] border-[#111933] flex items-center justify-center p-2">
+                        {section.numQuestions}
+                      </p>
+                    </div>
+                  ))}
+                  <div className="grid grid-cols-2 flex-1 items-stretch">
+                    <p className="text-center border-r-[1px] border-[#111933] flex items-center justify-center p-2">
+                      Total
+                    </p>
+                    <p className="text-center flex items-center justify-center p-2">
+                      {testConfiguration?.questions || 0}
+                    </p>
+                  </div>
+                </>
+              )
+            )}
           </div>
-        </label>
-      </div>
-    ))}
-  </div>
-</section>
 
+          <div className="flex-1 flex flex-col text-center bg-white text-[#111933] border-[1px] border-gray-200 rounded-md pb-2">
+            <p className="bg-[#111933] rounded-tl-md rounded-tr-md p-2 text-[#ffffff] text-lg font-normal">
+              Proctoring Enabled
+            </p>
+            {[
+              {
+                title: "Full Screen Mode",
+                value: testConfiguration?.fullScreenMode ? "Enabled" : "Disabled",
+                enabled: testConfiguration?.fullScreenMode,
+                icon: "fullscreen-icon",
+              },
+              {
+                title: "Face Detection",
+                value: testConfiguration?.faceDetection ? "Enabled" : "Disabled",
+                enabled: testConfiguration?.faceDetection,
+                icon: "face-detection-icon",
+              },
+              {
+                title: "Device Restriction",
+                value: testConfiguration?.deviceRestriction ? "Enabled" : "Disabled",
+                enabled: testConfiguration?.deviceRestriction,
+                icon: "device-restriction-icon",
+              },
+              {
+                title: "Noise Detection",
+                value: testConfiguration?.noiseDetection ? "Enabled" : "Disabled",
+                enabled: testConfiguration?.noiseDetection,
+                icon: "noise-detection-icon",
+              },
+            ].map((configParam) => (
+              <div key={configParam.title} className="flex justify-between p-2 w-[85%] self-center">
+                <p> {configParam.title} </p>{" "}
+                <label className="relative inline-flex items-center cursor-pointer ml-auto">
+                  <input
+                    type="checkbox"
+                    checked={configParam.enabled}
+                    disabled
+                    className="sr-only peer"
+                  />
+                  <div className="w-10 h-5 cursor-auto bg-gray-300 rounded-full peer-focus:ring-2 peer-focus:ring-blue-900 peer-checked:bg-[#111933] transition-all duration-300">
+                    <div
+                      className={`absolute left-0.5 top-1 h-4 w-4 bg-white rounded-full shadow-md transition-transform duration-300 ${
+                        configParam.enabled ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    ></div>
+                  </div>
+                </label>
+              </div>
+            ))}
+          </div>
+        </section>
 
         <RulesAndRegulations assessmentOverview={assessmentOverview} />
-        {/* Visible To Section */}
+
         {student_details && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 className="text-xl font-semibold text-[#111933] mb-4">
               Students
             </h2>
 
-            {/* Filter Button */}
             <div className="flex justify-end">
-              <button className="bg-[#111933] text-white font-medium mb-5 px-5 border rounded-xl"
+              <button className="bg-[#111933] text-white font-medium mb-5 py-1 px-5 border rounded-xl"
                 onClick={handleFilterDialogOpen}>
                 <span className="pr-1">Filter</span><FilterListIcon />
               </button>
             </div>
 
-            {/* Filter Dialog */}
             <Dialog
               open={openFilterDialog}
               onClose={handleFilterDialogClose}
@@ -909,16 +947,16 @@ const ViewTest = () => {
               maxWidth="md"
               PaperProps={{
                 style: {
-                  width: '800px', // Increased width
-                  height: '530px', // Reduced height
-                  borderRadius: 15, // Rounded edges for the filter dialog
-                  backgroundColor: '#fff', // White background for the dialog
+                  width: '800px',
+                  height: '530px',
+                  borderRadius: 15,
+                  backgroundColor: '#fff',
                 },
               }}
               BackdropProps={{
                 className: "fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm",
               }}
-              TransitionProps={{ unmountOnExit: true }} // Remove sliding effect
+              TransitionProps={{ unmountOnExit: true }}
             >
               <DialogTitle sx={{ fontWeight: "bold", mb: 1, color: "#111933", display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 Filter Options
@@ -945,20 +983,20 @@ const ViewTest = () => {
                           cursor: "pointer",
                           backgroundColor: filters.dept.includes(dept)
                             ? "#111933"
-                            : "rgba(225, 235, 255, 0.8)", // Light blue with low opacity
+                            : "rgba(225, 235, 255, 0.8)",
                           color: filters.dept.includes(dept) ? "#fff" : "#111933",
-                          width: 'auto', // Allow width to adjust based on content
-                          height: '35px', // Adjusted height
+                          width: 'auto',
+                          height: '35px',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center', // Center the text
-                          borderRadius: '15px', // Rounded corners
-                          whiteSpace: 'nowrap', // Prevent text wrapping
-                          overflow: 'hidden', // Hide overflow text
-                          textOverflow: 'ellipsis', // Show ellipsis for overflow text
+                          justifyContent: 'center',
+                          borderRadius: '15px',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
                           "&:hover": {
-                            backgroundColor: "#111933", // Change to #111933 on hover
-                            color: "#fff", // Change text color to white on hover
+                            backgroundColor: "#111933",
+                            color: "#fff",
                           },
                         }}
                       />
@@ -984,20 +1022,20 @@ const ViewTest = () => {
                           cursor: "pointer",
                           backgroundColor: filters.collegename.includes(college)
                             ? "#111933"
-                            : "rgba(225, 235, 255, 0.8)", // Light blue with low opacity
+                            : "rgba(225, 235, 255, 0.8)",
                           color: filters.collegename.includes(college) ? "#fff" : "#111933",
-                          width: 'auto', // Allow width to adjust based on content
-                          height: '40px', // Adjusted height
+                          width: 'auto',
+                          height: '40px',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center', // Center the text
-                          borderRadius: '15px', // Rounded corners
-                          whiteSpace: 'nowrap', // Prevent text wrapping
-                          overflow: 'hidden', // Hide overflow text
-                          textOverflow: 'ellipsis', // Show ellipsis for overflow text
+                          justifyContent: 'center',
+                          borderRadius: '15px',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
                           "&:hover": {
-                            backgroundColor: "#111933", // Change to #111933 on hover
-                            color: "#fff", // Change text color to white on hover
+                            backgroundColor: "#111933",
+                            color: "#fff",
                           },
                         }}
                       />
@@ -1022,20 +1060,20 @@ const ViewTest = () => {
                         cursor: "pointer",
                         backgroundColor: filters.year.includes(year)
                           ? "#111933"
-                          : "rgba(225, 235, 255, 0.8)", // Light blue with low opacity
+                          : "rgba(225, 235, 255, 0.8)",
                         color: filters.year.includes(year) ? "#fff" : "#111933",
-                        width: 'auto', // Allow width to adjust based on content
-                        height: '35px', // Adjusted height
+                        width: 'auto',
+                        height: '35px',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center', // Center the text
-                        borderRadius: '15px', // Rounded corners
-                        whiteSpace: 'nowrap', // Prevent text wrapping
-                        overflow: 'hidden', // Hide overflow text
-                        textOverflow: 'ellipsis', // Show ellipsis for overflow text
+                        justifyContent: 'center',
+                        borderRadius: '15px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
                         "&:hover": {
-                          backgroundColor: "#111933", // Change to #111933 on hover
-                          color: "#fff", // Change text color to white on hover
+                          backgroundColor: "#111933",
+                          color: "#fff",
                         },
                       }}
                     />
@@ -1049,9 +1087,9 @@ const ViewTest = () => {
                   sx={{
                     color: "#111933",
                     borderColor: "#111933",
-                    borderRadius: '10px', // Slightly curved
-                    width: '150px', // Adjusted width
-                    height: '40px', // Adjusted height
+                    borderRadius: '10px',
+                    width: '150px',
+                    height: '40px',
                     alignItems: 'center',
                     justifyContent: 'center',
                     whiteSpace: "nowrap",
@@ -1065,7 +1103,6 @@ const ViewTest = () => {
                   <div className="rounded-full border border-[#111933] p-[2px]">
                     <IoCloseCircleOutline className="text-[#111933]"/>
                   </div>
-
                   Clear Filter
                 </Button>
                 <Button
@@ -1074,9 +1111,9 @@ const ViewTest = () => {
                   sx={{
                     backgroundColor: "#111933",
                     color: "#fff",
-                    borderRadius: '10px', // Slightly curved
-                    width: '150px', // Adjusted width
-                    height: '40px', // Adjusted height
+                    borderRadius: '10px',
+                    width: '150px',
+                    height: '40px',
                     alignItems: 'center',
                     justifyContent: 'center',
                     whiteSpace: 'nowrap',
@@ -1094,9 +1131,7 @@ const ViewTest = () => {
               </DialogActions>
             </Dialog>
 
-            {/* Filter Section */}
             <Box mb={2} display="flex" gap={2}>
-              {/* Search Field */}
               <TextField
                 label="Search"
                 variant="outlined"
@@ -1106,28 +1141,26 @@ const ViewTest = () => {
                 onChange={handleFilterChange}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: '50px', // Fully rounded corners
-                    height: '40px', // Reduced field height
-                    padding: '0 16px', // Adjust padding for better alignment
+                    borderRadius: '50px',
+                    height: '40px',
+                    padding: '0 16px',
                   },
                   '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'gray', // Gray border color
+                    borderColor: 'gray',
                   },
                   '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'darkgray', // Border color on hover
+                    borderColor: 'darkgray',
                   },
                   '& .MuiInputLabel-root': {
-                    top: '-5px', // Adjust label alignment
-                    fontSize: '0.9rem', // Smaller font for label
-                    color: 'gray', // Gray label color
+                    top: '-5px',
+                    fontSize: '0.9rem',
+                    color: 'gray',
                   },
                   '& .MuiInputLabel-shrink': {
-                    top: '0px', // Adjust shrink label position
+                    top: '0px',
                   },
                 }}
               />
-
-              {/* Filter by Year */}
               <TextField
                 label="Filter by Year"
                 select
@@ -1137,23 +1170,23 @@ const ViewTest = () => {
                 onChange={handleFilterChange}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: '50px', // Fully rounded corners
-                    height: '40px', // Reduced field height
-                    padding: '0 16px', // Adjust padding for better alignment
+                    borderRadius: '50px',
+                    height: '40px',
+                    padding: '0 16px',
                   },
                   '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'gray', // Gray border color
+                    borderColor: 'gray',
                   },
                   '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'darkgray', // Border color on hover
+                    borderColor: 'darkgray',
                   },
                   '& .MuiInputLabel-root': {
-                    top: '-5px', // Adjust label alignment
-                    fontSize: '0.9rem', // Smaller font for label
-                    color: 'gray', // Gray label color
+                    top: '-5px',
+                    fontSize: '0.9rem',
+                    color: 'gray',
                   },
                   '& .MuiInputLabel-shrink': {
-                    top: '0px', // Adjust shrink label position
+                    top: '0px',
                   },
                 }}
               >
@@ -1173,8 +1206,6 @@ const ViewTest = () => {
                   IV
                 </MenuItem>
               </TextField>
-
-              {/* Filter by Status */}
               <TextField
                 label="Filter by Status"
                 select
@@ -1184,23 +1215,23 @@ const ViewTest = () => {
                 onChange={handleFilterChange}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: '50px', // Fully rounded corners
-                    height: '40px', // Reduced field height
-                    padding: '0 16px', // Adjust padding for better alignment
+                    borderRadius: '50px',
+                    height: '40px',
+                    padding: '0 16px',
                   },
                   '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'gray', // Gray border color
+                    borderColor: 'gray',
                   },
                   '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'darkgray', // Border color on hover
+                    borderColor: 'darkgray',
                   },
                   '& .MuiInputLabel-root': {
-                    top: '-5px', // Adjust label alignment
-                    fontSize: '0.9rem', // Smaller font for label
-                    color: 'gray', // Gray label color
+                    top: '-5px',
+                    fontSize: '0.9rem',
+                    color: 'gray',
                   },
                   '& .MuiInputLabel-shrink': {
-                    top: '0px', // Adjust shrink label position
+                    top: '0px',
                   },
                 }}
               >
@@ -1219,7 +1250,6 @@ const ViewTest = () => {
               </TextField>
             </Box>
 
-            {/* Students Table */}
             <TableContainer component={Paper} sx={{ borderRadius: "10px" }}>
               <Table>
                 <TableHead sx={{ backgroundColor: "#111933", color: "white" }}>
@@ -1302,49 +1332,59 @@ const ViewTest = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {currentStudents.map((student) => (
-                    <TableRow key={student.regno}>
-                      <TableCell sx={{ position: "relative", textAlign: "center" }}>
-                        {isEditing && (
+                  {loading ? (
+                    Array.from({ length: rowsPerPage }).map((_, index) => (
+                      <TableRow key={index}>
+                        <TableCell colSpan={7}>
+                          <Skeleton variant="rectangular" width="100%" height={40} />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    currentStudents.map((student) => (
+                      <TableRow key={student.regno}>
+                        <TableCell sx={{ position: "relative", textAlign: "center" }}>
+                          {isEditing && (
+                            <button
+                              onClick={() => handleStudentRemove(student.regno)}
+                              style={{
+                                position: "absolute",
+                                left: "20px",
+                                top: "50%",
+                                transform: "translateY(-50%)",
+                              }}
+                            >
+                              <XCircle className="text-red-500" />
+                            </button>
+                          )}
+                          <span>{student.name}</span>
+                        </TableCell>
+                        <TableCell sx={{ textAlign: "center" }}>
+                          {student.regno}
+                        </TableCell>
+                        <TableCell sx={{ textAlign: "center" }}>
+                          {student.dept}
+                        </TableCell>
+                        <TableCell sx={{ textAlign: "center" }}>
+                          {student.collegename}
+                        </TableCell>
+                        <TableCell sx={{ textAlign: "center" }}>
+                          {student.year}
+                        </TableCell>
+                        <TableCell sx={{ textAlign: "center" }}>
+                          {student.status}
+                        </TableCell>
+                        <TableCell sx={{ textAlign: "center" }}>
                           <button
-                            onClick={() => handleStudentRemove(student.regno)}
-                            style={{
-                              position: "absolute",
-                              left: "20px", // Adjust as needed
-                              top: "50%",
-                              transform: "translateY(-50%)",
-                            }}
+                            className="text-red-500 ml-2"
+                            onClick={() => handleViewClick(student)}
                           >
-                            <XCircle className="text-red-500" />
+                            View
                           </button>
-                        )}
-                        <span>{student.name}</span>
-                      </TableCell>
-                      <TableCell sx={{ textAlign: "center" }}>
-                        {student.regno}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: "center" }}>
-                        {student.dept}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: "center" }}>
-                        {student.collegename}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: "center" }}>
-                        {student.year}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: "center" }}>
-                        {student.status}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: "center" }}>
-                        <button
-                          className="text-red-500 ml-2"
-                          onClick={() => handleViewClick(student)}
-                        >
-                          View
-                        </button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -1353,18 +1393,18 @@ const ViewTest = () => {
               <div className="flex justify-center mt-6">
                 <Pagination
                   count={Math.ceil(filteredStudents.length / rowsPerPage)}
-                  page={page + 1} // Adjust page value to be one-based
+                  page={page + 1}
                   onChange={handlePageChange}
                   sx={{
                     '& .MuiPaginationItem-root': {
-                      color: '#111933', // Text color for pagination items
+                      color: '#111933',
                     },
                     '& .MuiPaginationItem-root.Mui-selected': {
-                      backgroundColor: '#FDC500', // Background color for selected item
-                      color: '#111933', // Text color for the selected item
+                      backgroundColor: '#FDC500',
+                      color: '#111933',
                     },
                     '& .MuiPaginationItem-root:hover': {
-                      backgroundColor: 'rgba(0, 9, 117, 0.1)', // Hover effect
+                      backgroundColor: 'rgba(0, 9, 117, 0.1)',
                     },
                   }}
                 />
@@ -1372,7 +1412,6 @@ const ViewTest = () => {
             )}
 
             <div className="flex justify-between items-stretch mt-6">
-              {/* Add Student Button */}
               {isEditing && (
                 <button
                   onClick={() => setPublishDialogOpen(true)}
@@ -1414,11 +1453,7 @@ const ViewTest = () => {
 
                 <button
                   className={themeButtonStyle}
-                  onClick={() => {
-                    setPopup("Are you sure you want to close the Assessment?");
-                    setPopupFunction(() => handleCloseSession());
-                    setShowPopup(true);
-                  }}
+                  onClick={() => setShowClosePopup(true)} // Show the close popup
                 >
                   Close Assessment
                 </button>
@@ -1444,7 +1479,6 @@ const ViewTest = () => {
           </button>
         </div>
 
-        {/* Add Student Dialog */}
         <Dialog open={publishDialogOpen} onClose={() => setPublishDialogOpen(false)} fullWidth maxWidth="lg">
           <DialogTitle>Select Students</DialogTitle>
           <DialogContent>
@@ -1472,7 +1506,6 @@ const ViewTest = () => {
           </DialogActions>
         </Dialog>
 
-        {/* No Report Available Modal */}
         <Dialog open={modalOpen} onClose={handleCloseModal}>
           <DialogTitle className="font-semibold">
             No Report Available
@@ -1487,7 +1520,6 @@ const ViewTest = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Blur Background when Modal is Open */}
         {modalOpen && (
           <div className="fixed inset-0 backdrop-blur-sm z-40"></div>
         )}

@@ -5,9 +5,7 @@ import SectionBasedHeader from "../../../components/staff/mcq/SectionBasedHeader
 import SectionBasedQuestion from "../../../components/staff/mcq/SectionBasedQuestion";
 import SectionBasedSidebar from "../../../components/staff/mcq/SectionBasedSidebar";
 import useDeviceRestriction from "../../../components/staff/mcq/useDeviceRestriction";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
-import FaceDetectionComponent from "../../../components/staff/mcq/useVideoDetection";
-import Legend from "../../../components/staff/mcq/Legend";
+
 
 export default function SectionBasedMcqAssessment() {
   const { contestId } = useParams();
@@ -58,6 +56,7 @@ export default function SectionBasedMcqAssessment() {
   const [isFreezePeriodOver, setIsFreezePeriodOver] = useState(false);
   const [faceDetectionWarning, setFaceDetectionWarning] = useState('');
   const [showPopup, setShowPopup] = useState(false); // Add this state for the popup
+  const [expandedSectionIndex, setExpandedSectionIndex] = useState(null); // State for dropdown selection
 
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
@@ -613,7 +612,7 @@ export default function SectionBasedMcqAssessment() {
         httpEquiv="Content-Security-Policy"
         content="frame-ancestors 'none'"
       ></meta>
-      <div className="max-w-[1900px] max-h-[1540px] mx-auto p-3 sm:p-6">
+      <div className="max-w-[1900px] max-h-[1540px] mx-auto ">
         <div className="bg-white ">
           <SectionBasedHeader
             contestId={contestId}
@@ -642,7 +641,7 @@ export default function SectionBasedMcqAssessment() {
           </div>
 
           <div className="flex flex-col lg:flex-row gap-6 p-4 sm:p-6 min-h-[600px] sm:min-h-[750px] mt-2 sm:mt-7 relative">
-            <div className="flex-grow relative">
+            <div className="flex-grow relative border-r-2">
               <SectionBasedQuestion
                 sections={sections}
                 currentSectionIndex={currentSectionIndex}
@@ -670,7 +669,7 @@ export default function SectionBasedMcqAssessment() {
               }`}
             >
               <div className="sticky top-6 p-4 sm:p-0">
-                <Legend />
+                
                 <SectionBasedSidebar
                   sections={sections}
                   currentSectionIndex={currentSectionIndex}
@@ -715,83 +714,105 @@ export default function SectionBasedMcqAssessment() {
 
       {/* Popup UI Code */}
       {showPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white w-[600px] p-6 rounded-xl shadow-lg">
-            <h3 className="text-[#00296b] text-lg font-bold mb-4">
-              MCT Mock Test
-            </h3>
-            <p className="text-center text-sm mb-4">
-              You have gone through all the questions. <br />
-              Either browse through them once again or finish your assessment.
-            </p>
-            <div className="grid grid-cols-6 gap-2 mb-6">
-              {Array.from({ length: sections[currentSectionIndex].questions.length }).map((_, idx) => (
-                <div
-                  key={idx}
-                  className={`w-10 h-10 flex items-center justify-center rounded-md text-white ${
-                    idx === currentQuestionIndex
-                      ? "bg-yellow-400"
-                      : selectedAnswers[currentSectionIndex]?.[idx]
-                      ? "bg-green-500"
-                      : "bg-red-500"
-                  }`}
-                >
-                  {idx + 1}
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-center items-center mb-4">
-              <div className="relative w-24 h-24">
-                <svg className="absolute inset-0 w-full h-full">
-                  <circle
-                    cx="50%"
-                    cy="50%"
-                    r="38"
-                    stroke="#E0E0E0"
-                    strokeWidth="8"
-                    fill="none"
-                  />
-                  <circle
-                    cx="50%"
-                    cy="50%"
-                    r="38"
-                    stroke="#00296B"
-                    strokeWidth="8"
-                    fill="none"
-                    strokeDasharray="238"
-                    strokeDashoffset={`${
-                      238 - (Object.keys(selectedAnswers[currentSectionIndex] || {}).length / sections[currentSectionIndex].questions.length) * 238
-                    }`}
-                    style={{
-                      transform: "rotate(-90deg)",
-                      transformOrigin: "center",
-                    }}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <p className="text-[#00296b] font-bold text-xl">
-                    {Object.keys(selectedAnswers[currentSectionIndex] || {}).length}/{sections[currentSectionIndex].questions.length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-between">
-              <button
-                className="border border-red-500 text-red-500 px-6 py-2 rounded-full"
-                onClick={() => setShowPopup(false)}
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white w-[800px] p-8 rounded-xl shadow-lg max-h-[90vh] overflow-y-auto">
+      <h3 className="text-[#00296b] text-lg font-bold mb-4">
+        MCT Mock Test
+      </h3>
+      <p className="text-center text-sm mb-4">
+        You have gone through all the questions. <br />
+        Either browse through them once again or finish your assessment.
+      </p>
+      {sections.map((section, sectionIndex) => (
+        <div key={sectionIndex} className="mb-6">
+          <div
+            className="flex justify-between items-center mb-2 cursor-pointer"
+            onClick={() =>
+              setExpandedSectionIndex(expandedSectionIndex === sectionIndex ? null : sectionIndex)
+            }
+          >
+            <h4 className="text-[#00296b] font-semibold flex items-center">
+              {section.sectionName}
+              <svg
+                className={`ml-2 transition-transform ${expandedSectionIndex === sectionIndex ? 'rotate-180' : 'rotate-0'}`}
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
               >
-                Close
-              </button>
-              <button
-                className="bg-[#fdc500] text-[#00296b] px-6 py-2 rounded-full"
-                onClick={handleFinish}
-              >
-                Finish
-              </button>
-            </div>
+                <path
+                  d="M7 10L12 15L17 10"
+                  stroke="#00296b"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </h4>
           </div>
+          {expandedSectionIndex === sectionIndex && (
+            <div className="mt-2">
+              <div className="grid grid-cols-6 gap-2 mb-2">
+                {section.questions.map((_, questionIndex) => (
+                  <div
+                    key={questionIndex}
+                    className={`w-10 h-10 flex items-center justify-center rounded-md text-white ${
+                      selectedAnswers[sectionIndex]?.[questionIndex]
+                        ? "bg-green-500"
+                        : reviewStatus[sectionIndex]?.[questionIndex]
+                        ? "bg-yellow-500"
+                        : "bg-red-500"
+                    }`}
+                  >
+                    {questionIndex + 1}
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between mb-2">
+                <p className="text-sm text-gray-700">
+                  Attempted: {Object.keys(selectedAnswers[sectionIndex] || {}).length}/{section.questions.length}
+                </p>
+                <p className="text-sm text-gray-700">
+                  Unattempted: {section.questions.length - Object.keys(selectedAnswers[sectionIndex] || {}).length}
+                </p>
+                <p className="text-sm text-gray-700">
+                  Marked for Review: {Object.values(reviewStatus[sectionIndex] || {}).filter(Boolean).length}
+                </p>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
+                <div
+                  className="bg-blue-600 h-4 rounded-full"
+                  style={{
+                    width: `${(Object.keys(selectedAnswers[sectionIndex] || {}).length / section.questions.length) * 100}%`,
+                  }}
+                ></div>
+              </div>
+              <p className="text-center text-sm">
+                {((Object.keys(selectedAnswers[sectionIndex] || {}).length / section.questions.length) * 100).toFixed(0)}% Completed
+              </p>
+            </div>
+          )}
         </div>
-      )}
+      ))}
+      <div className="flex justify-between mt-4">
+        <button
+          className="border border-red-500 text-red-500 px-6 py-2 rounded-full"
+          onClick={() => setShowPopup(false)}
+        >
+          Close
+        </button>
+        <button
+          className="bg-[#fdc500] text-[#00296b] px-6 py-2 rounded-full"
+          onClick={handleFinish}
+        >
+          Finish
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }

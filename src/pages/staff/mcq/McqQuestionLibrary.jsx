@@ -227,7 +227,7 @@ const McqLibrary = () => {
             <div className="sticky top-4 bg-white p-2 shadow rounded-lg flex items-center justify-between">
               <button
                 onClick={toggleSelectAll}
-                className="py-1 px-7 bg-white border-2 border-[#efeeee] shadow-blue-100 font-semibold text-[#000a75b2] rounded-xl hover:bg-white h-full flex items-center justify-center gap-2"
+                className="py-1 px-7 bg-white border-2 border-[#efeeee] shadow-blue-100 font-semibold text-[#111933] rounded-xl hover:bg-white h-full flex items-center justify-center gap-2"
               >
                 {selectAll ? 'Deselect All' : 'Select All'}
               </button>
@@ -259,14 +259,14 @@ const McqLibrary = () => {
           {/* Right Panel for Selected Questions */}
           <div className="col-span-1">
             <div className="bg-white shadow p-4 rounded-lg">
-              <h2 className="text-sm font-bold mb-4 text-[#00296B]">Selected Questions</h2>
+              <h2 className="text-sm font-bold mb-4 text-[#111933]">Selected Questions</h2>
               {selectedCurrentQuestions.length === 0 ? (
-                <p className="text-sm text-[#00296B]">No questions selected</p>
+                <p className="text-sm text-[#111933]">No questions selected</p>
               ) : (
                 <ul>
                   {selectedCurrentQuestions.map((question, index) => (
                     <li key={index} className="border-b py-2 text-sm flex justify-between items-center">
-                      <span className="text-[#00296B]">{index + 1}. {question.question}</span>
+                      <span className="text-[#111933]">{index + 1}. {question.question}</span>
                     </li>
                   ))}
                 </ul>
@@ -293,7 +293,7 @@ const McqLibrary = () => {
               )}
               <button
                 onClick={handleSubmit}
-                className="mt-4 w-full py-2 px-4 rounded-lg text-sm bg-[#fdc500] text-[#00296B] bg-opacity-40 border border-[#fdc500] text-[#00975] hover:bg-opacity-80"
+                className="mt-4 w-full py-2 px-4 rounded-lg text-sm bg-[#FFCC00] text-[#00296B]  border border-[#fdc500] text-[#00975] hover:bg-opacity-80"
               >
                 Save Selected Questions
               </button>

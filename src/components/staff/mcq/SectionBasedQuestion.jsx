@@ -101,14 +101,14 @@ export default function SectionBasedQuestion({
   }
 
   return (
-    <div className="flex-1 relative">
+    <div className="flex-1 relative  ">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-[#00296b] text-2xl font-bold">
+        <h2 className="text-[#111933] text-2xl font-bold">
           Question {currentQuestionIndex + 1}/{totalQuestions}
         </h2>
         <button
-          className={`text-sm border rounded-full px-4 py-1 ${
-            reviewStatus[currentSectionIndex]?.[currentQuestionIndex] ? "text-blue-600 border-blue-600" : "text-red-500 border-red-500"
+          className={`text-sm border rounded-full  px-4 py-1 mr-7 ${
+            reviewStatus[currentSectionIndex]?.[currentQuestionIndex] ? "text-[#111933] border-[#111933]" : "text-red-500 border-red-500"
           }`}
           onClick={() => onReviewMark(currentSectionIndex, currentQuestionIndex)} // Call the review mark callback
         >
@@ -116,9 +116,9 @@ export default function SectionBasedQuestion({
         </button>
       </div>
 
-      <p className="text-2xl font-semibold mb-8">{currentQuestion.text}</p>
+      <p className="text-2xl text-[#111933] font-semibold mb-8">{currentQuestion.text}</p>
 
-      <div className="space-y-4 mb-12">
+      <div className="space-y-4 text-[#111933] mb-12">
         {shuffledOptions.map((option, idx) => (
           <div
             key={idx}
@@ -127,13 +127,13 @@ export default function SectionBasedQuestion({
           >
             <button
               className={`w-8 h-8 flex items-center justify-center mr-4 border rounded-lg transition-colors text-1xl font-semibold ${
-                selectedOption === option ? "border-[#00296b] bg-[#fdc500]" : ""
+                selectedOption === option ? "border-[#111933] bg-[#fdc500]" : ""
               }`}
             >
               {String.fromCharCode(65 + idx)} {/* 65 is the ASCII code for 'A' */}
             </button>
-            <span className={`flex-1 p-4 border rounded-lg transition-colors text-1xl font-semibold ${
-              selectedOption === option ? "border-[#00296b] bg-[#fdc500]" : ""
+            <span className={`flex-1 p-4 mr-6 border rounded-lg transition-colors text-1xl font-semibold ${
+              selectedOption === option ? "border-[#111933] bg-[#fdc500]" : ""
             }`}>
               {option}
             </span>
@@ -141,7 +141,7 @@ export default function SectionBasedQuestion({
         ))}
       </div>
       {/* Ensure watermark does not interfere with options */}
-      <div className="absolute inset-0 pointer-events-none z-[5] grid grid-cols-7 gap-2 p-4 opacity-[0.1]">
+      <div className="absolute inset-0 pointer-events-none z-[1] grid grid-cols-7 gap-2 p-1 opacity-[0.1]">
         {[...Array(21)].map((_, index) => (
           <div key={index} className="flex items-center justify-center">
             <div className="transform rotate-45 text-black text-[20px] font-semibold select-none">
@@ -153,7 +153,7 @@ export default function SectionBasedQuestion({
 
       {/* <div className="flex justify-between mt-8">
         <button
-          className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full flex items-center gap-2"
+          className="bg-[#fdc500] text-[#111933] px-8 py-2 rounded-full flex items-center gap-2"
           onClick={onPrevious}
           disabled={currentQuestionIndex === 0}
         >
@@ -162,14 +162,14 @@ export default function SectionBasedQuestion({
         {isLastQuestion ? (
           isLastSection ? (
             <button
-              className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full"
+              className="bg-[#fdc500] text-[#111933] px-8 py-2 rounded-full"
               onClick={handleFinishClick}
             >
               Finish
             </button>
           ) : (
             <button
-              className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full"
+              className="bg-[#fdc500] text-[#111933] px-8 py-2 rounded-full"
               onClick={handleSubmit}
             >
               Submit
@@ -177,7 +177,7 @@ export default function SectionBasedQuestion({
           )
         ) : (
           <button
-            className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full flex items-center gap-2"
+            className="bg-[#fdc500] text-[#111933] px-8 py-2 rounded-full flex items-center gap-2"
             onClick={onNext}
             disabled={currentQuestionIndex === totalQuestions - 1}
           >
@@ -189,7 +189,7 @@ export default function SectionBasedQuestion({
       {showPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white w-[600px] p-6 rounded-xl shadow-lg">
-            <h3 className="text-[#00296b] text-lg font-bold mb-4">
+            <h3 className="text-[#111933] text-lg font-bold mb-4">
               MCT Mock Test
             </h3>
             <p className="text-center text-sm mb-4">
@@ -227,7 +227,7 @@ export default function SectionBasedQuestion({
                     cx="50%"
                     cy="50%"
                     r="38"
-                    stroke="#00296B"
+                    stroke="#111933"
                     strokeWidth="8"
                     fill="none"
                     strokeDasharray="238"
@@ -241,7 +241,7 @@ export default function SectionBasedQuestion({
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <p className="text-[#00296b] font-bold text-xl">
+                  <p className="text-[#111933] font-bold text-xl">
                     {Object.keys(selectedAnswers[currentSectionIndex] || {}).length}/{totalQuestions}
                   </p>
                 </div>
@@ -255,7 +255,7 @@ export default function SectionBasedQuestion({
                 Close
               </button>
               <button
-                className="bg-[#fdc500] text-[#00296b] px-6 py-2 rounded-full"
+                className="bg-[#fdc500] text-[#111933] px-6 py-2 rounded-full"
                 onClick={confirmFinish}
               >
                 Finish

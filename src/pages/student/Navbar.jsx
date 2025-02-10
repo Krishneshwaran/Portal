@@ -7,6 +7,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 
 // Import your logo
 import logo from "../../assets/SNS-DT Logo.png"; // Update the path to your logo
+import avatarImage from "../../assets/Dashboard icon.png";
 
 const Navbar = () => {
   const [username, setUsername] = useState("");
@@ -59,13 +60,11 @@ const Navbar = () => {
         <div className="flex items-center gap-8">
           <img src={logo} alt="Logo" className="h-16 cursor-pointer" onClick={() => navigate('/studentdashboard')} />
         </div>
-        <div className="flex items-center gap-4 text-[#000975]">
+        <div className="flex items-center gap-4 text-[#111933]">
           <div className="flex items-center mr-2 gap-2">
             <span>{username || "Student"}</span>
-            <button onClick={handleMenuOpen} className="p-2">
-              <Avatar>
-                {username ? username[0].toUpperCase() : "S"}
-              </Avatar>
+            <button onClick={handleMenuOpen} className="p-3">
+            <img src={avatarImage} alt="Avatar" className="ml-2 rounded-full h-12 w-12" />
             </button>
           </div>
         </div>

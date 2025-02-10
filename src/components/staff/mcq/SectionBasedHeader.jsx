@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Legend from "../../../components/staff/mcq/Legend";
 
 export default function SectionBasedHeader({ contestId, totalDuration, sectionRemainingTime }) {
   const [totalTimeLeft, setTotalTimeLeft] = useState(() => {
@@ -48,19 +49,23 @@ export default function SectionBasedHeader({ contestId, totalDuration, sectionRe
   };
 
   return (
-    <div className="flex justify-between max-w-full items-center mb-7 bg-white p-4">
+    <div className="flex justify-between items-center mb-7 bg-white border-b border-gray-200 p-4 ">
       <div className="flex items-center gap-2">
-        <h1 className="text-[#00296b] text-2xl ml-8 font-bold">MCQ ASSESSMENT</h1>
+        <h1 className="text-[#111933] text-2xl ml-8 font-bold">MCQ ASSESSMENT</h1>
       </div>
-      <div className="flex items-center mr-7 mt-4 gap-2">
-        <span className="w-8 h-8 text-bold text-4xl pr-4 flex items-center justify-center">⏰</span>
+      <div className="flex items-center -mr-96 ml-52 mt-4 gap-2 ">
+        <span className="w-8 h-8 text-bold text-4xl pr-4  flex items-center justify-center">⏰</span>
         <div>
-          <div className="text-[#00296b] text-xl font-bold">
+          <div className="text-[#111933] text-xl font-bold">
             {formatTime(totalTimeLeft)}
           </div>
-          <div className="text-[#00296b] text-xl">Total Time Left</div>
+          <div className="text-[#111933] text-xl">Total Time Left</div>
         </div>
-
+      </div>
+      <div className="items-end">
+        <div className="mt-4 mr-16">
+            <Legend/>
+        </div>
       </div>
     </div>
   );

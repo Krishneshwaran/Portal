@@ -6,7 +6,8 @@ const AIGenerate = () => {
   const [formData, setFormData] = useState({
     topic: "",
     subtopic: "",
-    level: [], // Array of objects with value and percentage
+    selectedLevel: "",
+    level: [],
     question_type: "Multiple Choice",
     num_questions: "",
   });
@@ -14,33 +15,27 @@ const AIGenerate = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const navigate = useNavigate();
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+  const API_BASE_URL =
+    process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
 
-    if (type === "checkbox" && name === "level") {
-      // Handle multiple level selections
-      setFormData((prevData) => {
-        let newLevels = [...prevData.level];
-        if (checked) {
-          // Add the level with an initial percentage of 0
-          newLevels.push({ value: value, percentage: "" });  // Initial percentage
-        } else {
-          // Remove the level
-          newLevels = newLevels.filter((level) => level.value !== value);
-        }
-        return { ...prevData, level: newLevels };
-      });
+    if (name === "selectedLevel") {
+      // Only add the level if it's not already in the list
+      if (!formData.level.some((l) => l.value === value)) {
+        setFormData((prevData) => ({
+          ...prevData,
+          selectedLevel: value,
+          level: [...prevData.level, { value: value, percentage: "" }],
+        }));
+      }
     } else if (name === "num_questions") {
-      // Update number of questions
       setFormData((prevData) => ({
         ...prevData,
         num_questions: value,
       }));
-    }
-    else {
-      // Handle other input changes as before
+    } else {
       setFormData((prevData) => ({
         ...prevData,
         [name]: value,
@@ -49,7 +44,6 @@ const AIGenerate = () => {
   };
 
   const handleLevelPercentageChange = (levelValue, percentage) => {
-    // Function to update the percentage for a specific level
     setFormData((prevData) => {
       const updatedLevels = prevData.level.map((level) => {
         if (level.value === levelValue) {
@@ -59,6 +53,13 @@ const AIGenerate = () => {
       });
       return { ...prevData, level: updatedLevels };
     });
+  };
+
+  const removeLevel = (levelValue) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      level: prevData.level.filter((l) => l.value !== levelValue),
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -73,7 +74,6 @@ const AIGenerate = () => {
         return;
       }
 
-      // Validation
       if (!formData.num_questions) {
         alert("Please enter the number of questions.");
         setLoading(false);
@@ -89,7 +89,7 @@ const AIGenerate = () => {
 
       const totalPercentage = formData.level.reduce((sum, level) => {
         const percentage = parseFloat(level.percentage);
-        return sum + (isNaN(percentage) ? 0 : percentage);  // Use 0 for NaN values
+        return sum + (isNaN(percentage) ? 0 : percentage);
       }, 0);
 
       if (totalPercentage !== 100) {
@@ -98,7 +98,6 @@ const AIGenerate = () => {
         return;
       }
 
-      // Prepare data for the backend
       const requestData = {
         topic: formData.topic,
         subtopic: formData.subtopic,
@@ -106,10 +105,11 @@ const AIGenerate = () => {
         question_type: "Multiple Choice",
         level_distribution: formData.level.map((level) => ({
           level: level.value,
-          count: Math.round((parseFloat(level.percentage) / 100) * numQuestions), // Calculate the questions per level
+          count: Math.round(
+            (parseFloat(level.percentage) / 100) * numQuestions
+          ),
         })),
       };
-
 
       const response = await axios.post(
         `${API_BASE_URL}/api/mcq/api/generate-questions/`,
@@ -129,7 +129,10 @@ const AIGenerate = () => {
       navigate("/mcq/airesponse", { state: { questions } });
     } catch (error) {
       console.error("Error generating questions:", error);
-      setErrorMessage(error.response.data.error || 'Failed to generate questions. Please try again later.');
+      setErrorMessage(
+        error.response.data.error ||
+          "Failed to generate questions. Please try again later."
+      );
       setSuccessMessage(null);
     } finally {
       setLoading(false);
@@ -146,33 +149,39 @@ const AIGenerate = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-12">
       <div className="h-14 px-14 pb-10">
-          <div className="flex items-center gap-2 text-[#111933]">
-            <span className="opacity-60">Home</span>
-            <span>{">"}</span>
-            <span className="opacity-60">Assessment Overview</span>
-            <span>{">"}</span>
-            <span className="opacity-60">Test Configuration</span>
-            <span>{">"}</span>
-            <span onClick={() => window.history.back()} className="cursor-pointer opacity-60 hover:underline">
-              Add Questions
-            </span>
-            <span>{">"}</span>
-            <span >
-              AI Generator
-            </span>
-
-          </div>
+        <div className="flex items-center gap-2 text-[#111933]">
+          <span className="opacity-60">Home</span>
+          <span>{">"}</span>
+          <span className="opacity-60">Assessment Overview</span>
+          <span>{">"}</span>
+          <span className="opacity-60">Test Configuration</span>
+          <span>{">"}</span>
+          <span
+            onClick={() => window.history.back()}
+            className="cursor-pointer opacity-60 hover:underline"
+          >
+            Add Questions
+          </span>
+          <span>{">"}</span>
+          <span>AI Generator</span>
         </div>
-      <div className="max-w-4xl mx-auto bg-white p-8 shadow-lg rounded-2xl">
-        <h1 className="text-2xl font-bold mb-2">Question Generator AI</h1>
-        <p className="text-sm">Enter the below details and click generate to generate the questions.</p>
-        <hr className="mb-10 mt-5 border-1 border-gray-500" />
-        <form onSubmit={handleSubmit} className="space-y-6 md:mx-[15%] mb-10">
+      </div>
+      <div className="max-w-5xl mx-auto bg-white p-10 shadow-lg rounded-2xl">
+        <h1 className="text-3xl font-bold mb-3 text-[#111933]">Question Generator AI</h1>
+        <p className="text-sm mb-8">
+          Choose how you’d like to add questions to your assessment. Select the
+          method that works best for you to quickly build your test.
+        </p>
+        <hr className="mb-12 mt-6 border-1 border-gray-500" />
+        <form onSubmit={handleSubmit} className="space-y-8 md:mx-[20%] mb-12">
           {/* Topic */}
           <div className="flex items-center justify-between">
-            <label htmlFor="topic" className="block text-md font-semibold text-gray-700">
+            <label
+              htmlFor="topic"
+              className="block text-md font-semibold text-gray-700"
+            >
               Topic*
             </label>
             <input
@@ -183,13 +192,16 @@ const AIGenerate = () => {
               onChange={handleChange}
               required
               placeholder="Enter the topic"
-              className="mt-1 block w-1/2 text-sm px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              className="mt-1 block w-1/2 text-sm px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
 
           {/* Subtopic */}
           <div className="flex items-center justify-between">
-            <label htmlFor="subtopic" className="block text-md font-semibold text-gray-700">
+            <label
+              htmlFor="subtopic"
+              className="block text-md font-semibold text-gray-700"
+            >
               Sub-Topic*
             </label>
             <input
@@ -200,59 +212,80 @@ const AIGenerate = () => {
               onChange={handleChange}
               required
               placeholder="Enter the sub-topic"
-              className="mt-1 block w-1/2 text-sm px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              className="mt-1 block w-1/2 text-sm px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
 
-          {/* Level */}
-          <div className="">
-            <label className="block text-md font-semibold text-gray-700 mb-5">
+          {/* Level Dropdown */}
+          <div className="flex items-center justify-between">
+            <label className="block text-md font-semibold text-gray-700">
               Bloom's Taxonomy Levels*
             </label>
-            <div className="mt-2 ml-5 space-y-2">
-              {bloomLevels.map((level) => (
-                <div key={level.value} className="w-[30vw] h-8 flex justify-between items-center">
-                  <div className="flex"><input
-                    type="checkbox"
-                    id={`level-${level.value}`}
-                    name="level"
-                    value={level.value}
-                    checked={formData.level.some((l) => l.value === level.value)}
-                    onChange={handleChange}
-                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  />
-                    <label
-                      htmlFor={`level-${level.value}`}
-                      className="ml-2 block text-sm text-gray-900"
-                    >
+            <div className="w-1/2">
+              <select
+                name="selectedLevel"
+                value={formData.selectedLevel}
+                onChange={handleChange}
+                className="w-full text-sm px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">Select a level</option>
+                {bloomLevels
+                  .filter(
+                    (level) =>
+                      !formData.level.some((l) => l.value === level.value)
+                  )
+                  .map((level) => (
+                    <option key={level.value} value={level.value}>
                       {level.label}
-                    </label></div>
-                  {/* Percentage Input */}
-                  {formData.level.some((l) => l.value === level.value) && (
-                    <input
-                      type="number"
-                      placeholder="Percentage"
-                      min="0"
-                      max="100"
-                      value={
-                        formData.level.find((l) => l.value === level.value)
-                          ?.percentage || ""
-                      }
-                      onChange={(e) =>
-                        handleLevelPercentageChange(level.value, e.target.value)
-                      }
-                      className="ml-4 w-1/2 text-sm px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  )}
-                </div>
-              ))}
+                    </option>
+                  ))}
+              </select>
+
+              {/* Selected Levels */}
+              <div className="mt-3 space-y-3">
+                {formData.level.map((level) => (
+                  <div
+                    key={level.value}
+                    className="flex items-center justify-between p-3 border border-gray-300 rounded-md"
+                  >
+                    <span className="text-sm">
+                      {bloomLevels.find((l) => l.value === level.value)?.label}
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="number"
+                        placeholder="%"
+                        min="0"
+                        max="100"
+                        value={level.percentage}
+                        onChange={(e) =>
+                          handleLevelPercentageChange(
+                            level.value,
+                            e.target.value
+                          )
+                        }
+                        className="w-20 text-sm px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeLevel(level.value)}
+                        className="text-red-500 hover:text-red-700 text-xl px-2"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
-
           {/* Question Type */}
           <div className="flex items-center justify-between">
-            <label htmlFor="question_type" className="block text-md font-semibold text-gray-700">
+            <label
+              htmlFor="question_type"
+              className="block text-md font-semibold text-gray-700"
+            >
               Type of Questions*
             </label>
             <select
@@ -260,7 +293,7 @@ const AIGenerate = () => {
               name="question_type"
               value={formData.question_type}
               onChange={handleChange}
-              className="mt-1 block w-1/2 text-sm px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              className="mt-1 block w-1/2 text-sm px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
               disabled
             >
               <option value="Multiple Choice">Multiple Choice</option>
@@ -269,7 +302,10 @@ const AIGenerate = () => {
 
           {/* Number of Questions */}
           <div className="flex items-center justify-between">
-            <label htmlFor="num_questions" className="block text-md font-semibold text-gray-700">
+            <label
+              htmlFor="num_questions"
+              className="block text-md font-semibold text-gray-700"
+            >
               Number of Questions*
             </label>
             <input
@@ -280,31 +316,34 @@ const AIGenerate = () => {
               onChange={handleChange}
               required
               placeholder="Enter the no. of questions"
-              className="mt-1 block w-1/2 text-sm px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              className="mt-1 block w-1/2 text-sm px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
 
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full border-2 border-[#111933] text-[#111933] py-2 px-4 rounded-lg hover:bg-[#111933] hover:text-white hover:border-[#111933]"
+            className="w-full border-2 border-[#111933] text-[#111933] py-3 px-6 rounded-lg hover:bg-[#111933] hover:text-white hover:border-[#111933] text-lg mt-8"
             disabled={loading}
           >
             {loading ? "Generating..." : "Generate Questions"}
           </button>
-
         </form>
 
         {/* Loading Spinner */}
         {loading && (
-          <div className="flex justify-center mt-4">
-            <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="flex justify-center mt-6">
+            <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         )}
 
         {/* Success/Error Messages */}
-        {errorMessage && <p className="mt-4 text-red-600">{errorMessage}</p>}
-        {successMessage && <p className="mt-4 text-green-600">{successMessage}</p>}
+        {errorMessage && (
+          <p className="mt-6 text-red-600 text-center">{errorMessage}</p>
+        )}
+        {successMessage && (
+          <p className="mt-6 text-green-600 text-center">{successMessage}</p>
+        )}
       </div>
     </div>
   );

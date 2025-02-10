@@ -1,13 +1,15 @@
 import React from 'react';
 import { X } from 'lucide-react';
+import submiticon from '../../assets/submit.svg';
+
 
 const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen, singleQuestionData, handleSingleQuestionInputChange, handleSingleQuestionSubmit, uploadStatus }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-lg w-4/5 max-w p-4 overflow-hidden transform transition-all duration-300">
-        <div className="flex mb-4">
+      <div className="bg-white rounded-lg shadow-lg w-4/5 max-w px-16 py-8  overflow-hidden transform transition-all duration-300">
+        <div className="flex mb-10">
          
-          <div className='w-full'>
+          <div className='w-full '>
           <h2 className="text-lg font-semibold text-[#111933] pb-2">Add New Question</h2>
           <h2 className="text-sm font-light  text-[#111933] pb-4">Choose how you’d like to add questions to your assessment. Select the method that works best for you to quickly build your test.</h2>
           <div className='border-b-2 border-[#111933]  ' > </div> 
@@ -23,7 +25,7 @@ const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen
         </div>
         <form onSubmit={handleSingleQuestionSubmit} className="space-y-4">
           <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-            <div className="flex-1">
+            <div className="flex-1 mr-4">
               <label className="block text-sm font-medium text-[#111933] mb-1">
                 Question <span className="text-red-500">*</span>
               </label>
@@ -31,7 +33,8 @@ const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen
                 name="question"
                 value={singleQuestionData.question}
                 onChange={handleSingleQuestionInputChange}
-                style={{paddingBottom:'8.7rem'}}
+                Placeholder="Type your question here"
+                style={{paddingBottom:'10rem'}}
                 className="w-full p-2  rounded-lg border-2 border-gray-300 shadow-sm focus:border-gray-500 focus:ring focus:ring-gray-300"
                 rows={2}
                 required
@@ -39,14 +42,15 @@ const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen
             </div>
             <div className="flex-1">
               <label className="block text-sm font-medium text-[#111933] mb-1">
-                Choice
+                Choice <span className="text-red-500">*</span>
               </label>
               {['option1', 'option2', 'option3', 'option4'].map((optionKey, index) => (
-                <div key={optionKey} className="flex items-center space-x-2 mb-2">
+                <div key={optionKey} className="flex items-center space-x-2 mb-4">
                   <input
                     type="text"
                     name={optionKey}
                     value={singleQuestionData[optionKey]}
+                    placeholder='Type your choice here'
                     onChange={handleSingleQuestionInputChange}
                     className="flex-1 p-2 rounded-lg border-2 border-gray-300 shadow-sm focus:border-gray-500 focus:ring focus:ring-gray-300"
                     required
@@ -55,8 +59,8 @@ const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen
               ))}
             </div>
           </div>
-          <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-            <div className="flex-1">
+          <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 ">
+            <div className="flex-1 pr-20 ">
               <label className="block text-sm font-medium text-[#111933] mb-1">
                 Select correct answer <span className="text-red-500">*</span>
               </label>
@@ -77,7 +81,7 @@ const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen
                 ))}
               </select>
             </div>
-            <div className="flex-1">
+            <div className="flex-1 pr-20">
               <label className="block text-sm font-medium text-[#111933] mb-1">
                 Difficulty Level <span className="text-red-500">*</span>
               </label>
@@ -93,7 +97,7 @@ const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen
                 <option value="hard">Hard</option>
               </select>
             </div>
-            <div className="flex-1">
+            <div className="flex-1 ">
               <label className="block text-sm font-medium text-[#111933] mb-1">
                 Tags
               </label>
@@ -109,11 +113,14 @@ const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen
             </div>
           </div>
           <div className="flex justify-center mt-4">
-            <button
-              type="submit"
-              className=" p-2  bg-[#111933]  rounded-lg   text-[#ffffff]  focus:outline-none focus:ring focus:ring-blue-300"
-            >
+          <button
+         type='submit'
+          className="inline-flex items-center px-4 py-1 w-144px mt-2 font-medium bg-[#111933] text-[#ffffff] hover:bg-[#111933] focus:outline-none focus:ring-2 focus:ring-offset-2 transform transition-transform duration-300 hover:scale-102 cursor-pointer"
+          style={{ borderRadius: '0.5rem' }}
+          
+        >
               Submit
+            <img src={submiticon} alt="submit" className="w-4 h-4 ml-2" /> 
             </button>
           </div>
           {uploadStatus && (

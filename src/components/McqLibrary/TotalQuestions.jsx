@@ -12,7 +12,7 @@ const TotalQuestions = ({ totalQuestions }) => {
         width: '16rem', // Match the width of FiltersSidebar
         height: '30px', // Adjust as needed
         borderRadius: '10px',
-        backgroundColor: 'rgba(253, 197, 0, 0.3)', // Updated background color with 20% opacity
+        backgroundColor: '#FFCC00', // Updated background color with 20% opacity
         
       };
       

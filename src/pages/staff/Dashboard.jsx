@@ -1,16 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { FaChartBar, FaUsers, FaClipboardList, FaCheckCircle, FaSearch } from 'react-icons/fa';
-import { Dialog, DialogTitle, DialogContent, IconButton, DialogActions, Typography, Grid, Box, Pagination } from '@mui/material';
+import { FaSearch } from 'react-icons/fa';
+import { Dialog, DialogTitle, DialogContent, IconButton, DialogActions, Typography, Grid, Box, Pagination, Skeleton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import TestCard from '../../components/staff/TestCard';
 import CreateTestCard from '../../components/staff/CreaTestCard';
-import Loader from '../../layout/Loader';
-import mcq from '../../assets/mcq.png';
-import code from '../../assets/code.png';
 import api from '../../axiosConfig';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { format } from 'date-fns-tz';
-import { formatInTimeZone } from 'date-fns-tz';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import notest from '../../assets/testno.png';
@@ -19,6 +15,9 @@ import dashboard2 from '../../assets/dashboard2.svg';
 import dashboard3 from '../../assets/dashboard3.svg';
 import dashboard4 from '../../assets/dashboard4.svg';
 import graph from '../../assets/graph.svg';
+import { formatInTimeZone } from 'date-fns-tz';
+import mcq from '../../assets/mcq.png'; // Adjust the path as necessary
+import code from '../../assets/code.png'; // Adjust the path as necessary
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -31,7 +30,7 @@ const Dashboard = () => {
     completedTests: 0,
     upcomingTest: 0,
   });
-  
+
   const [tests, setTests] = useState([]);
   const [mcqTests, setMcqTests] = useState([]);
   const [activeFilter, setActiveFilter] = useState('All');
@@ -109,7 +108,6 @@ const Dashboard = () => {
     }
   }, [location, fetchData]);
 
-  // Filter tests based on status and search query
   const filteredTests = useMemo(() => {
     const allTests = [...tests, ...mcqTests];
     if (activeFilter === 'All') {
@@ -122,33 +120,27 @@ const Dashboard = () => {
     );
   }, [tests, mcqTests, activeFilter, searchQuery]);
 
-  // Modify itemsPerPage to be dynamic based on activeFilter
   const getItemsPerPage = useCallback(() => {
     return activeFilter === 'All' ? 8 : 9;
   }, [activeFilter]);
 
-  // Update paginatedTests to use dynamic itemsPerPage
   const paginatedTests = useMemo(() => {
     const currentItemsPerPage = getItemsPerPage();
     return filteredTests.slice((page - 1) * currentItemsPerPage, page * currentItemsPerPage);
   }, [filteredTests, page, getItemsPerPage]);
 
-  // Handle filter change
   const filterTests = useCallback((status) => {
     setActiveFilter(status);
     setPage(1); // Reset to the first page when filter changes
   }, []);
 
-  // Handle modal open/close
   const handleModalClose = () => setIsModalOpen(false);
 
-  // Handle search input change
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
     setPage(1); // Reset to the first page when search query changes
   };
 
-  // Update handlePageChange to use dynamic itemsPerPage
   const handlePageChange = (event, value) => {
     setPage(value);
   };
@@ -157,7 +149,6 @@ const Dashboard = () => {
     const state = location.state;
     if (state && state.toastMessage) {
       toast.success(state.toastMessage);
-      // Clear the state to prevent repeated toasts
       window.history.replaceState({}, document.title);
     }
   }, [location]);
@@ -178,54 +169,61 @@ const Dashboard = () => {
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-[#f4f6ff86]'}`}>
-      {/* Toast Container */}
       <ToastContainer />
 
       <div className="bg-transparent mx-5 ml-16 mr-14 rounded-b-2xl p-6 ">
-      <h2 className="text-3xl text-[#111933] mb-6 font-medium cursor-text">
-        Overall Stats
-      </h2>
+        <h2 className="text-3xl text-[#111933] mb-6 font-medium cursor-text">
+          Overall Stats
+        </h2>
 
-      <div className="grid grid-cols-1 mt-11 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-        {[
-          { title: "Test Created", value: stats.totalTests, icon: dashboard1 },
-          { title: "No of Students", value: stats.students, icon: dashboard2 },
-          { title: "Live Test", value: stats.liveTests, icon: dashboard3 },
-          { title: "Completed Test", value: stats.completedTests, icon: dashboard4 },
-          { title: "Upcoming Test", value: stats.upcomingTest, icon: dashboard1 }
-        ].map(({ title, value, icon }, index) => (
-          <div
-            key={index}
-            className="relative bg-white rounded-lg shadow-lg p-4 max-w-[250px] w-full hover:shadow-xl transition duration-300"
-          >
-            {/* Top-right icon badge */}
-            <div className="absolute -top-5 -right-4 flex items-center justify-center w-14 h-14 bg-white rounded-full shadow-md">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden">
-                <img src={icon} alt={title} />
+        <div className="grid grid-cols-1 mt-11 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          {[
+            { title: "Test Created", value: stats.totalTests, icon: dashboard1 },
+            { title: "No of Students", value: stats.students, icon: dashboard2 },
+            { title: "Live Test", value: stats.liveTests, icon: dashboard3 },
+            { title: "Completed Test", value: stats.completedTests, icon: dashboard4 },
+            { title: "Upcoming Test", value: stats.upcomingTest, icon: dashboard1 }
+          ].map(({ title, value, icon }, index) => (
+            <div
+              key={index}
+              className="relative bg-white rounded-lg shadow-lg p-4 max-w-[250px] w-full hover:shadow-xl transition duration-300"
+            >
+              <div className="absolute -top-5 -right-4 flex items-center justify-center w-14 h-14 bg-white rounded-full shadow-md">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden">
+                  
+                    <img src={icon} alt={title} />
+                  
+                </div>
+              </div>
+
+              <div className="flex flex-col items-start justify-between h-full">
+                <div>
+                  {isLoading ? (
+                    <Skeleton variant="text" width={35} height={30}
+                    
+                    />
+                  ) : (
+                    <p className="text-2xl font-medium text-[#111933]">{value}</p>
+                  )}
+                  {isLoading ? (
+                    <Skeleton variant="text" width={100} height={30}
+                    
+                    />
+                  ) : (
+                    <p className="text-[#111933] text-md font-medium mt-1 whitespace-nowrap">{title}</p>
+                  )}
+                </div>
+
+                <div className="h-16 -mt-8">
+                  <img src={graph} alt="Graph" className="w-full h-36 ml-16" />
+                </div>
               </div>
             </div>
-
-            {/* Main content with vertical layout */}
-            <div className="flex flex-col items-start justify-between h-full">
-              {/* Stats and title */}
-              <div>
-                <p className="text-2xl font-medium text-[#111933]">{value}</p>
-                <p className="text-[#111933] text-md font-medium mt-1 whitespace-nowrap">{title}</p>
-              </div>
-
-              {/* Graph at the bottom */}
-              <div className="h-16 -mt-8">
-                <img src={graph} alt="Graph" className="w-full h-36 ml-16" />
-              </div>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
 
-      {/* Main Content Section */}
       <div className={`max-w-8xl mx-auto px-4 py-8 ${isDarkMode ? 'text-white' : ''}`}>
-        {/* Tabs, Search, and Create Test Button */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex text-sm gap-4 ml-20">
             {['All', 'Live', 'Completed', 'Upcoming'].map((status) => (
@@ -252,77 +250,62 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Tests Section */}
-        {isLoading ? (
-          <Loader />
-        ) : error ? (
-          <Typography color="error">{error}</Typography>
-        ) : (
-          <>
-            <div className={`grid  rounded-2xl grid-cols-1 md:grid-cols-3 p-7 ml-14 mr-12 gap-6 ${isDarkMode ? 'bg-black' : 'bg-white'}`}>
-              {activeFilter === 'All' && searchQuery === '' && <CreateTestCard />}
-              {paginatedTests.length > 0 ? (
-                paginatedTests.map((test) => (
-                  <TestCard
-                    key={test._id}
-                    contestId={test.contestId || test._id}
-                    title={test.assessmentName || test.name || 'Unnamed Test'}
-                    type={test.type || 'General'}
-                    date={test.endDate ? format(new Date(test.endDate), 'MM/dd/yyyy') : 'Date Unavailable'}
-                    time={
-                      test.endDate
-                        ? formatInTimeZone(new Date(test.endDate), 'UTC', 'hh:mm a')
-                        : 'Time Unavailable'
-                    }
-                    stats={{
-                      Assigned: test.assignedCount || 0,
-                      'Yet to Complete': (test.assignedCount || 0) - (test.completedCount || 0),
-                      Completed: test.completedCount || 0,
-                    }}
-                    status={
-                      test.overall_status === 'closed' ? 'Completed' :
-                      (test.status || 'Upcoming')
-                    }
-                    isDarkMode={isDarkMode}
-                  />
-                ))
-              ) : (
-                <div className="col-span-full text-center">
-                  <img
-                    src={notest} // Update with your image path
-                    alt="No Tests Found"
-                    className="mx-auto w-100 h-80" // Adjust width and height as needed
-                  />
-                  <p className="text-gray-500 text-xl font-semibold">No tests found for the selected filter.</p>
-                </div>
-              )}
-            </div>
-
-            {/* Pagination */}
-            <div className="flex justify-center mt-6">
-              <Pagination
-                count={Math.ceil(filteredTests.length / getItemsPerPage())}
-                page={page}
-                onChange={handlePageChange}
-                sx={{
-                  '& .MuiPaginationItem-root': {
-                    color: '#000975', // Text color for pagination items
-                  },
-                  '& .MuiPaginationItem-root.Mui-selected': {
-                    backgroundColor: '#FDC500', // Background color for selected item
-                    color: '#fff', // Text color for the selected item
-                  },
-                  '& .MuiPaginationItem-root:hover': {
-                    backgroundColor: 'rgba(0, 9, 117, 0.1)', // Hover effect
-                  },
+        <div className={`grid rounded-2xl grid-cols-1 md:grid-cols-3 p-7 ml-14 mr-12 gap-6 ${isDarkMode ? 'bg-black' : 'bg-white'}`}>
+          {activeFilter === 'All' && searchQuery === '' && <CreateTestCard />}
+          {isLoading ? (
+            // Render skeleton TestCards while loading
+            Array.from({ length: getItemsPerPage() }).map((_, index) => (
+              <TestCard key={index} isLoading={true} />
+            ))
+          ) : (
+            paginatedTests.map((test) => (
+              <TestCard
+                key={test._id}
+                contestId={test.contestId || test._id}
+                title={test.assessmentName || test.name || 'Unnamed Test'}
+                type={test.type || 'General'}
+                date={test.endDate ? format(new Date(test.endDate), 'MM/dd/yyyy') : 'Date Unavailable'}
+                time={
+                  test.endDate
+                    ? formatInTimeZone(new Date(test.endDate), 'UTC', 'hh:mm a')
+                    : 'Time Unavailable'
+                }
+                stats={{
+                  Assigned: test.assignedCount || 0,
+                  'Yet to Complete': (test.assignedCount || 0) - (test.completedCount || 0),
+                  Completed: test.completedCount || 0,
                 }}
+                status={
+                  test.overall_status === 'closed' ? 'Completed' :
+                  (test.status || 'Upcoming')
+                }
+                isDarkMode={isDarkMode}
               />
-            </div>
-          </>
-        )}
+            ))
+          )}
+        </div>
+
+        <div className="flex justify-center mt-6">
+          <Pagination
+            count={Math.ceil(filteredTests.length / getItemsPerPage())}
+            page={page}
+            onChange={handlePageChange}
+            sx={{
+              '& .MuiPaginationItem-root': {
+                color: '#000975',
+              },
+              '& .MuiPaginationItem-root.Mui-selected': {
+                backgroundColor: '#FDC500',
+                color: '#fff',
+              },
+              '& .MuiPaginationItem-root:hover': {
+                backgroundColor: 'rgba(0, 9, 117, 0.1)',
+              },
+            }}
+          />
+        </div>
       </div>
 
-      {/* Modal for Create Test */}
       <Dialog
         open={isModalOpen}
         onClose={handleModalClose}
@@ -330,7 +313,7 @@ const Dashboard = () => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: '24px', // Smooth curved corners for the modal
+            borderRadius: '24px',
             padding: '16px',
             backgroundColor: isDarkMode ? 'gray-800' : 'white',
             color: isDarkMode ? 'white' : 'black',
@@ -361,15 +344,15 @@ const Dashboard = () => {
                 sx={{
                   p: 4,
                   textAlign: 'center',
-                  height: '250px', // Increased height for better spacing
+                  height: '250px',
                   border: '1px solid #E0E0E0',
-                  borderRadius: '24px', // Smooth curved corners for boxes
+                  borderRadius: '24px',
                   cursor: 'pointer',
-                  transition: 'transform 0.3s, box-shadow 0.3s', // Smooth hover animations
+                  transition: 'transform 0.3s, box-shadow 0.3s',
                   '&:hover': {
                     backgroundColor: '#f9faff',
-                    transform: 'scale(1.05)', // Slight zoom effect
-                    boxShadow: '0px 8px 20px rgba(0, 0, 0, 0.15)', // Add shadow on hover
+                    transform: 'scale(1.05)',
+                    boxShadow: '0px 8px 20px rgba(0, 0, 0, 0.15)',
                   },
                   backgroundColor: isDarkMode ? 'gray-800' : 'white',
                   color: isDarkMode ? 'white' : 'black',
@@ -393,15 +376,15 @@ const Dashboard = () => {
                 sx={{
                   p: 4,
                   textAlign: 'center',
-                  height: '250px', // Increased height for better spacing
+                  height: '250px',
                   border: '1px solid #E0E0E0',
-                  borderRadius: '24px', // Smooth curved corners for boxes
+                  borderRadius: '24px',
                   cursor: 'pointer',
-                  transition: 'transform 0.3s, box-shadow 0.3s', // Smooth hover animations
+                  transition: 'transform 0.3s, box-shadow 0.3s',
                   '&:hover': {
                     backgroundColor: '#f9faff',
-                    transform: 'scale(1.05)', // Slight zoom effect
-                    boxShadow: '0px 8px 20px rgba(0, 0, 0, 0.15)', // Add shadow on hover
+                    transform: 'scale(1.05)',
+                    boxShadow: '0px 8px 20px rgba(0, 0, 0, 0.15)',
                   },
                   backgroundColor: isDarkMode ? 'gray-800' : 'white',
                   color: isDarkMode ? 'white' : 'black',
@@ -433,7 +416,6 @@ const Dashboard = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Toggle Button */}
       {showToggle && (
         <button
           className="fixed bottom-4 right-4 bg-[#000a7500] text-transparent p-2 rounded-full"

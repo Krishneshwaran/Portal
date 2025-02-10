@@ -60,7 +60,10 @@ const ShareModal = ({ open, onClose, shareLink, handleCopyLink }) => {
             <CopyIcon />
           </IconButton>
         </Box>
-        <Button onClick={onClose} color="primary" variant="contained">
+        <Button onClick={onClose} variant="contained" 
+        sx={{
+          backgroundColor: '#25D366',
+        }}>
           Close
         </Button>
       </DialogContent>

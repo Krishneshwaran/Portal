@@ -27,7 +27,7 @@ const FiltersSidebar = ({ filters, toggleFilter, clearFilters, availableTags }) 
 
   return (
     <div className="lg:w-64 flex-shrink-0">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-8">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-8 ">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold flex items-center gap-2" style={styles.textStyle}>
             <FaFilter style={{ color: '#ffcc00' }} />
@@ -63,9 +63,9 @@ const FiltersSidebar = ({ filters, toggleFilter, clearFilters, availableTags }) 
               Tag
               {isTagOpen ? <FaChevronUp style={styles.iconStyle} /> : <FaChevronDown style={styles.iconStyle} />}
             </h4>
-            <div className={`space-y-2 max-h-48 overflow-y-auto transition-max-height duration-300 ease-in-out overflow-hidden ${isTagOpen ? 'max-h-96' : 'max-h-0'}`}>
+            <div className={`space-y-2 max-h-56 overflow-y-auto transition-max-height duration-300 ease-in-out overflow-hidden ${isTagOpen ? 'max-h-96' : 'max-h-0'}`}>
               {isTagOpen && (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="space-y-2 max-56 overflow-y-auto">
                   {availableTags.map(tag => (
                     <label key={tag} className="flex items-center text-sm" style={styles.customBlue}>
                       <input type="checkbox" checked={filters.tags.includes(tag)} onChange={() => toggleFilter('tags', tag)} style={styles.checkboxStyle} />

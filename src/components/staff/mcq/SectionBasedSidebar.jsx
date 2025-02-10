@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import SectionBasedQuestionNumbers from "./SectionBasedQuestionNumbers";
 
+
 export default function SectionBasedSidebar({
   sections,
   currentSectionIndex,
@@ -52,6 +53,14 @@ export default function SectionBasedSidebar({
     );
   }, [currentSectionIndex]);
 
+  useEffect(() => {
+    setOpenSections((prevOpenSections) => {
+      const newOpenSections = new Set(prevOpenSections);
+      newOpenSections.add(currentSectionIndex);
+      return newOpenSections;
+    });
+  }, [currentSectionIndex]);
+
   const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -94,7 +103,7 @@ export default function SectionBasedSidebar({
           <div key={sectionIndex} className="border-b border-gray-200 pb-4">
             <div className="flex items-center justify-between mb-2">
               <button
-                className="flex items-center text-[#00296b] font-medium hover:underline"
+                className="flex items-center text-[#111933] font-medium hover:underline"
                 onClick={() => handleSectionClick(sectionIndex)}
               >
                 <span>{section.sectionName}</span>

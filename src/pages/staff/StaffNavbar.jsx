@@ -175,7 +175,16 @@ const StaffNavbar = () => {
 
             <button
               className="py-1 px-7 mb-2 bg-white border-2 border-[#efeeee] shadow-md shadow-blue-100 font-semibold text-[#111933] rounded-full hover:bg-white w-full h-full flex items-center justify-center gap-2"
-              onClick={handleModalOpen}
+              onClick={() => {
+                  if (window.location.pathname.includes('mcq/combinedDashboard')) {
+                    setIsConfirmModalOpen(true);
+                    setTargetPath("/mcq/details"); // Set the target path you want to navigate to
+                    handleModalClose();
+                    return;
+                  }
+                  navigate('/mcq/details');
+                  handleModalClose();
+                }}
             >
               Create Test <span><FaPlusCircle /></span>
             </button>
@@ -191,7 +200,7 @@ const StaffNavbar = () => {
         </div>
       </div>
       {/* Modal for Create Test */}
-      <Dialog
+      {/* <Dialog
         open={isModalOpen}
         onClose={handleModalClose}
         maxWidth="md"
@@ -305,7 +314,7 @@ const StaffNavbar = () => {
             You can select a test type to proceed or close the dialog.
           </Typography>
         </DialogActions>
-      </Dialog>
+      </Dialog> */}
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}

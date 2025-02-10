@@ -215,7 +215,7 @@ const QuestionsDisplay = () => {
         </table>
 
         {/* Level Report Section */}
-        <div className="mt-8">
+        {/* <div className="mt-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">Bloom's Taxonomy Level Distribution</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.entries(levelReport).map(([level, percentage]) => (
@@ -226,7 +226,7 @@ const QuestionsDisplay = () => {
               </div>
             ))}
           </div>
-        </div>
+        </div> */}
 
         <button
           className="mt-8 px-8 py-3 bg-blue-600 text-white font-semibold text-lg rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300"

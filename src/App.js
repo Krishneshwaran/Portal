@@ -38,7 +38,6 @@ import StaffProfile from './pages/staff/Staffprofile';
 import Mcq_Assesment from './pages/staff/mcq/Mcq_Assesment';
 import Mcq_CombinedDashboard from './pages/staff/mcq/Mcq_CombinedDashboard';
 import AIGenerate from "./pages/staff/mcq/AIGenerate";
-import Mcq_section from './pages/staff/mcq/Mcq_section';
 import Mcq_createQuestion from './components/staff/mcq/Mcq_createQuestion';
 import Mcq_bulkUpload from './components/staff/mcq/Mcq_bulkUpload';
 import Mcq_Dashboard from './pages/staff/mcq/Mcq_Dashboard';
@@ -55,6 +54,8 @@ import ScrollToTop from './ScrollToTop';
 import { TestProvider } from './pages/student/TestContext';
 import AddTest from './components/McqLibrary/AddTest';
 import CertificateVerification from './pages/staff/mcq/CertificateVerification';
+
+
 
 // Layout component for wrapping student routes 
 const StudentLayout = () => (
@@ -142,7 +143,6 @@ function App() {
           {/* MCQ - routes */}
           <Route path='mcq/details' element={<Mcq_Assesment />}/>
           
-          <Route path='mcq/sectionDetails' element={<Mcq_section/>}/>
           <Route path='mcq/combinedDashboard' element={<Mcq_CombinedDashboard/>}/>
           <Route path='mcq/CreateQuestion' element = {<Mcq_createQuestion/>}/>
           <Route path='mcq/bulkUpload' element={<Mcq_bulkUpload />}/>

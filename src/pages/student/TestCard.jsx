@@ -3,7 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { motion } from "framer-motion";
 import { GiDuration } from "react-icons/gi";
-import { Calendar, Clock, ChevronRight, FileText, Code } from "lucide-react";
+import { Calendar, Clock,  FileText, Code } from "lucide-react";
+import { FaArrowRightLong } from "react-icons/fa6";
 
 const TestCard = ({
   test = {},
@@ -21,7 +22,7 @@ const TestCard = ({
     color: isCompleted ? 'text-red-500' : 'text-green-500',
     text: isCompleted ? 'Completed' : 'Live',
     buttonText: isCompleted ? 'View Result' : 'Take Test',
-  }), [isCompleted]);
+  }), [isCompleted]); 
 
   const formatDuration = (hours, minutes) => {
     const totalHours = Math.floor((parseInt(hours || 0) * 60 + parseInt(minutes || 0)) / 60);
@@ -75,7 +76,7 @@ const TestCard = ({
   return (
     <motion.div whileHover={{ y: -2 }} className="w-full mb-4 max-w-md">
       <div
-        className={`py-5 px-4 shadow-lg bg-gradient-to-br from-blue-50 to-white rounded-xl hover:shadow-xl transition-all duration-300 cursor-pointer ${isCompleted ? 'cursor-not-allowed' : ''}`}
+        className={`py-5 px-4 border bg-gradient-to-br from-blue-50 to-white rounded-xl hover:shadow-xl transition-all duration-300 cursor-pointer ${isCompleted ? 'cursor-not-allowed' : ''}`}
         onClick={isRegistrationStarted && !isCompleted ? handleCardClick : undefined}
       >
         <div className="flex justify-between items-center gap-4 p-2">
@@ -83,13 +84,13 @@ const TestCard = ({
             <div className="rounded-full p-1 bg-white">
               {icon}
             </div>
-            <div className="text-[#000975]">
+            <div className="text-[#111933]">
               <h3 className="text-base font-semibold">{test?.name || 'Unknown Test'}</h3>
               <p className="text-sm">{assessment_type?.toUpperCase() || 'Unknown Type'}</p>
             </div>
           </div>
           <span
-            className={`px-2 py-1 rounded-full text-xs font-semibold ${statusStyles[isRegistrationStarted ? statusConfig.text : 'Not Yet Started']}`}
+            className={`px-2 py-1 text-xs rounded-xl font-semibold ${statusStyles[isRegistrationStarted ? statusConfig.text : 'Not Yet Started']}`}
           >
             {isRegistrationStarted ? statusConfig.text : 'Not Yet Started'}
           </span>
@@ -97,18 +98,18 @@ const TestCard = ({
         <div className="p-2">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-2 mt-2">
             <div className="flex flex-row gap-2 flex-wrap">
-              <div className="flex bg-white py-1 px-2 border rounded-full items-center gap-1">
+              <div className="flex bg-white py-1 px-2 border shadow rounded-sm items-center gap-1">
                 <Calendar className="w-3 h-3" />
                 <span className="text-xs">{formatDate(test?.starttime).split(',')[0]}</span>
               </div>
-              <div className="flex bg-white py-1 px-2 border rounded-full items-center gap-1">
+              <div className="flex bg-white py-1 px-2 border shadow rounded-sm items-center gap-1">
                 <Clock className="w-3 h-3" />
                 <span className="text-xs whitespace-nowrap">
                   {new Date(test?.starttime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })}
                 </span>
               </div>
 
-              <div className="flex bg-white py-1 px-2 border rounded-full items-center gap-1">
+              <div className="flex bg-white py-1 px-2 border shadow rounded-sm items-center gap-1">
                 <GiDuration className="w-3 h-3" />
                 <span className="text-xs">
                   {formatDuration(test?.duration?.hours, test?.duration?.minutes)}
@@ -122,28 +123,28 @@ const TestCard = ({
                   className="text-white"
                 >
                   <button
-                    className="px-2 py-2.5 bg-[#000975] text-white rounded-lg hover:bg-amber-500 transition-colors flex items-center justify-center font-light text-xs"
+                    className="px-2 py-2.5 bg-[#111933] text-white rounded-lg hover:bg-amber-500 transition-colors flex items-center justify-center font-light text-xs"
                   >
                     View Result
-                    <ChevronRight className="w-3 h-3 ml-1" />
+                    <FaArrowRightLong className="w-3 h-3 ml-1" />
                   </button>
                 </Link>
               ) : isCompleted && !isPublished ? (
                 <button
-                  className="px-2 py-2.5 bg-[#000975] text-white rounded-lg hover:bg-amber-500 transition-colors flex items-center justify-center font-light text-xs opacity-50 cursor-not-allowed"
+                  className="px-2 py-2.5 bg-[#111933] text-white rounded-lg hover:bg-amber-500 transition-colors flex items-center justify-center font-light text-xs opacity-50 cursor-not-allowed"
                   disabled
                 >
-                  View Result
-                  <ChevronRight className="w-3 h-3 ml-1" />
+                  View Result 
+                  <FaArrowRightLong className="w-3 h-3 ml-1" />
                 </button>
               ) : (
                 <button
-                  className={`px-2 py-2.5 bg-[#000975] text-white rounded-lg hover:bg-amber-500 transition-colors flex items-center justify-center font-light text-xs ${!isRegistrationStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`px-2 py-2.5 bg-[#111933] text-white rounded-lg hover:bg-amber-500 transition-colors flex items-center justify-center font-light text-xs ${!isRegistrationStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
                   onClick={isRegistrationStarted ? handleCardClick : undefined}
                   disabled={!isRegistrationStarted}
                 >
                   {isRegistrationStarted ? statusConfig.buttonText : 'Yet to Start'}
-                  <ChevronRight className="w-3 h-3 ml-1" />
+                  <FaArrowRightLong className="w-3 h-3 ml-1" />
                 </button>
               )}
             </div>

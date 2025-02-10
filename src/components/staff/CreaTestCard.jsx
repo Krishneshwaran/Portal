@@ -9,25 +9,25 @@ import CloseIcon from '@mui/icons-material/Close';
 import { Dialog, DialogTitle, DialogContent, IconButton, DialogActions, Typography, Grid, Box } from '@mui/material';
 
 const CreateTestCard = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
 
-  const handleModalOpen = () => setIsModalOpen(true);
-  const handleModalClose = () => setIsModalOpen(false);
 
   return (
     <>
       <motion.div
         whileHover={{ y: -2 }}
         className="w-full max-w-md cursor-pointer"
-        onClick={handleModalOpen}
+        onClick={() => {
+          navigate('/mcq/details');
+         
+        }}
       >
         <Card className="p-12 bg-transparent border-2 border-dashed rounded-2xl flex items-center justify-center">
           <Plus className="w-12 h-12 bg-transparent rounded-full text-gray-500" />
           <h2 className="m-2 mb-2 text-gray-500">Create Your Test Here...</h2>
         </Card>
       </motion.div>
-      <Dialog
+      {/* <Dialog
           open={isModalOpen}
           onClose={handleModalClose}
           maxWidth="md"
@@ -129,7 +129,7 @@ const CreateTestCard = () => {
               You can select a test type to proceed or close the dialog.
             </Typography>
           </DialogActions>
-        </Dialog>
+        </Dialog> */}
     </>
   );
 };

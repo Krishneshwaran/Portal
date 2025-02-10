@@ -21,8 +21,47 @@ import markIcon from "../../../assets/icons/mark-icon-new.svg";
 import markIconmarks from "../../../assets/icons/mark-icon.svg";
 import questionIcon from "../../../assets/icons/question-icon.svg";
 import { useCallback } from "react";
+import  Loader  from "../../../components/ui/multi-step-loader";
+
+
+
+const loadingStates = [
+  {
+    text: "Loading details...",
+  },
+  {
+    text: "Configuring test details...",
+  },
+  {
+    text: "Loading questions...",
+  },
+  {
+    text: "Assigning to student...",
+  },
+  {
+    text: "Published successfully",
+  }
+];
 
 const Mcq_Dashboard = () => {
+  const [loading, setLoading] = useState(false);
+
+
+  useEffect(() => {
+    if (loading) {
+      const timer = setTimeout(() => {
+        handlePublish();
+        setLoading(false);
+      }, 10000); // 5000 milliseconds = 5 seconds
+
+      // Cleanup function to clear the timer if the component unmounts or loading changes
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
+
+
+
+
   const navigate = useNavigate();
   const location = useLocation();
   useEffect(() => {
@@ -74,54 +113,7 @@ const Mcq_Dashboard = () => {
 
   const duplicateToastShown = useRef(false); // ✅ Prevent duplicate messages
 
-  // const fetchQuestions = async () => {
-  //   try {
-  //     const token = localStorage.getItem("contestToken");
-  //     if (!token) {
-  //       showToast("Unauthorized access. Please log in again.", "error");
-  //       return;
-  //     }
 
-  //     const response = await axios.get(`${API_BASE_URL}/api/mcq/questions`, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-
-  //     const fetchedQuestions = response.data.questions.map((question) => ({
-  //       ...question,
-  //       correctAnswer:
-  //         question.correctAnswer || question.answer || "No Answer Provided",
-  //     }));
-
-  //     const duplicateCount = response.data.duplicateCount || 0;
-
-  //     // ✅ Show warning only once per session
-  //     if (duplicateCount > 0 && !duplicateToastShown.current) {
-  //       showToast(`${duplicateCount} duplicate questions removed.`, "warning");
-  //       duplicateToastShown.current = true;
-  //     }
-
-  //     if (duplicateCount === 0) {
-  //       duplicateToastShown.current = false; // Reset for future warnings
-  //     }
-
-  //     setQuestions(fetchedQuestions);
-
-  //     setDashboardStats((prev) => ({
-  //       ...prev,
-  //       totalQuestions: `${fetchedQuestions.length}/${
-  //         localStorage.getItem("totalquestions") || 0
-  //       }`,
-  //     }));
-  //   } catch (error) {
-  //     console.error(
-  //       "Error fetching questions:",
-  //       error.response?.data || error.message
-  //     );
-  //     showToast("Failed to load questions. Please try again.", "error");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
 
   const showToast = (message, type = "info") => {
     toast[type](message);
@@ -587,6 +579,7 @@ useEffect(() => {
             />
           </DialogContent>
           <DialogActions>
+          
             <Button
               onClick={() => setPublishDialogOpen(false)}
               color="primary"
@@ -594,9 +587,21 @@ useEffect(() => {
             >
               Cancel
             </Button>
-            <Button onClick={handlePublish} color="primary" variant="contained">
-              Confirm
-            </Button>
+
+            <Loader loadingStates={loadingStates} loading={loading} duration={2000} />
+
+            <Button
+        onClick={() => setLoading(true)}
+        color="primary"
+        variant="contained"
+      >
+        Confirm
+      </Button>
+      {loading && (
+        <div className="fixed top-4 right-4 text-black dark:text-white z-[120]">
+        
+        </div>
+      )}
           </DialogActions>
         </Dialog>
         <ShareModal

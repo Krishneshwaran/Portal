@@ -7,9 +7,9 @@ import { withStyles } from '@mui/styles';
 // Custom styling for the checkbox
 const CustomCheckbox = withStyles({
   root: {
-    color: '#fdc500',
+    color: '#111933',
     '&$checked': {
-      color: '#fdc500',
+      color: '#111933',
     },
   },
   checked: {},
@@ -35,7 +35,7 @@ const QuestionsList = ({
   };
 
   return (
-    <div className="bg-white p-4 shadow-sm border w-auto border-gray-200">
+    <div className="bg-white p-4 shadow-sm   border-gray-200" >
       <div className="space-y-2">
         {loading ? (
           <div className="flex justify-center items-center min-h-[400px]">
@@ -51,7 +51,7 @@ const QuestionsList = ({
             {currentQuestions.map((question, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between bg-white hover:bg-gray-50 transition-all duration-300 p-6 mb-4 rounded-md shadow-md"
+                className="flex items-center justify-between bg-white hover:bg-gray-50 transition-all duration-300 px-2   rounded-md border border-[#111933]"
               >
                 <div className="flex items-center">
                   <CustomCheckbox
@@ -59,10 +59,10 @@ const QuestionsList = ({
                     onChange={() => handleQuestionClick(question)}
                   />
                 </div>
-                <div className="text-left text-sm font-medium text-[#00296B] truncate w-7/12">
+                <div className="text-left text-sm font-medium text-[#111933] truncate w-7/12">
                   {question.question}
                 </div>
-                <div className="text-left text-sm text-[#00296B] w-3/12">
+                <div className="text-left text-sm text-[#111933] w-3/12">
                   <strong>Answer:</strong> {question.correctAnswer}
                 </div>
               </div>
