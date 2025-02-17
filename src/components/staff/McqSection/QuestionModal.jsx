@@ -20,7 +20,7 @@ const QuestionModal = ({ onClose, handleCreateManually, handleBulkUpload, handle
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-      <div className="p-5  pb-8 max-w-6xl mx-auto bg-white rounded-xl  shadow-lg relative">
+      <div className="p-4  pb-7 max-w-4xl mx-auto bg-white rounded-xl  shadow-lg relative">
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-2xl text-[#111933] font-bold mb-1 ml-10 text-left">
             Add and manage your questions

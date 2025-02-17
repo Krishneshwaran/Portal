@@ -90,150 +90,82 @@ const QuestionsDisplay = () => {
       <div className="bg-white shadow-lg rounded-3xl p-8 w-[90%] max-w-5xl">
         <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Generated Questions</h1>
 
-        <table className="table-auto w-full bg-white shadow-lg rounded-lg overflow-hidden">
-          <thead className="bg-gray-200 text-gray-800">
-            <tr>
-              <th className="px-4 py-2 text-center">
-                <input
-                  type="checkbox"
-                  checked={selectedQuestions.length === editedQuestions.length}
-                  onChange={handleSelectAll}
-                />
-              </th>
-              <th className="px-4 py-2">Question</th>
-              <th className="px-4 py-2">Options</th>
-              <th className="px-4 py-2">Correct Answer</th>
-              <th className="px-4 py-2">Level</th>
-              <th className="px-4 py-2">Tags</th>
-              <th className="px-4 py-2">Edit</th>
-            </tr>
-          </thead>
-          <tbody>
+        <div className="space-y-6 w-full">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-[#111933]">Generated Questions Preview</h2>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <button
+              onClick={handleSelectAll}
+              className="px-4 py-2 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+            >
+              {selectedQuestions.length === editedQuestions.length
+                ? "Deselect All"
+                : "Select All"}
+            </button>
+            <span className="text-sm text-gray-600">
+              {selectedQuestions.length} of {editedQuestions.length} questions selected
+            </span>
+          </div>
+
+          <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 w-full">
             {editedQuestions.map((question, index) => (
-              <tr
+              <div
                 key={index}
-                className={`${index % 2 === 0 ? "bg-gray-100" : "bg-white"} text-gray-800`}
+                className={`p-4 border rounded-lg transition-colors ${
+                  selectedQuestions.includes(index)
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
               >
-                <td className="px-4 py-2 text-center">
+                <div className="flex items-start gap-4">
                   <input
                     type="checkbox"
                     checked={selectedQuestions.includes(index)}
                     onChange={() => handleSelectQuestion(index)}
+                    className="mt-1.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                </td>
-                <td className="px-4 py-2">
-                  {isEditing === index ? (
-                    <input
-                      type="text"
-                      value={question.question}
-                      onChange={(e) => handleEditQuestion(index, 'question', e.target.value)}
-                      className="w-full px-2 py-1 border rounded"
-                    />
-                  ) : (
-                    question.question
-                  )}
-                </td>
-                <td className="px-4 py-2">
-                  {isEditing === index ? (
-                    question.options.map((option, idx) => (
-                      <input
-                        key={idx}
-                        type="text"
-                        value={option}
-                        onChange={(e) => {
-                          const updatedOptions = [...question.options];
-                          updatedOptions[idx] = e.target.value;
-                          handleEditQuestion(index, 'options', updatedOptions);
-                        }}
-                        className="w-full px-2 py-1 border rounded mb-1"
-                      />
-                    ))
-                  ) : (
-                    question.options.map((option, idx) => (
-                      <div key={idx} className="text-gray-700 text-sm">
-                        {option}
-                      </div>
-                    ))
-                  )}
-                </td>
-                <td className="px-4 py-2">
-                  {isEditing === index ? (
-                    <input
-                      type="text"
-                      value={question.correctAnswer}
-                      onChange={(e) => handleEditQuestion(index, 'correctAnswer', e.target.value)}
-                      className="w-full px-2 py-1 border rounded"
-                    />
-                  ) : (
-                    question.correctAnswer
-                  )}
-                </td>
-                <td className="px-4 py-2 text-center">
-                  {isEditing === index ? (
-                    <input
-                      type="text"
-                      value={question.level}
-                      onChange={(e) => handleEditQuestion(index, 'level', e.target.value)}
-                      className="w-full px-2 py-1 border rounded"
-                    />
-                  ) : (
-                    question.level  // Display the short form level (e.g., L1)
-                  )}
-                </td>
-                <td className="px-4 py-2 text-center">
-                  {isEditing === index ? (
-                    <input
-                      type="text"
-                      value={question.tags.join(", ")}
-                      onChange={(e) => handleEditQuestion(index, 'tags', e.target.value.split(","))}
-                      className="w-full px-2 py-1 border rounded"
-                    />
-                  ) : (
-                    question.tags.join(", ")
-                  )}
-                </td>
-                <td className="px-4 py-2 text-center">
-                  {isEditing === index ? (
-                    <button
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                      onClick={() => setIsEditing(null)}
-                    >
-                      Save
-                    </button>
-                  ) : (
-                    <button
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                      onClick={() => setIsEditing(index)}
-                    >
-                      Edit
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Level Report Section */}
-        {/* <div className="mt-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">Bloom's Taxonomy Level Distribution</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(levelReport).map(([level, percentage]) => (
-              <div key={level} className="bg-gray-100 rounded-lg p-4 shadow-md">
-                <p className="text-lg font-medium text-gray-700">
-                  {level}: <span className="text-blue-600">{percentage}%</span>
-                </p>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900 mb-3">
+                      Q{index + 1}. {question.question}
+                    </p>
+                    <div className="pl-4 space-y-2">
+                      {question.options.map((option, optIndex) => (
+                        <p
+                          key={optIndex}
+                          className={`${
+                            option === question.correctAnswer
+                              ? "text-green-600 font-medium"
+                              : "text-gray-600"
+                          }`}
+                        >
+                          {String.fromCharCode(65 + optIndex)}. {option}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
-        </div> */}
 
-        <button
-          className="mt-8 px-8 py-3 bg-blue-600 text-white font-semibold text-lg rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300"
-          onClick={handleSaveQuestions}
-        >
-          Save Selected Questions
-        </button>
+          <div className="flex justify-end gap-4 pt-4 border-t">
+            <button
+              onClick={() => navigate('/mcq/QuestionsDashboard')}
+              className="px-4 py-2 border rounded-md hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveQuestions}
+              disabled={selectedQuestions.length === 0}
+              className="px-4 py-2 bg-[#111933] text-white rounded-md hover:bg-[#2a3958] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              Save Selected Questions
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

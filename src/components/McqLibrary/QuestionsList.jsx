@@ -24,10 +24,10 @@ const QuestionsList = ({ questions, loading, error, currentQuestions, setSelecte
             {currentQuestions.map((question, index) => (
               <div
                 key={index}
-                className="flex items-center bg-white hover:bg-gray-50 transition-all duration-300 cursor-pointer py-4 px-4 mb-2 rounded-md border border-[#111933]"
+                className="flex items-center bg-white hover:shadow-md hover:scale-y-102 transition-all duration-300 cursor-pointer py-5 px-4 mb-2 rounded-xl border border-gray-400"
                 onClick={() => setSelectedQuestion(question)}
               >
-                <div className="text-center text-sm font-light text-[#111933] w-5 rounded-full mr-4 bg-[#FFCC00]">
+                <div className="text-center text-sm font-light text-[#111933] w-6 h-6 p-0.5 rounded-full mr-4 bg-[#FFCC00]">
                   <strong>{index + 1 + (currentPage - 1) * 10}</strong>
                 </div>
                 <div className="text-left text-sm font-medium text-[#111933] truncate w-7/12">
@@ -52,8 +52,8 @@ const QuestionsList = ({ questions, loading, error, currentQuestions, setSelecte
                       color: '#111933', // Text color for pagination items
                     },
                     '& .MuiPaginationItem-root.Mui-selected': {
-                      backgroundColor: '#FDC500', // Background color for selected item
-                      color: '#111933', // Text color for the selected item
+                      backgroundColor: '#ffcc00', // Background color for selected item
+                      
                     },
                     
                   }}

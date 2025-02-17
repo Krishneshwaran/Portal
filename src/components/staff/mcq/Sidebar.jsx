@@ -24,7 +24,7 @@ export default function Sidebar({
     <div className="w-[300px]">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[#000975] font-medium">Sections Name</h3>
+          <h3 className="text-[#111933] font-medium">Sections Name</h3>
         </div>
         <Legend />
         <QuestionNumbers

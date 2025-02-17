@@ -57,8 +57,8 @@ const StaffStudentProfile = () => {
 
   const filteredStudents = students
     .filter((student) => {
-      const matchesSearch = Object.values(student).some((value) =>
-        normalizeString(value).includes(normalizeString(searchTerm))
+      const matchesSearch = Object.entries(student).some(([key, value]) =>
+        key !== 'year' && normalizeString(value).includes(normalizeString(searchTerm))
       );
       const matchesDepartment =
         departmentFilter.length === 0 || departmentFilter.some((filter) => normalizeString(student.dept).includes(normalizeString(filter)));
@@ -72,6 +72,7 @@ const StaffStudentProfile = () => {
       const isAsc = sortConfig.direction === "ascending" ? 1 : -1;
       return isAsc * (a[sortConfig.key] < b[sortConfig.key] ? -1 : 1);
     });
+
 
   const indexOfLastStudent = currentPage * studentsPerPage;
   const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
@@ -140,134 +141,134 @@ const StaffStudentProfile = () => {
   }
 
   return (
-    <div className="bg-[#f4f6ff] p-6 rounded-lg shadow-md">
+    <div className="bg-[#f4f6ff86] py-10 px-2 rounded-lg shadow-md">
       <div className="p-6 ml-16 mr-14 min-h-screen">
-      <h1 className="text-2xl font-bold text-[#111933] mb-4">Academic Profile Management</h1>
-      <p className="text-[#111933] mb-6">
-        A comprehensive platform for analyzing and overseeing profiles across academic cohorts.
-      </p>
+        <h1 className="text-2xl font-bold text-[#111933] mb-4">Academic Profile Management</h1>
+        <p className="text-[#111933] mb-6">
+          A comprehensive platform for analyzing and overseeing profiles across academic cohorts.
+        </p>
         {/* Year Count Cards */}
         <div className="grid grid-cols-1 mb-11 mt-11 sm:grid-cols-2 md:grid-cols-4 gap-6">
-            {Object.entries(yearCounts).map(([year, count]) => (
-              <div
-                key={year}
-                className="relative bg-white rounded-lg mb-4 shadow-lg p-6 max-w-[250px] mx-auto w-full flex flex-col items-center hover:shadow-xl transition duration-300"
-              >
-                {/* Circular Year Badge */}
-                <div className="absolute -top-5 flex items-center justify-center ml-60 w-14 h-14 bg-white rounded-full shadow-md">
-                  <div className="flex items-center justify-center w-11 h-11 bg-yellow-500 rounded-full">
-                    <span className="text-blue-900 text-lg font-bold">{year}</span>
-                  </div>
+          {Object.entries(yearCounts).map(([year, count]) => (
+            <div
+              key={year}
+              className="relative bg-white rounded-lg mb-4 shadow-lg p-6 max-w-[250px] mx-auto w-full flex flex-col items-center hover:shadow-xl transition duration-300"
+            >
+              {/* Circular Year Badge */}
+              <div className="absolute -top-5 flex items-center justify-center ml-60 w-14 h-14 bg-white rounded-full shadow-md">
+                <div className="flex items-center justify-center w-11 h-11 bg-yellow-500 rounded-full">
+                  <span className="text-[#111933] text-lg font-bold">{year}</span>
                 </div>
-
-                <p className="text-gray-700 text-lg font-medium mt-2">{year} Year Students</p>
-                <p className="text-3xl font-bold text-[#111933]">{count}</p>
               </div>
-            ))}
-          </div>
+
+              <p className="text-gray-700 text-lg font-medium mt-2">{year} Year Students</p>
+              <p className="text-3xl font-bold text-[#111933]">{count}</p>
+            </div>
+          ))}
+        </div>
 
 
 
-          <div className="bg-white p-6 rounded-xl shadow-lg ">
-            {/* Search and Filter Section */}
-            <div className="flex justify-between items-center mb-4">
-              <div className="relative border border-gray-300 rounded-3xl">
-                <input
-                  type="text"
-                  placeholder="Search students..."
-                  className="focus:outline-none focus:ring-1 focus:ring-[#111933] w-full ring-1 ring-[#111933] rounded-3xl pl-10 pr-4 py-2"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              </div>
-              <div className="flex space-x-2">
+        <div className="bg-white p-6 rounded-xl shadow-lg ">
+          {/* Search and Filter Section */}
+          <div className="flex justify-between items-center mb-4">
+            <div className="relative border border-gray-300 rounded-3xl">
+              <input
+                type="text"
+                placeholder="Search students..."
+                className="focus:outline-none focus:ring-1 focus:ring-[#111933] w-full ring-1 ring-[#111933] rounded-3xl pl-10 pr-4 py-2"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                onClick={handleFilterDialogOpen}
+                variant="contained"
+                sx={{
+                  backgroundColor: "#111933",
+                  color: "#fff",
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                <span style={{ marginRight: '8px' }}>Filter</span>
+                <FilterListIcon />
+              </Button>
+              {areFiltersApplied() && (
                 <Button
-                  onClick={handleFilterDialogOpen}
+                  onClick={clearFilters}
                   variant="contained"
                   sx={{
                     backgroundColor: "#111933",
                     color: "#fff",
                     borderRadius: '10px',
-                    display: 'flex',
-                    alignItems: 'center'
+                    "&:hover": {
+                      backgroundColor: "#fff",
+                      color: "#111933",
+                    },
                   }}
                 >
-                  <span style={{ marginRight: '8px' }}>Filter</span>
-                  <FilterListIcon />
+                  <ClearIcon className="mr-2" />
+                  Clear Filters
                 </Button>
-                {areFiltersApplied() && (
-                  <Button
-                    onClick={clearFilters}
-                    variant="contained"
-                    sx={{
-                      backgroundColor: "#111933",
-                      color: "#fff",
-                      borderRadius: '10px',
-                      "&:hover": {
-                        backgroundColor: "#fff",
-                        color: "#111933",
-                      },
-                    }}
-                  >
-                    <ClearIcon className="mr-2" />
-                    Clear Filters
-                  </Button>
-                )}
-              </div>
+              )}
             </div>
-
-        {/* Students Table */}
-        <div className="bg-white rounded-xl overflow-hidden">
-          <div className="grid grid-cols-5 gap-4 p-4 bg-[#111933] text-white font-medium">
-            <p onClick={() => requestSort("name")} className="flex items-center cursor-pointer">
-              Name
-              {sortConfig.key === "name" && (
-                sortConfig.direction === "ascending" ? (
-                  <FontAwesomeIcon icon={faSortUp} className="ml-3" />
-                ) : (
-                  <FontAwesomeIcon icon={faSortDown} className="ml-3" />
-                )
-              )}
-              {sortConfig.key !== "name" && <FontAwesomeIcon icon={faSort} className="ml-3" />}
-            </p>
-            <p className="flex justify-center">Department</p>
-            <p onClick={() => requestSort("collegename")} className="flex items-center justify-center cursor-pointer">
-              College
-              {sortConfig.key === "collegename" && (
-                sortConfig.direction === "ascending" ? (
-                  <FontAwesomeIcon icon={faSortUp} className="ml-3" />
-                ) : (
-                  <FontAwesomeIcon icon={faSortDown} className="ml-3" />
-                )
-              )}
-              {sortConfig.key !== "collegename" && <FontAwesomeIcon icon={faSort} className="ml-3" />}
-            </p>
-            <p className="flex justify-center">Year</p>
-            <p className="flex justify-center">Report</p>
           </div>
-          {filteredStudents
-            .slice(indexOfFirstStudent, indexOfLastStudent)
-            .map((student) => (
-              <div
-                key={student.regno}
-                className="grid grid-cols-5 gap-4 p-4 border-t bg-white hover:bg-[#ECF2FE]"
-              >
-                <p>{student.name}</p>
-                <p className="flex justify-center">{student.dept}</p>
-                <p className="flex justify-center">{student.collegename}</p>
-                <p className="flex justify-center">{student.year}</p>
-                <p className="flex justify-center">
-                  <Button
-                    className="text-[#111933]"
-                    onClick={() => navigate(`/studentstats/${student.regno}`)}
-                  >
-                    <VisibilityIcon sx={{ color: "#111933" }} />
-                  </Button>
-                </p>
-              </div>
-            ))}
-        </div>
+
+          {/* Students Table */}
+          <div className="bg-white rounded-xl overflow-hidden">
+            <div className="grid grid-cols-5 gap-4 p-4 bg-[#111933] text-white font-medium">
+              <p onClick={() => requestSort("name")} className="flex items-center cursor-pointer">
+                Name
+                {sortConfig.key === "name" && (
+                  sortConfig.direction === "ascending" ? (
+                    <FontAwesomeIcon icon={faSortUp} className="ml-3" />
+                  ) : (
+                    <FontAwesomeIcon icon={faSortDown} className="ml-3" />
+                  )
+                )}
+                {sortConfig.key !== "name" && <FontAwesomeIcon icon={faSort} className="ml-3" />}
+              </p>
+              <p className="flex justify-center">Department</p>
+              <p onClick={() => requestSort("collegename")} className="flex items-center justify-center cursor-pointer">
+                College
+                {sortConfig.key === "collegename" && (
+                  sortConfig.direction === "ascending" ? (
+                    <FontAwesomeIcon icon={faSortUp} className="ml-3" />
+                  ) : (
+                    <FontAwesomeIcon icon={faSortDown} className="ml-3" />
+                  )
+                )}
+                {sortConfig.key !== "collegename" && <FontAwesomeIcon icon={faSort} className="ml-3" />}
+              </p>
+              <p className="flex justify-center">Year</p>
+              <p className="flex justify-center">Report</p>
+            </div>
+            {filteredStudents
+              .slice(indexOfFirstStudent, indexOfLastStudent)
+              .map((student) => (
+                <div
+                  key={student.regno}
+                  className="grid grid-cols-5 gap-4 p-4 border-t bg-white hover:bg-[#ECF2FE]"
+                >
+                  <p>{student.name}</p>
+                  <p className="flex justify-center">{student.dept}</p>
+                  <p className="flex justify-center">{student.collegename}</p>
+                  <p className="flex justify-center">{student.year}</p>
+                  <p className="flex justify-center">
+                    <Button
+                      className="text-[#111933]"
+                      onClick={() => navigate(`/studentstats/${student.regno}`)}
+                    >
+                      <VisibilityIcon sx={{ color: "#111933" }} />
+                    </Button>
+                  </p>
+                </div>
+              ))}
+          </div>
         </div>
 
         {/* Filter Dialog */}
@@ -381,7 +382,7 @@ const StaffStudentProfile = () => {
               Year
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
-              {["I Year", "II Year", "III Year", "IV Year"].map((year) => (
+              {["I", "II", "III", "IV"].map((year) => (
                 <Chip
                   key={year}
                   label={year}
@@ -432,9 +433,9 @@ const StaffStudentProfile = () => {
               }}
             >
               <div className="rounded-full border border-[#111933] p-[2px]">
-                <IoCloseCircleOutline className="text-[#111933]"/>
+                <IoCloseCircleOutline className="text-[#111933]" />
               </div>
-              
+
               Clear Filter
             </Button>
             <Button
@@ -451,13 +452,13 @@ const StaffStudentProfile = () => {
                 whiteSpace: 'nowrap',
                 gap: '8px',
                 "&:hover": {
-                 
+
                 },
               }}
             >
               <div className="rounded-full border border-white ">
-                <FaCheckCircle className="text-white"/>
-             </div>
+                <FaCheckCircle className="text-white" />
+              </div>
               Apply Filters
             </Button>
           </DialogActions>

@@ -21,7 +21,7 @@ import markIcon from "../../../assets/icons/mark-icon-new.svg";
 import markIconmarks from "../../../assets/icons/mark-icon.svg";
 import questionIcon from "../../../assets/icons/question-icon.svg";
 import { useCallback } from "react";
-import  Loader  from "../../../components/ui/multi-step-loader";
+import Loader from "../../../components/ui/multi-step-loader";
 
 
 
@@ -139,7 +139,17 @@ const Mcq_Dashboard = () => {
         setQuestions((prevQuestions) =>
           prevQuestions.filter((question) => question._id !== questionId)
         );
-        showToast("Question deleted successfully!", "success"); // ✅ Separate toast for delete
+
+        // Update the totalQuestions count in dashboardStats
+        setDashboardStats((prevStats) => {
+          const [selected, total] = prevStats.totalQuestions.split("/").map(Number);
+          return {
+            ...prevStats,
+            totalQuestions: `${selected - 1}/${total}`,
+          };
+        });
+
+        showToast("Question deleted successfully!", "success");
       } else {
         showToast(response.data.error || "Failed to delete question.", "error");
       }
@@ -154,6 +164,7 @@ const Mcq_Dashboard = () => {
     }
   };
 
+
   const handlePublish = async () => {
     try {
       const token = localStorage.getItem("contestToken");
@@ -167,25 +178,25 @@ const Mcq_Dashboard = () => {
         toast.error("Invalid contest token. Please log in again.");
         return;
       }
-
+  
       const uniqueQuestions = Array.from(
         new Set(questions.map(JSON.stringify))
       ).map(JSON.parse);
-
+  
       const selectedStudentDetails = students.filter((student) =>
         selectedStudents.includes(student.regno)
       );
       const selectedStudentEmails = selectedStudentDetails.map(
         (student) => student.email
       );
-
+  
       const payload = {
         contestId,
         questions: uniqueQuestions,
         students: selectedStudents,
         studentEmails: selectedStudentEmails,
       };
-
+  
       const response = await axios.post(
         `${API_BASE_URL}/api/mcq/publish/`,
         payload,
@@ -196,17 +207,19 @@ const Mcq_Dashboard = () => {
           },
         }
       );
-
+  
       if (response.status === 200) {
         setSharingLink(
           `${process.env.REACT_APP_FRONTEND_LINK}/testinstructions/${contestId}`
         );
         setShareModalOpen(true);
         toast.success("Questions published successfully!");
+  
+        // Clear session storage
+        sessionStorage.clear();
       } else {
         toast.error(
-          `Failed to publish questions: ${
-            response.data.message || "Unknown error."
+          `Failed to publish questions: ${response.data.message || "Unknown error."
           }`
         );
       }
@@ -227,101 +240,100 @@ const Mcq_Dashboard = () => {
       setPublishDialogOpen(false);
     }
   };
-
-// Inside your component
-const fetchQuestions = useCallback(async () => {
-  try {
-    const token = localStorage.getItem("contestToken");
-    if (!token) {
-      showToast("Unauthorized access. Please log in again.", "error");
-      return;
-    }
-
-    const response = await axios.get(`${API_BASE_URL}/api/mcq/questions`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    const fetchedQuestions = response.data.questions.map((question) => ({
-      ...question,
-      correctAnswer:
-        question.correctAnswer || question.answer || "No Answer Provided",
-    }));
-
-    const duplicateCount = response.data.duplicateCount || 0;
-
-    if (duplicateCount > 0 && !duplicateToastShown.current) {
-      showToast(`${duplicateCount} duplicate questions removed.`, "warning");
-      duplicateToastShown.current = true;
-    }
-
-    if (duplicateCount === 0) {
-      duplicateToastShown.current = false;
-    }
-
-    setQuestions(fetchedQuestions);
-
-    setDashboardStats((prev) => ({
-      ...prev,
-      totalQuestions: `${fetchedQuestions.length}/${
-        localStorage.getItem("totalquestions") || 0
-      }`,
-    }));
-  } catch (error) {
-    console.error(
-      "Error fetching questions:",
-      error.response?.data || error.message
-    );
-    showToast("Failed to load questions. Please try again.", "error");
-  } finally {
-    setIsLoading(false);
-  }
-}, [API_BASE_URL]); // Add dependencies if needed
-
-useEffect(() => {
-  const fetchDashboardData = async () => {
+  
+  // Inside your component
+  const fetchQuestions = useCallback(async () => {
     try {
-      const totalMarks = localStorage.getItem("totalMarks");
-      const duration = JSON.parse(localStorage.getItem("duration"));
-      const passPercentage = localStorage.getItem("passPercentage");
-      const totalQuestions = localStorage.getItem("totalquestions");
-
-      let selectedQuestionsCount = 0;
-
       const token = localStorage.getItem("contestToken");
-      if (token) {
-        const response = await axios.get(
-          `${API_BASE_URL}/api/mcq/questions`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        selectedQuestionsCount = response.data.questions.length;
+      if (!token) {
+        showToast("Unauthorized access. Please log in again.", "error");
+        return;
       }
+
+      const response = await axios.get(`${API_BASE_URL}/api/mcq/questions`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const fetchedQuestions = response.data.questions.map((question) => ({
+        ...question,
+        correctAnswer:
+          question.correctAnswer || question.answer || "No Answer Provided",
+      }));
+
+      const duplicateCount = response.data.duplicateCount || 0;
+
+      if (duplicateCount > 0 && !duplicateToastShown.current) {
+        showToast(`${duplicateCount} duplicate questions removed.`, "warning");
+        duplicateToastShown.current = true;
+      }
+
+      if (duplicateCount === 0) {
+        duplicateToastShown.current = false;
+      }
+
+      setQuestions(fetchedQuestions);
 
       setDashboardStats((prev) => ({
         ...prev,
-        totalMarks: totalMarks || 0,
-        totalDuration: duration
-          ? `${duration.hours.padStart(2, "0")}:${duration.minutes.padStart(
-              2,
-              "0"
-            )}:00`
-          : "00:00:00",
-        maximumMark: passPercentage || 0,
-        totalQuestions: `${selectedQuestionsCount}/${totalQuestions || 0}`,
+        totalQuestions: `${fetchedQuestions.length}/${localStorage.getItem("totalquestions") || 0
+          }`,
       }));
-
-      await fetchQuestions();
-      initialFetch.current = false;
     } catch (error) {
-      console.error("Error fetching dashboard data:", error.message);
+      console.error(
+        "Error fetching questions:",
+        error.response?.data || error.message
+      );
+      showToast("Failed to load questions. Please try again.", "error");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [API_BASE_URL]); // Add dependencies if needed
 
-  fetchDashboardData();
-}, [formData, sections, API_BASE_URL, fetchQuestions]); // Added fetchQuestions to dependencies
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const totalMarks = localStorage.getItem("totalMarks");
+        const duration = JSON.parse(localStorage.getItem("duration"));
+        const passPercentage = localStorage.getItem("passPercentage");
+        const totalQuestions = localStorage.getItem("totalquestions");
+
+        let selectedQuestionsCount = 0;
+
+        const token = localStorage.getItem("contestToken");
+        if (token) {
+          const response = await axios.get(
+            `${API_BASE_URL}/api/mcq/questions`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          selectedQuestionsCount = response.data.questions.length;
+        }
+
+        setDashboardStats((prev) => ({
+          ...prev,
+          totalMarks: totalMarks || 0,
+          totalDuration: duration
+            ? `${duration.hours.padStart(2, "0")}:${duration.minutes.padStart(
+              2,
+              "0"
+            )}:00`
+            : "00:00:00",
+          maximumMark: passPercentage || 0,
+          totalQuestions: `${selectedQuestionsCount}/${totalQuestions || 0}`,
+        }));
+
+        await fetchQuestions();
+        initialFetch.current = false;
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [formData, sections, API_BASE_URL, fetchQuestions]); // Added fetchQuestions to dependencies
 
 
   const handleShareModalClose = () => {
@@ -343,8 +355,8 @@ useEffect(() => {
   };
 
   return (
-    <div className="p-6 bg-[#ECF2FE] min-h-screen flex justify-center">
-      
+    <div className="p-6 py-10 px-10 bg-[#f4f6ff86] min-h-screen flex justify-center">
+
       <ToastContainer
         position="top-center"
         autoClose={3000}
@@ -357,7 +369,7 @@ useEffect(() => {
         pauseOnHover
       />
       <div className=" w-full">
-      <div className="h-14 px-14 pb-10">
+        <div className="h-14 px-14 pb-10">
           <div className="flex items-center gap-2 text-[#111933]">
             <span className="opacity-60">Home</span>
             <span>{">"}</span>
@@ -375,7 +387,7 @@ useEffect(() => {
 
           </div>
         </div>
-        <div className="mx-40 max-w-[1200px] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-x-20 mb-8 mt-8 items-stretch justify-stretch">
+        <div className="mx-52 max-w-[1200px] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-x-20 mb-8 mt-8 items-stretch justify-stretch">
           {[
             {
               label: "Total Questions",
@@ -393,7 +405,7 @@ useEffect(() => {
               icon: clockIcon,
             },
             {
-              label: "Maximum Mark",
+              label: "Pass Percentage %",
               value: dashboardStats.maximumMark,
               icon: markIconmarks,
             },
@@ -417,8 +429,8 @@ useEffect(() => {
           ))}
         </div>
 
-        {!isLoading && questions.length > 0 && (
-          <div className="mt-8 ml-16 px-5 pt-4 pb-6 bg-white shadow-md text-[#111933] rounded-xl w-full max-w-[1400px] ">
+        {!isLoading && questions.length >= 0 && (
+          <div className="mt-8 ml-16 px-5 pt-4 pb-6 bg-white shadow-md text-[#111933] rounded-xl w-full max-w-[1525px]  ">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-semibold mt-3">Questions</h2>
               <Button
@@ -473,7 +485,7 @@ useEffect(() => {
               </ul>
             )}
 
-            <div className="mt-6 flex justify-center">
+            {questions.length > 0 && <div className="mt-6 flex justify-center">
               <Pagination
                 count={Math.ceil(questions.length / itemsPerPage)}
                 page={page}
@@ -491,7 +503,21 @@ useEffect(() => {
                   },
                 }}
               />
-            </div>
+            </div>}
+            { questions.length === 0 && (
+              <div className="text-center mt-8">
+                <p className="text-gray-600">
+                  No questions available in the database.
+                </p>
+                {/* <Button
+              onClick={() => navigate("/mcq/sectionDetails")}
+              variant="contained"
+              style={{ backgroundColor: "#111933", color: "white" }}
+            >
+              Add Sections and Questions
+            </Button> */}
+              </div>
+            )}
           </div>
         )}
 
@@ -502,20 +528,7 @@ useEffect(() => {
           </div>
         )}
 
-        {!isLoading && questions.length === 0 && (
-          <div className="text-center mt-16">
-            <p className="text-gray-600">
-              No questions available in the database.
-            </p>
-            <Button
-              onClick={() => navigate("/mcq/sectionDetails")}
-              variant="contained"
-              style={{ backgroundColor: "#111933", color: "white" }}
-            >
-              Add Sections and Questions
-            </Button>
-          </div>
-        )}
+
 
         {!isLoading && questions.length > 0 && (
           <div className="flex justify-end mr-20 mt-6">
@@ -579,11 +592,15 @@ useEffect(() => {
             />
           </DialogContent>
           <DialogActions>
-          
+
             <Button
               onClick={() => setPublishDialogOpen(false)}
               color="primary"
               variant="outlined"
+              sx={{
+                color: "#111933",
+                borderColor: "#111933", // Set the border color
+              }}
             >
               Cancel
             </Button>
@@ -591,17 +608,22 @@ useEffect(() => {
             <Loader loadingStates={loadingStates} loading={loading} duration={2000} />
 
             <Button
-        onClick={() => setLoading(true)}
-        color="primary"
-        variant="contained"
-      >
-        Confirm
-      </Button>
-      {loading && (
-        <div className="fixed top-4 right-4 text-black dark:text-white z-[120]">
-        
-        </div>
-      )}
+              onClick={() => setLoading(true)}
+              color="primary"
+              variant="outlined"
+              sx={{
+                color: '#fff',
+                backgroundColor: '#111933',
+                borderColor: '#111933'
+              }}
+            >
+              Confirm
+            </Button>
+            {loading && (
+              <div className="fixed top-4 right-4 text-black dark:text-white z-[120]">
+
+              </div>
+            )}
           </DialogActions>
         </Dialog>
         <ShareModal

@@ -5,7 +5,7 @@ export default function FinishPopup({ onClose, onFinish, attempted, totalQuestio
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white w-[500px] p-6 rounded-xl shadow-lg relative">
         {/* Header */}
-        <h2 className="text-[#000975] text-xl font-bold text-center mb-6">MCQ Mock Test</h2>
+        <h2 className="text-[#111933] text-xl font-bold text-center mb-6">MCQ Mock Test</h2>
         <div className="absolute top-4 right-4 cursor-pointer text-red-500 text-lg font-bold" onClick={onClose}>
           ✖
         </div>
@@ -41,7 +41,7 @@ export default function FinishPopup({ onClose, onFinish, attempted, totalQuestio
 
         {/* Progress */}
         <div className="text-center mb-6">
-          <p className="text-[#000975] font-medium mb-2">Sections Name</p>
+          <p className="text-[#111933] font-medium mb-2">Sections Name</p>
           <div className="flex justify-center items-center">
             <span className="text-[#FDC500] font-bold text-lg mr-2">←</span>
             <span className="text-[#FDC500] font-bold text-lg">→</span>
@@ -63,7 +63,7 @@ export default function FinishPopup({ onClose, onFinish, attempted, totalQuestio
                 cx="50%"
                 cy="50%"
                 r="38"
-                stroke="#000975"
+                stroke="#111933"
                 strokeWidth="8"
                 fill="none"
                 strokeDasharray="238"
@@ -71,7 +71,7 @@ export default function FinishPopup({ onClose, onFinish, attempted, totalQuestio
                 style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
               />
             </svg>
-            <div className="absolute inset-0 flex items-center justify-center text-[#000975]">
+            <div className="absolute inset-0 flex items-center justify-center text-[#111933]">
               <p className="text-lg font-bold">
                 {attempted}/{totalQuestions}
               </p>
@@ -89,7 +89,7 @@ export default function FinishPopup({ onClose, onFinish, attempted, totalQuestio
             Close
           </button>
           <button
-            className="bg-[#FDC500] text-[#000975] text-lg px-6 py-2 rounded-full"
+            className="bg-[#FDC500] text-[#111933] text-lg px-6 py-2 rounded-full"
             onClick={onFinish}
           >
             Finish

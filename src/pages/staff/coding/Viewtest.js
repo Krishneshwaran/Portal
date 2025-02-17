@@ -25,13 +25,16 @@ import {
   Skeleton,
 } from "@mui/material";
 import FilterListIcon from "@mui/icons-material/FilterList";
-import 'react-toastify/dist/ReactToastify.css';
-import { ToastContainer, toast } from 'react-toastify';
-import { parseISO, isAfter } from 'date-fns';
-import CloseIcon from '@mui/icons-material/Close';
+import AddIcon from '@mui/icons-material/Add';
+import "react-toastify/dist/ReactToastify.css";
+import { ToastContainer, toast } from "react-toastify";
+import { parseISO, isAfter } from "date-fns";
+import CloseIcon from "@mui/icons-material/Close";
 import { IoCloseCircleOutline } from "react-icons/io5";
-import { FaCheckCircle } from "react-icons/fa";
-import { XCircle } from 'lucide-react';
+import { MdDelete } from "react-icons/md";
+import { FaCheckCircle, FaCheck } from "react-icons/fa";
+import { FaXmark } from "react-icons/fa6";
+import { XCircle } from "lucide-react";
 import heroImg from "../../../assets/test_view_hero_img.png";
 import StudentTable from "../../../components/staff/StudentTable";
 import DownloadContestData from "../../../components/staff/report/DownloadContestData";
@@ -56,13 +59,13 @@ const RulesAndRegulations = ({ assessmentOverview }) => {
   const parseGuidelines = (guidelines) => {
     if (!guidelines) return [];
 
-    const lines = guidelines.split('\n');
+    const lines = guidelines.split("\n");
     const items = lines.map((line) => {
       const match = line.match(/^(\d+\.|\d+\)|\*|\-|\+)\s(.*)/);
       if (match) {
         return { type: match[1], content: match[2] };
       }
-      return { type: '', content: line };
+      return { type: "", content: line };
     });
 
     return items;
@@ -78,12 +81,16 @@ const RulesAndRegulations = ({ assessmentOverview }) => {
           Rules and Regulations{" "}
         </p>
         <p className="text-md font-semibold ml-6 text-[#111933] mb-2">
-          Instructions: Read carefully; contact the Department for clarifications.
+          Instructions: Read carefully; contact the Department for
+          clarifications.
         </p>
         {items.length > 0 ? (
           <ul className="list-disc list-inside ml-7">
             {items.map((item, index) => (
-              <li key={index} className="text-md text-black break-words ml-3 text-justify">
+              <li
+                key={index}
+                className="text-md text-black break-words ml-3 text-justify"
+              >
                 {item.content}
               </li>
             ))}
@@ -99,11 +106,16 @@ const RulesAndRegulations = ({ assessmentOverview }) => {
 };
 
 const ViewTest = () => {
+  const [testDetails, setTestDetails] = useState(null); // Added state variable
+  const [students, setStudents] = useState([]);
+  const [filteredStudents, setFilteredStudents] = useState([]);
+  const [isResultsPublished, setIsResultsPublished] = useState(false);
   const themeButtonStyle =
     "px-5 p-2 rounded-xl bg-transparent border-[#111933] border-[1px] mx-2 hover:bg-[#b6c5f7]";
 
   const [showDownload, setShowDownload] = useState(false);
   const { contestId } = useParams();
+  const { studentId } = useParams();
   const [sortConfig, setSortConfig] = useState({ key: "", direction: "" });
   const [openFilterDialog, setOpenFilterDialog] = useState(false);
 
@@ -113,11 +125,7 @@ const ViewTest = () => {
   const [page, setPage] = useState(0);
 
   const navigate = useNavigate();
-  const [testDetails, setTestDetails] = useState(null);
   const [error, setError] = useState(null);
-  const [students, setStudents] = useState([]);
-  const [filteredStudents, setFilteredStudents] = useState([]);
-  const [isEditing, setIsEditing] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [filters, setFilters] = useState({
     collegename: [],
@@ -143,39 +151,40 @@ const ViewTest = () => {
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [showPublishPopup, setShowPublishPopup] = useState(false);
   const [showClosePopup, setShowClosePopup] = useState(false); // New state for close popup
+  const [showDeleteStudentPopup, setShowDeleteStudentPopup] = useState(false); // New state for delete student popup
+  const [studentToDelete, setStudentToDelete] = useState(null); // State to track the student to delete
+
+  const { testConfiguration, student_details, sections } = testDetails || {};
+
+  // Calculate totalQuestions after sections is defined
+  const totalQuestions = sections?.reduce((total, section) => total + (parseInt(section.numQuestions, 10) || 0), 0) || 0;
 
   const assessmentOverview = testDetails?.assessmentOverview || {};
   const isRegistrationPeriodOver = assessmentOverview?.registrationEnd
     ? isAfter(new Date(), parseISO(assessmentOverview.registrationEnd))
     : false;
-  const isOverallStatusClosed = testDetails?.overall_status === 'closed';
+  const isOverallStatusClosed = testDetails?.overall_status === "closed";
+  const hasCompletedStudents = () => {
+    return students.some(student => student.status.toLowerCase() === 'completed');
+  };
 
   const handlePublish = async () => {
-    if (isPublished) {
-      toast.error("Results are already published.");
-      return;
-    }
-
-    const confirmPublish = window.confirm(
-      "Are you sure you want to publish the results?"
-    );
-    if (!confirmPublish) return;
-
     try {
       setIsPublished(true);
-
+  
       console.log("Contest ID:", contestId);
       console.log(
         "API URL:",
         `${API_BASE_URL}/api/mcq/publish-result/${contestId}/`
       );
-
+  
       const response = await axios.post(
         `${API_BASE_URL}/api/mcq/publish-result/${contestId}/`
       );
       if (response.status === 200) {
-        setIsPublished(true);
-        toast.success("Results published successfully.");
+        setIsResultsPublished(true);
+        toast.success("Results published successfully!");
+        setShowPublishPopup(false);
       } else {
         toast.error("Failed to publish results. Please try again.");
       }
@@ -196,7 +205,8 @@ const ViewTest = () => {
           `${API_BASE_URL}/api/contests/${contestId}/`
         );
         setTestDetails(response.data);
-
+        setIsResultsPublished(response.data.isResultsPublished || false); // Add this line
+  
         const updatedStudents = (response.data.student_details || []).map(
           (student) => ({
             ...student,
@@ -206,7 +216,7 @@ const ViewTest = () => {
         );
         setStudents(updatedStudents);
         setFilteredStudents(updatedStudents);
-
+  
         const passPercentage = response.data.testConfiguration?.passPercentage;
         if (passPercentage !== undefined) {
           sessionStorage.setItem("passPercentage", passPercentage);
@@ -218,7 +228,7 @@ const ViewTest = () => {
         setLoading(false);
       }
     };
-
+  
     if (contestId) fetchTestDetails();
   }, [contestId, API_BASE_URL]);
 
@@ -264,7 +274,6 @@ const ViewTest = () => {
         testDetails
       );
 
-      setIsEditing(false);
       setLoading(true);
 
       await axios.put(
@@ -283,6 +292,16 @@ const ViewTest = () => {
       console.error("Error:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadContestData = () => {
+    const completedStudents = students.filter(student => student.status === 'Completed');
+
+    if (completedStudents.length === 0) {
+      toast.info("No students have completed the assessment. Download is not available.");
+    } else {
+      setShowDownload(true);
     }
   };
 
@@ -354,26 +373,112 @@ const ViewTest = () => {
   };
 
   const handleStudentRemove = (regno) => {
-    setTestDetails((prevDetails) => {
-      const updatedDetails = { ...prevDetails };
-      updatedDetails.visible_to = updatedDetails.visible_to.filter(
-        (studentRegno) => studentRegno !== regno
-      );
-      return updatedDetails;
-    });
+    setStudentToDelete(regno);
+    setShowDeleteStudentPopup(true);
   };
 
-  const handleAddStudent = () => {
-    setTestDetails((prevDetails) => {
-      const updatedDetails = { ...prevDetails };
-      const newVisibleTo = new Set([
-        ...updatedDetails.visible_to,
-        ...selectedStudents,
+  const confirmStudentRemove = async () => {
+    try {
+      // Send delete request to backend
+      await axios.delete(`${API_BASE_URL}/api/remove_student/${contestId}/${studentToDelete}/`);
+
+      // Update the state to remove the student from the list
+      setTestDetails((prevDetails) => {
+        const updatedDetails = { ...prevDetails };
+        updatedDetails.visible_to = updatedDetails.visible_to.filter(
+          (studentRegno) => studentRegno !== studentToDelete
+        );
+        updatedDetails.student_details = updatedDetails.student_details.filter(
+          (student) => student.regno !== studentToDelete
+        );
+        return updatedDetails;
+      });
+
+      setStudents((prevStudents) =>
+        prevStudents.filter((student) => student.regno !== studentToDelete)
+      );
+      setFilteredStudents((prevFilteredStudents) =>
+        prevFilteredStudents.filter((student) => student.regno !== studentToDelete)
+      );
+
+      // Show a toast notification for feedback
+      toast.success(`Student removed successfully`);
+
+      // Close the popup
+      setShowDeleteStudentPopup(false);
+    } catch (error) {
+      console.error("Error removing student:", error);
+      toast.error("Failed to remove student");
+    }
+  };
+
+  const handleAddStudent = async () => {
+    try {
+      // Create a new Set from the current visible_to array and add new selected students
+      const updatedVisibleTo = new Set([
+        ...(testDetails?.visible_to || []),
+        ...selectedStudents
       ]);
-      updatedDetails.visible_to = Array.from(newVisibleTo);
-      return updatedDetails;
-    });
-    setPublishDialogOpen(false);
+
+      // Create the updated test details
+      const updatedTestDetails = {
+        ...testDetails,
+        visible_to: Array.from(updatedVisibleTo)
+      };
+
+      // Update the API first
+      await axios.put(
+        `${API_BASE_URL}/api/contests/${contestId}/`,
+        updatedTestDetails
+      );
+
+      // After successful API update, update the local state
+      setTestDetails(updatedTestDetails);
+
+      // Fetch the updated student details for the newly added students
+      const newStudentDetails = await Promise.all(
+        selectedStudents.map(async (regno) => {
+          try {
+            const response = await axios.get(`${API_BASE_URL}/api/student/${regno}/`);
+            return {
+              ...response.data,
+              status: 'Yet to Start',
+              year: response.data.year || 'N/A'
+            };
+          } catch (error) {
+            console.error(`Error fetching details for student ${regno}:`, error);
+            return null;
+          }
+        })
+      );
+
+      // Filter out any null values and add only valid student details
+      const validNewStudents = newStudentDetails.filter(student => student !== null);
+
+      // Update the students state with new students
+      setStudents(prevStudents => {
+        const existingRegnos = new Set(prevStudents.map(s => s.regno));
+        const uniqueNewStudents = validNewStudents.filter(s => !existingRegnos.has(s.regno));
+        return [...prevStudents, ...uniqueNewStudents];
+      });
+
+      // Update filtered students as well
+      setFilteredStudents(prevFiltered => {
+        const existingRegnos = new Set(prevFiltered.map(s => s.regno));
+        const uniqueNewStudents = validNewStudents.filter(s => !existingRegnos.has(s.regno));
+        return [...prevFiltered, ...uniqueNewStudents];
+      });
+
+      // Show success message
+      toast.success('Students added successfully');
+
+      // Clear selection and close dialog
+      setSelectedStudents([]);
+      setPublishDialogOpen(false);
+    } catch (error) {
+      console.error('Error adding students:', error);
+      toast.error('Failed to add students. Please try again.');
+    }
   };
 
   const handleCloseSession = async () => {
@@ -409,6 +514,21 @@ const ViewTest = () => {
     }
   };
 
+  const handleReassign = async (student) => {
+    console.log(student);
+    try {
+      const response = await axios.delete(`${API_BASE_URL}/api/mcq/reassign/${contestId}/${student.studentId}/`);
+      if (response.status === 200) {
+        toast.success("Student reassigned successfully");
+      } else {
+        toast.error("Failed to reassign student. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error reassigning student:", error);
+      toast.error("An error occurred while reassigning the student. Please try again.");
+    }
+  };
+
   if (error) return <div>{error}</div>;
 
   const handleViewClick = (student) => {
@@ -424,12 +544,6 @@ const ViewTest = () => {
   const handleCloseModal = () => {
     setModalOpen(false);
   };
-
-  const {
-    testConfiguration,
-    student_details,
-    sections,
-  } = testDetails || {};
 
   const handlePageChange = (event, value) => {
     setPage(value - 1);
@@ -499,9 +613,8 @@ const ViewTest = () => {
         pauseOnHover
       />
       <div
-        className={`w-screen h-screen bg-[#0000005a] fixed ${
-          showPopup ? "flex" : "hidden"
-        } items-center justify-center z-10 px-10`}
+        className={`w-screen h-screen bg-[#0000005a] fixed ${showPopup ? "flex" : "hidden"
+          } items-center justify-center z-10 px-10`}
       >
         <div className="h-fit p-4 rounded-xl bg-white flex flex-col text-center min-w-[300px] w-1/2 max-w-[70%]">
           <i className="bi bi-exclamation-diamond-fill text-rose-700 text-7xl"></i>
@@ -592,7 +705,8 @@ const ViewTest = () => {
               <h2 className="text-2xl font-semibold">Confirm Publish</h2>
             </div>
             <p className="text-md text-gray-700 mt-4">
-              Are you sure you want to publish the assessment? Once published, it will be visible to all participants.
+              Are you sure you want to publish the assessment? Once published,
+              it will be visible to all participants.
             </p>
             <p className="text-sm text-red-500 mt-2">
               <strong>Note:</strong> This action cannot be undone.
@@ -617,62 +731,101 @@ const ViewTest = () => {
           </div>
         </div>
       )}
+      {showClosePopup && (
+        <div className="fixed inset-0 bg-[#0000005a] flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-white p-8 w-[600px] max-w-full rounded-xl shadow-lg text-center">
+            {/* Warning Icon */}
+            <div className="text-red-600 mb-4">
+              <svg
+                className="w-16 h-16 mx-auto"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
 
-{showClosePopup && (
-  <div className="fixed inset-0 bg-[#0000005a] flex items-center justify-center z-50 backdrop-blur-sm">
-    <div className="bg-white p-8 w-[600px] max-w-full rounded-xl shadow-lg text-center">
-      
-      {/* Warning Icon */}
-      <div className="text-red-600 mb-4">
-        <svg
-          className="w-16 h-16 mx-auto"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-          />
-        </svg>
-      </div>
+            {/* Warning Message */}
+            <h2 className="text-2xl font-semibold text-red-600">Warning</h2>
+            <p className="text-lg text-gray-700 mt-2">
+              Are you sure you want to close the assessment?
+            </p>
+            <p className="text-sm text-red-500 mt-2">
+              <strong>Note:</strong> This action cannot be undone.
+            </p>
 
-      {/* Warning Message */}
-      <h2 className="text-2xl font-semibold text-red-600">Warning</h2>
-      <p className="text-lg text-gray-700 mt-2">
-        Are you sure you want to close the assessment?
-      </p>
-      <p className="text-sm text-red-500 mt-2">
-        <strong>Note:</strong> This action cannot be undone.
-      </p>
+            {/* Buttons */}
+            <div className="flex justify-center mt-6 space-x-40">
+              <button
+                className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded-lg transition"
+                onClick={() => setShowClosePopup(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
+                onClick={() => {
+                  handleCloseSession();
+                  setShowClosePopup(false);
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Buttons */}
-      <div className="flex justify-center mt-6 space-x-40">
-        <button
-          className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded-lg transition"
-          onClick={() => setShowClosePopup(false)}
-        >
-          Cancel
-        </button>
-        <button
-          className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
-          onClick={() => {
-            handleCloseSession();
-            setShowClosePopup(false);
-          }}
-        >
-          Close
-        </button>
-      </div>
-      
-    </div>
-  </div>
-)}
+      {showDeleteStudentPopup && (
+        <div className="fixed inset-0 bg-[#0000005a] flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-white p-8 w-[600px] max-w-full rounded-xl shadow-lg text-center">
+            <div className="text-red-600 mb-4">
+              <svg
+                className="w-14 h-14 mx-auto"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-semibold text-red-600">Warning</h2>
+            <p className="text-lg text-gray-700 mt-2">
+              Are you sure you want to delete this student?
+            </p>
+            <p className="text-sm text-red-500 mt-2">
+              <strong>Note:</strong> This action cannot be undone.
+            </p>
+            <div className="flex justify-center mt-6 space-x-32">
+              <button
+                className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded-lg transition"
+                onClick={() => setShowDeleteStudentPopup(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
+                onClick={confirmStudentRemove}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-
-      <div className="p-14 bg-blue-50 min-h-full">
+      <div className="p-14 py-12 px-24 bg-[#f4f6ff86] min-h-full">
         <section className="flex p-6 shadow-sm flex-1 bg-white mb-6 rounded-lg text-[#111933] items-start">
           <div className="flex-1 p-2 flex flex-col mr-12 justify-between">
             <div className="mb-6">
@@ -693,793 +846,684 @@ const ViewTest = () => {
             </div>
 
             <div className="mt-4 border-2 rounded-lg">
-              <table className="min-w-full bg-white rounded-lg overflow-hidden">
-                <thead className="bg-[#111933] text-white">
-                  <tr>
-                    {[
-                      "Registration Start",
-                      "Total Duration",
-                      "Total Attendees",
-                      "Registration End",
-                    ].map((title, index) => (
-                      <th
-                        key={index}
-                        className={`relative font-normal py-2 px-6 text-center ${
-                          index === 0 ? "rounded-tl-lg" : index === 3 ? "rounded-tr-lg" : ""
-                        }`}
-                      >
-                        {title}
-                        {index !== 0 && (
-                          <span
-                            className="absolute top-1/2 -translate-y-1/2 left-0 h-3/4 w-[1px] bg-gray-200"
-                            style={{ marginTop: "0.001rem", marginBottom: "2rem" }}
-                          ></span>
-                        )}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b border-gray-300 hover:bg-gray-100">
-                    <td className="py-3 px-6 text-center ">
-                      {loading ? (
-                        <Skeleton variant="text" width={150} height={20} />
-                      ) : (
-                        formatDateTime(assessmentOverview?.registrationStart)
-                      )}
-                    </td>
-                    <td className="py-3 px-6 text-center ">
-                      {loading ? (
-                        <Skeleton variant="text" width={100} height={20} />
-                      ) : (
-                        `${testConfiguration?.duration?.hours}:${testConfiguration?.duration?.minutes} hrs`
-                      )}
-                    </td>
-                    <td className="py-3 px-6 text-center">
-                      {loading ? (
-                        <Skeleton variant="text" width={50} height={20} />
-                      ) : (
-                        student_details?.length || 0
-                      )}
-                    </td>
-                    <td className="py-3 px-6 text-center">
-                      {loading ? (
-                        <Skeleton variant="text" width={150} height={20} />
-                      ) : (
-                        formatDateTime(assessmentOverview?.registrationEnd)
-                      )}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <img src={heroImg} alt="Hero" className="w-[200px] ml-1 lg:w-[250px]" />
-        </section>
-
-        <section className="flex space-x-6 flex-1 mb-6">
-          <div className="flex-1 flex flex-col items-center bg-white text-[#111933] border border-gray-300 rounded-xl shadow-md">
-            <p className="bg-[#111933] rounded-t-xl py-3 text-[#ffffff] text-lg font-medium w-full text-center">
-              Progress Details
-            </p>
-            <div className="flex flex-col w-full px-6 py-6 space-y-4">
-              <div className="flex justify-between items-center w-full">
-                <p className="font-light">Assigned</p>
-                {loading ? (
-                  <Skeleton variant="text" width={50} height={20} />
-                ) : (
-                  <p className="font-light">{student_details.length}</p>
-                )}
-              </div>
-              <div className="flex justify-between items-center w-full">
-                <p className="font-light">Yet to Complete</p>
-                {loading ? (
-                  <Skeleton variant="text" width={50} height={20} />
-                ) : (
-                  <p className="font-light">{student_details.filter(student => student.status === 'Yet to Complete').length}</p>
-                )}
-              </div>
-              <div className="flex justify-between items-center w-full">
-                <p className="font-light">Completed</p>
-                {loading ? (
-                  <Skeleton variant="text" width={50} height={20} />
-                ) : (
-                  <p className="font-light">{student_details.filter(student => student.status === 'Completed').length}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex-1 flex flex-col items-center bg-white text-[#111933] border border-gray-300 rounded-xl shadow-md">
-            <p className="bg-[#111933] rounded-t-xl py-3 text-[#ffffff] text-lg font-medium w-full text-center">
-              Question & Section Details
-            </p>
-            <div className="flex flex-col w-full px-6 py-6 space-y-6 ">
-              <div className="flex justify-between items-center w-full">
-                <p className="font-light">No. of Questions</p>
-                {loading ? (
-                  <Skeleton variant="text" width={50} height={20} />
-                ) : (
-                  <p className="font-light">{testConfiguration?.questions || 0}</p>
-                )}
-              </div>
-              {sections?.length > 0 && (
-                <div className="flex justify-between items-center w-full">
-                  <p className="font-light">No. of Sections</p>
-                  {loading ? (
-                    <Skeleton variant="text" width={50} height={20} />
-                  ) : (
-                    <p className="font-light">{sections?.length || 0}</p>
-                  )}
-                </div>
-              )}
-              <div className="flex justify-between items-center w-full">
-                <p className="font-light">Total Marks</p>
-                {loading ? (
-                  <Skeleton variant="text" width={50} height={20} />
-                ) : (
-                  <p className="font-light">{testConfiguration?.totalMarks || 0}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex-1 flex flex-col text-center bg-white text-[#111933] border-[1px] border-gray-200 rounded-md pb-2">
-            <p className="bg-[#111933] rounded-tl-md rounded-tr-md p-2 text-[#ffffff] text-lg font-normal">
-              Sections & Questions
-            </p>
-            <div className="grid grid-cols-2 items-center font-semibold p-4">
-              <p className="text-center p-2 border-r-[1px] border-[#111933] border-b-[1px]">
-                Sections
-              </p>
-              <p className="text-center p-2 border-b-[1px] border-[#111933]">
-                Questions
-              </p>
-            </div>
-            {loading ? (
-              <div className="flex flex-1 items-center justify-center p-4">
-                <Skeleton variant="rectangular" width="100%" height={100} />
-              </div>
-            ) : (
-              (sections ?? []).length === 0 ? (
-                <div className="flex flex-1 items-center justify-center p-4">
-                  <p className="text-center font-semibold">
-                    !! No Sections here to Display !!
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {sections?.map((section, index) => (
-                    <div key={index} className="grid grid-cols-2 flex-1 items-stretch">
-                      <p className="text-center border-r-[1px] border-[#111933] border-b-[1px] flex items-center justify-center p-2">
-                        {section.sectionName}
-                      </p>
-                      <p className="text-center border-b-[1px] border-[#111933] flex items-center justify-center p-2">
-                        {section.numQuestions}
-                      </p>
-                    </div>
-                  ))}
-                  <div className="grid grid-cols-2 flex-1 items-stretch">
-                    <p className="text-center border-r-[1px] border-[#111933] flex items-center justify-center p-2">
-                      Total
-                    </p>
-                    <p className="text-center flex items-center justify-center p-2">
-                      {testConfiguration?.questions || 0}
-                    </p>
-                  </div>
-                </>
-              )
+  <table className="min-w-full bg-white rounded-lg overflow-hidden">
+    <thead className="bg-[#111933] text-white">
+      <tr>
+        {[
+          "Registration Start",
+          "Total Duration",
+          "Total Attendees",
+          "Registration End",
+        ].map((title, index) => (
+          <th
+            key={index}
+            className={`relative font-normal py-2 px-6 text-center ${index === 0
+              ? "rounded-tl-lg"
+              : index === 3
+                ? "rounded-tr-lg"
+                : ""
+              }`}
+          >
+            {title}
+            {index !== 0 && (
+              <span
+                className="absolute top-1/2 -translate-y-1/2 left-0 h-3/4 w-[1px] bg-gray-200"
+                style={{
+                  marginTop: "0.001rem",
+                  marginBottom: "2rem",
+                }}
+              ></span>
             )}
+          </th>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      <tr className="border-b border-gray-300 hover:bg-gray-100">
+        <td className="py-3 px-6 text-center">
+          {loading ? (
+            <Skeleton variant="text" width={150} height={20} />
+          ) : (
+            formatDateTime(assessmentOverview?.registrationStart)
+          )}
+        </td>
+        <td className="py-3 px-6 text-center">
+          {loading ? (
+            <Skeleton variant="text" width={100} height={20} />
+          ) : (
+            sections?.length > 0
+              ? (() => {
+                  const totalDuration = sections.reduce(
+                    (total, section) => {
+                      const sectionDuration = parseInt(section.sectionDuration, 10) || 0;
+                      total += sectionDuration;
+                      return total;
+                    },
+                    0
+                  );
+
+                  // Convert total duration from minutes to hours and minutes
+                  const hours = Math.floor(totalDuration / 60);
+                  const minutes = totalDuration % 60;
+
+                  // Formatting the total duration as a string
+                  const formattedTime = `${hours} hrs ${minutes} mins`;
+
+                  return formattedTime;
+                })()
+              : `${testConfiguration?.duration?.hours || 0} hrs ${testConfiguration?.duration?.minutes || 0} mins`
+          )}
+        </td>
+        <td className="py-3 px-6 text-center">
+          {loading ? (
+            <Skeleton variant="text" width={50} height={20} />
+          ) : (
+            student_details?.length || 0
+          )}
+        </td>
+        <td className="py-3 px-6 text-center">
+          {loading ? (
+            <Skeleton variant="text" width={150} height={20} />
+          ) : (
+            formatDateTime(assessmentOverview?.registrationEnd)
+          )}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
           </div>
 
-          <div className="flex-1 flex flex-col text-center bg-white text-[#111933] border-[1px] border-gray-200 rounded-md pb-2">
-            <p className="bg-[#111933] rounded-tl-md rounded-tr-md p-2 text-[#ffffff] text-lg font-normal">
-              Proctoring Enabled
-            </p>
-            {[
-              {
-                title: "Full Screen Mode",
-                value: testConfiguration?.fullScreenMode ? "Enabled" : "Disabled",
-                enabled: testConfiguration?.fullScreenMode,
-                icon: "fullscreen-icon",
-              },
-              {
-                title: "Face Detection",
-                value: testConfiguration?.faceDetection ? "Enabled" : "Disabled",
-                enabled: testConfiguration?.faceDetection,
-                icon: "face-detection-icon",
-              },
-              {
-                title: "Device Restriction",
-                value: testConfiguration?.deviceRestriction ? "Enabled" : "Disabled",
-                enabled: testConfiguration?.deviceRestriction,
-                icon: "device-restriction-icon",
-              },
-              {
-                title: "Noise Detection",
-                value: testConfiguration?.noiseDetection ? "Enabled" : "Disabled",
-                enabled: testConfiguration?.noiseDetection,
-                icon: "noise-detection-icon",
-              },
-            ].map((configParam) => (
-              <div key={configParam.title} className="flex justify-between p-2 w-[85%] self-center">
-                <p> {configParam.title} </p>{" "}
-                <label className="relative inline-flex items-center cursor-pointer ml-auto">
-                  <input
-                    type="checkbox"
-                    checked={configParam.enabled}
-                    disabled
-                    className="sr-only peer"
-                  />
-                  <div className="w-10 h-5 cursor-auto bg-gray-300 rounded-full peer-focus:ring-2 peer-focus:ring-blue-900 peer-checked:bg-[#111933] transition-all duration-300">
-                    <div
-                      className={`absolute left-0.5 top-1 h-4 w-4 bg-white rounded-full shadow-md transition-transform duration-300 ${
-                        configParam.enabled ? "translate-x-5" : "translate-x-0"
-                      }`}
-                    ></div>
-                  </div>
-                </label>
-              </div>
-            ))}
-          </div>
+          <img
+            src={heroImg}
+            alt="Hero"
+            className="w-[200px] ml-1 lg:w-[250px]"
+          />
         </section>
 
-        <RulesAndRegulations assessmentOverview={assessmentOverview} />
+        <section className="flex space-x-5">
+          <div className="w-3/4 flex flex-col flex-1">
+            <RulesAndRegulations assessmentOverview={assessmentOverview} />
 
-        {student_details && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-xl font-semibold text-[#111933] mb-4">
-              Students
-            </h2>
+            {student_details && (
+              <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                <Box mb={2} display="flex" sx={{ alignItems: 'center' }} gap={2}>
+                  <h2 className="text-2xl font-semibold text-[#111933]">Students</h2>
+                  <TextField
+                    label="Search"
+                    variant="outlined"
+                    fullWidth
+                    name="searchText"
+                    value={filters.searchText || ""}
+                    onChange={handleFilterChange}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "50px",
+                        height: "40px",
+                        padding: "0 16px",
+                      },
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "gray",
+                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "darkgray",
+                      },
+                      "& .MuiInputLabel-root": {
+                        top: "-5px",
+                        fontSize: "0.9rem",
+                        color: "gray",
+                      },
+                      "& .MuiInputLabel-shrink": {
+                        top: "0px",
+                      },
+                    }}
+                  />
+                  <div className="flex justify-center items-center space-x-2">
+                    {[
+                      { label: "Filter", icon: <FilterListIcon />, onClick: handleFilterDialogOpen },
+                      { label: "Add Student", icon: <AddIcon />, onClick: () => setPublishDialogOpen(true) },
+                    ].map((btn, index) => (
+                      <button
+                        key={index}
+                        className="bg-[#111933] text-sm text-nowrap text-white font-medium py-1 px-5 border rounded-lg flex items-center"
+                        onClick={btn.onClick}
+                      >
+                        <span className="pr-1">{btn.label}</span>
+                        {btn.icon}
+                      </button>
+                    ))}
+                  </div>
 
-            <div className="flex justify-end">
-              <button className="bg-[#111933] text-white font-medium mb-5 py-1 px-5 border rounded-xl"
-                onClick={handleFilterDialogOpen}>
-                <span className="pr-1">Filter</span><FilterListIcon />
-              </button>
-            </div>
-
-            <Dialog
-              open={openFilterDialog}
-              onClose={handleFilterDialogClose}
-              fullWidth
-              maxWidth="md"
-              PaperProps={{
-                style: {
-                  width: '800px',
-                  height: '530px',
-                  borderRadius: 15,
-                  backgroundColor: '#fff',
-                },
-              }}
-              BackdropProps={{
-                className: "fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm",
-              }}
-              TransitionProps={{ unmountOnExit: true }}
-            >
-              <DialogTitle sx={{ fontWeight: "bold", mb: 1, color: "#111933", display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                Filter Options
-                <IconButton onClick={handleFilterDialogClose} sx={{ color: "#111933" }}>
-                  <CloseIcon />
-                </IconButton>
-              </DialogTitle>
-              <DialogContent sx={{ paddingTop: 0 }}>
-                <Typography
-                  variant="h6"
-                  sx={{ mb: 1, fontWeight: "bold", color: "#111933" }}
-                >
-                  Department
-                </Typography>
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
-                  {["AI&ML", "IT", "CSE", "AI&DS", "Mech", "EEE", "ECE", "CSD", "CST", "AERO", "MCT", "CIVIL", "Others"].map(
-                    (dept) => (
-                      <Chip
-                        key={dept}
-                        label={dept}
-                        clickable
-                        onClick={() => toggleFilter("dept", dept)}
-                        sx={{
-                          cursor: "pointer",
-                          backgroundColor: filters.dept.includes(dept)
-                            ? "#111933"
-                            : "rgba(225, 235, 255, 0.8)",
-                          color: filters.dept.includes(dept) ? "#fff" : "#111933",
-                          width: 'auto',
-                          height: '35px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderRadius: '15px',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          "&:hover": {
-                            backgroundColor: "#111933",
-                            color: "#fff",
-                          },
-                        }}
-                      />
-                    )
-                  )}
                 </Box>
 
-                <Typography
-                  variant="h6"
-                  sx={{ mt: 2, mb: 1, fontWeight: "bold", color: "#111933" }}
+                <Dialog
+                  open={openFilterDialog}
+                  onClose={handleFilterDialogClose}
+                  fullWidth
+                  maxWidth="md"
+                  PaperProps={{
+                    style: {
+                      width: "800px",
+                      height: "530px",
+                      borderRadius: 15,
+                      backgroundColor: "#fff",
+                    },
+                  }}
+                  BackdropProps={{
+                    className: "fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm",
+                  }}
+                  TransitionProps={{ unmountOnExit: true }}
                 >
-                  Institution
-                </Typography>
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
-                  {["SNSCT", "SNSCE", "SNS Spine", "SNS Nursing", "SNS Pharmacy", "SNS Health Science", "SNS Academy", "SNS Physiotherapy"].map(
-                    (college) => (
-                      <Chip
-                        key={college}
-                        label={college}
-                        clickable
-                        onClick={() => toggleFilter("collegename", college)}
-                        sx={{
-                          cursor: "pointer",
-                          backgroundColor: filters.collegename.includes(college)
-                            ? "#111933"
-                            : "rgba(225, 235, 255, 0.8)",
-                          color: filters.collegename.includes(college) ? "#fff" : "#111933",
-                          width: 'auto',
-                          height: '40px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderRadius: '15px',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          "&:hover": {
-                            backgroundColor: "#111933",
-                            color: "#fff",
-                          },
-                        }}
-                      />
-                    )
-                  )}
-                </Box>
+                  <DialogTitle
+                    sx={{
+                      fontWeight: "bold",
+                      mb: 1,
+                      color: "#111933",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    Filter Options
+                    <IconButton onClick={handleFilterDialogClose} sx={{ color: "#111933" }}>
+                      <CloseIcon />
+                    </IconButton>
+                  </DialogTitle>
+                  <DialogContent sx={{ paddingTop: 0 }}>
+                    <Typography variant="h6" sx={{ mb: 1, fontWeight: "bold", color: "#111933" }}>
+                      Institution
+                    </Typography>
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
+                      {[
+                        "SNSCT",
+                        "SNSCE",
+                        "SNS Spine",
+                        "SNS Nursing",
+                        "SNS Pharmacy",
+                        "SNS Health Science",
+                        "SNS Academy",
+                        "SNS Physiotherapy",
+                      ].map((college) => (
+                        <Chip
+                          key={college}
+                          label={college}
+                          clickable
+                          onClick={() => toggleFilter("collegename", college)}
+                          sx={{
+                            cursor: "pointer",
+                            backgroundColor: filters.collegename.includes(college)
+                              ? "#111933"
+                              : "rgba(225, 235, 255, 0.8)",
+                            color: filters.collegename.includes(college) ? "#fff" : "#111933",
+                            width: "auto",
+                            height: "40px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: "15px",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            "&:hover": {
+                              backgroundColor: "#111933",
+                              color: "#fff",
+                            },
+                          }}
+                        />
+                      ))}
+                    </Box>
 
-                <Typography
-                  variant="h6"
-                  sx={{ mt: 2, mb: 1, fontWeight: "bold", color: "#111933" }}
-                >
-                  Year
-                </Typography>
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
-                  {["I", "II", "III", "IV"].map((year) => (
-                    <Chip
-                      key={year}
-                      label={year}
-                      clickable
-                      onClick={() => toggleFilter("year", year)}
+                    <Typography variant="h6" sx={{ mt: 3, mb: 1, fontWeight: "bold", color: "#111933" }}>
+                      Year
+                    </Typography>
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
+                      {["I", "II", "III", "IV"].map((year) => (
+                        <Chip
+                          key={year}
+                          label={year}
+                          clickable
+                          onClick={() => toggleFilter("year", year)}
+                          sx={{
+                            cursor: "pointer",
+                            backgroundColor: filters.year.includes(year) ? "#111933" : "rgba(225, 235, 255, 0.8)",
+                            color: filters.year.includes(year) ? "#fff" : "#111933",
+                            width: "auto",
+                            height: "35px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: "15px",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            "&:hover": {
+                              backgroundColor: "#111933",
+                              color: "#fff",
+                            },
+                          }}
+                        />
+                      ))}
+                    </Box>
+
+                    <Typography variant="h6" sx={{ mt: 3, mb: 1, fontWeight: "bold", color: "#111933" }}>
+                      Department
+                    </Typography>
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
+                      {[
+                        "AI&ML",
+                        "IT",
+                        "CSE",
+                        "AI&DS",
+                        "Mech",
+                        "EEE",
+                        "ECE",
+                        "CSD",
+                        "CST",
+                        "AERO",
+                        "MCT",
+                        "CIVIL",
+                        "Others",
+                      ].map((dept) => (
+                        <Chip
+                          key={dept}
+                          label={dept}
+                          clickable
+                          onClick={() => toggleFilter("dept", dept)}
+                          sx={{
+                            cursor: "pointer",
+                            backgroundColor: filters.dept.includes(dept) ? "#111933" : "rgba(225, 235, 255, 0.8)",
+                            color: filters.dept.includes(dept) ? "#fff" : "#111933",
+                            width: "auto",
+                            height: "35px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: "15px",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            "&:hover": {
+                              backgroundColor: "#111933",
+                              color: "#fff",
+                            },
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  </DialogContent>
+                  <DialogActions>
+                    <Button
+                      onClick={clearFilters}
+                      variant="outlined"
                       sx={{
-                        cursor: "pointer",
-                        backgroundColor: filters.year.includes(year)
-                          ? "#111933"
-                          : "rgba(225, 235, 255, 0.8)",
-                        color: filters.year.includes(year) ? "#fff" : "#111933",
-                        width: 'auto',
-                        height: '35px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: '15px',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
+                        color: "#111933",
+                        borderColor: "#111933",
+                        borderRadius: "10px",
+                        width: "150px",
+                        height: "40px",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        whiteSpace: "nowrap",
+                        gap: "8px",
+                        "&:hover": {
+                          backgroundColor: "#fff",
+                          color: "#111933",
+                        },
+                      }}
+                    >
+                      <div className="rounded-full border border-[#111933] p-[2px]">
+                        <IoCloseCircleOutline className="text-[#111933]" />
+                      </div>
+                      Clear Filter
+                    </Button>
+                    <Button
+                      onClick={applyFilters}
+                      variant="contained"
+                      sx={{
+                        backgroundColor: "#111933",
+                        color: "#fff",
+                        borderRadius: "10px",
+                        width: "150px",
+                        height: "40px",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        whiteSpace: "nowrap",
+                        gap: "8px",
                         "&:hover": {
                           backgroundColor: "#111933",
-                          color: "#fff",
+                        },
+                      }}
+                    >
+                      <div className="rounded-full border border-white">
+                        <FaCheckCircle className="text-white" />
+                      </div>
+                      Apply Filters
+                    </Button>
+                  </DialogActions>
+                </Dialog>
+
+                <TableContainer component={Paper} sx={{ borderRadius: "10px" }}>
+                  <Table>
+                    <TableHead sx={{ backgroundColor: "#111933", color: "white" }}>
+                      <TableRow>
+                        <TableCell
+                          sx={{
+                            color: "white",
+                            textAlign: "center",
+                            padding: "15px 0px",
+                          }}
+                        >
+                          <p className="border-r-[1px] border-white w-full">Name</p>
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            color: "white",
+                            textAlign: "center",
+                            padding: "15px 0px",
+                          }}
+                        >
+                          <p className="border-r-[1px] border-white w-full">Registration Number</p>
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            color: "white",
+                            textAlign: "center",
+                            padding: "15px 0px",
+                          }}
+                        >
+                          <p className="border-r-[1px] border-white w-full">Department</p>
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            color: "white",
+                            textAlign: "center",
+                            padding: "15px 0px",
+                          }}
+                        >
+                          <p className="border-r-[1px] border-white w-full">College Name</p>
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            color: "white",
+                            textAlign: "center",
+                            padding: "15px 0px",
+                          }}
+                        >
+                          <p className="border-r-[1px] border-white w-full">Year</p>
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            color: "white",
+                            textAlign: "center",
+                            padding: "15px 0px",
+                          }}
+                        >
+                          <p className="border-r-[1px] border-white w-full">Status</p>
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            color: "white",
+                            textAlign: "center",
+                            padding: "15px 0px",
+                          }}
+                        >
+                          Actions
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {loading
+                        ? Array.from({ length: rowsPerPage }).map((_, index) => (
+                          <TableRow key={index}>
+                            <TableCell colSpan={7}>
+                              <Skeleton variant="rectangular" width="100%" height={40} />
+                            </TableCell>
+                          </TableRow>
+                        ))
+                        : currentStudents.map((student) => (
+                          <TableRow key={student.regno}>
+                            <TableCell sx={{ position: "relative", textAlign: "center" }}>
+                              <button
+                                onClick={() => handleStudentRemove(student.regno)}
+                                style={{
+                                  position: "absolute",
+                                  left: "8px",
+                                  top: "50%",
+                                  transform: "translateY(-50%)",
+                                  background: "none",
+                                  border: "none",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <XCircle className="text-red-500" />
+                              </button>
+                              <span>{student.name}</span>
+                            </TableCell>
+                            <TableCell sx={{ textAlign: "center" }}>{student.regno}</TableCell>
+                            <TableCell sx={{ textAlign: "center" }}>{student.dept}</TableCell>
+                            <TableCell sx={{ textAlign: "center" }}>{student.collegename}</TableCell>
+                            <TableCell sx={{ textAlign: "center" }}>{student.year}</TableCell>
+                            <TableCell sx={{ textAlign: "center" }}>{student.status}</TableCell>
+                            <TableCell sx={{ textAlign: "center" }}>
+                              <button
+                                className="text-red-500 ml-2"
+                                onClick={() => handleViewClick(student)}
+                              >
+                                View
+                              </button>
+                              <button
+                                className="text-blue-500 ml-2"
+                                onClick={() => handleReassign(student)}
+                              >
+                                Reassign
+                              </button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+
+                {filters.searchText === "" && (
+                  <div className="flex justify-center mt-6">
+                    <Pagination
+                      count={Math.ceil(filteredStudents.length / rowsPerPage)}
+                      page={page + 1}
+                      onChange={handlePageChange}
+                      sx={{
+                        "& .MuiPaginationItem-root": {
+                          color: "#111933",
+                        },
+                        "& .MuiPaginationItem-root.Mui-selected": {
+                          backgroundColor: "#FDC500",
+                          color: "#111933",
+                        },
+                        "& .MuiPaginationItem-root:hover": {
+                          backgroundColor: "rgba(0, 9, 117, 0.1)",
                         },
                       }}
                     />
-                  ))}
-                </Box>
-              </DialogContent>
-              <DialogActions>
-                <Button
-                  onClick={clearFilters}
-                  variant="outlined"
-                  sx={{
-                    color: "#111933",
-                    borderColor: "#111933",
-                    borderRadius: '10px',
-                    width: '150px',
-                    height: '40px',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    whiteSpace: "nowrap",
-                    gap: '8px',
-                    "&:hover": {
-                      backgroundColor: "#fff",
-                      color: "#111933",
-                    },
-                  }}
-                >
-                  <div className="rounded-full border border-[#111933] p-[2px]">
-                    <IoCloseCircleOutline className="text-[#111933]"/>
                   </div>
-                  Clear Filter
-                </Button>
-                <Button
-                  onClick={applyFilters}
-                  variant="contained"
-                  sx={{
-                    backgroundColor: "#111933",
-                    color: "#fff",
-                    borderRadius: '10px',
-                    width: '150px',
-                    height: '40px',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    whiteSpace: 'nowrap',
-                    gap: '8px',
-                    "&:hover": {
-                      backgroundColor: "#111933",
-                    },
-                  }}
-                >
-                  <div className="rounded-full border border-white ">
-                    <FaCheckCircle className="text-white"/>
-                  </div>
-                  Apply Filters
-                </Button>
-              </DialogActions>
-            </Dialog>
-
-            <Box mb={2} display="flex" gap={2}>
-              <TextField
-                label="Search"
-                variant="outlined"
-                fullWidth
-                name="searchText"
-                value={filters.searchText || ""}
-                onChange={handleFilterChange}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '50px',
-                    height: '40px',
-                    padding: '0 16px',
-                  },
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'gray',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'darkgray',
-                  },
-                  '& .MuiInputLabel-root': {
-                    top: '-5px',
-                    fontSize: '0.9rem',
-                    color: 'gray',
-                  },
-                  '& .MuiInputLabel-shrink': {
-                    top: '0px',
-                  },
-                }}
-              />
-              <TextField
-                label="Filter by Year"
-                select
-                fullWidth
-                name="year"
-                value={filters.year || ""}
-                onChange={handleFilterChange}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '50px',
-                    height: '40px',
-                    padding: '0 16px',
-                  },
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'gray',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'darkgray',
-                  },
-                  '& .MuiInputLabel-root': {
-                    top: '-5px',
-                    fontSize: '0.9rem',
-                    color: 'gray',
-                  },
-                  '& .MuiInputLabel-shrink': {
-                    top: '0px',
-                  },
-                }}
-              >
-                <MenuItem key={"All"} value={""}>
-                  All
-                </MenuItem>
-                <MenuItem key={"I"} value={"I"}>
-                  I
-                </MenuItem>
-                <MenuItem key={"II"} value={"II"}>
-                  II
-                </MenuItem>
-                <MenuItem key={"III"} value={"III"}>
-                  III
-                </MenuItem>
-                <MenuItem key={"IV"} value={"IV"}>
-                  IV
-                </MenuItem>
-              </TextField>
-              <TextField
-                label="Filter by Status"
-                select
-                fullWidth
-                name="status"
-                value={filters.status || ""}
-                onChange={handleFilterChange}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '50px',
-                    height: '40px',
-                    padding: '0 16px',
-                  },
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'gray',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'darkgray',
-                  },
-                  '& .MuiInputLabel-root': {
-                    top: '-5px',
-                    fontSize: '0.9rem',
-                    color: 'gray',
-                  },
-                  '& .MuiInputLabel-shrink': {
-                    top: '0px',
-                  },
-                }}
-              >
-                <MenuItem key="All" value={""}>
-                  All
-                </MenuItem>
-                <MenuItem key={"Completed"} value={"Completed"}>
-                  Completed
-                </MenuItem>
-                <MenuItem key={"Started"} value={"Started"}>
-                  Started
-                </MenuItem>
-                <MenuItem key={"Yet to Start"} value={"Yet to Start"}>
-                  Yet to Start
-                </MenuItem>
-              </TextField>
-            </Box>
-
-            <TableContainer component={Paper} sx={{ borderRadius: "10px" }}>
-              <Table>
-                <TableHead sx={{ backgroundColor: "#111933", color: "white" }}>
-                  <TableRow>
-                    <TableCell
-                      sx={{
-                        color: "white",
-                        textAlign: "center",
-                        padding: "15px 0px",
-                      }}
-                    >
-                      <p className=" border-r-[1px] border-white w-full">
-                        Name
-                      </p>
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        color: "white",
-                        textAlign: "center",
-                        padding: "15px 0px",
-                      }}
-                    >
-                      <p className=" border-r-[1px] border-white w-full">
-                        Registration Number
-                      </p>
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        color: "white",
-                        textAlign: "center",
-                        padding: "15px 0px",
-                      }}
-                    >
-                      <p className=" border-r-[1px] border-white w-full">
-                        Department
-                      </p>
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        color: "white",
-                        textAlign: "center",
-                        padding: "15px 0px",
-                      }}
-                    >
-                      <p className=" border-r-[1px] border-white w-full">
-                        College Name
-                      </p>
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        color: "white",
-                        textAlign: "center",
-                        padding: "15px 0px",
-                      }}
-                    >
-                      <p className=" border-r-[1px] border-white w-full">
-                        Year
-                      </p>
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        color: "white",
-                        textAlign: "center",
-                        padding: "15px 0px",
-                      }}
-                    >
-                      <p className=" border-r-[1px] border-white w-full">
-                        Status
-                      </p>
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        color: "white",
-                        textAlign: "center",
-                        padding: "15px 0px",
-                      }}
-                    >
-                      Actions
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {loading ? (
-                    Array.from({ length: rowsPerPage }).map((_, index) => (
-                      <TableRow key={index}>
-                        <TableCell colSpan={7}>
-                          <Skeleton variant="rectangular" width="100%" height={40} />
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    currentStudents.map((student) => (
-                      <TableRow key={student.regno}>
-                        <TableCell sx={{ position: "relative", textAlign: "center" }}>
-                          {isEditing && (
-                            <button
-                              onClick={() => handleStudentRemove(student.regno)}
-                              style={{
-                                position: "absolute",
-                                left: "20px",
-                                top: "50%",
-                                transform: "translateY(-50%)",
-                              }}
-                            >
-                              <XCircle className="text-red-500" />
-                            </button>
-                          )}
-                          <span>{student.name}</span>
-                        </TableCell>
-                        <TableCell sx={{ textAlign: "center" }}>
-                          {student.regno}
-                        </TableCell>
-                        <TableCell sx={{ textAlign: "center" }}>
-                          {student.dept}
-                        </TableCell>
-                        <TableCell sx={{ textAlign: "center" }}>
-                          {student.collegename}
-                        </TableCell>
-                        <TableCell sx={{ textAlign: "center" }}>
-                          {student.year}
-                        </TableCell>
-                        <TableCell sx={{ textAlign: "center" }}>
-                          {student.status}
-                        </TableCell>
-                        <TableCell sx={{ textAlign: "center" }}>
-                          <button
-                            className="text-red-500 ml-2"
-                            onClick={() => handleViewClick(student)}
-                          >
-                            View
-                          </button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            {filters.searchText === "" && (
-              <div className="flex justify-center mt-6">
-                <Pagination
-                  count={Math.ceil(filteredStudents.length / rowsPerPage)}
-                  page={page + 1}
-                  onChange={handlePageChange}
-                  sx={{
-                    '& .MuiPaginationItem-root': {
-                      color: '#111933',
-                    },
-                    '& .MuiPaginationItem-root.Mui-selected': {
-                      backgroundColor: '#FDC500',
-                      color: '#111933',
-                    },
-                    '& .MuiPaginationItem-root:hover': {
-                      backgroundColor: 'rgba(0, 9, 117, 0.1)',
-                    },
-                  }}
-                />
+                )}
               </div>
             )}
-
-            <div className="flex justify-between items-stretch mt-6">
-              {isEditing && (
-                <button
-                  onClick={() => setPublishDialogOpen(true)}
-                  className=" bg-[#111933] rounded-lg text-white px-4 py-2"
-                >
-                  Add Student
-                </button>
-              )}
-
-              {isEditing && (
-                <button
-                  className={`bg-blue-900 text-white px-4 py-2 rounded-lg flex items-center justify-center ${
-                    loading ? "cursor-not-allowed opacity-50" : ""
-                  }`}
-                  onClick={handleSave}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <div className="w-5 h-5 border-4 border-t-transparent border-white rounded-full animate-spin"></div>
-                  ) : (
-                    "Save Changes"
-                  )}
-                </button>
-              )}
-            </div>
           </div>
+          {/* Right Side */}
+          {/* Progress Details */}
+          <section className="flex flex-col justify-between mb-6 space-y-5">
+            {/* Progress Details */}
+            <div className="flex-1 flex flex-col items-center bg-white text-[#111933] border border-gray-300 rounded-xl">
+  <p className="border border-[#111933] text-[#111933] rounded-t-xl py-3 text-lg font-medium w-full text-center">
+    Progress Details
+  </p>
+  <div className="w-full">
+    <div className="table-fixed w-full">
+      {/* No. of Questions */}
+      <div className="grid py-4 grid-cols-2 border-b border-gray-300">
+        <p className="p-3 border-r border-gray-300 font-medium text-center">No. of Questions</p>
+        {loading ? (
+          <Skeleton variant="text" width={50} height={20} />
+        ) : (
+          <p className="p-3 text-center w-1/2">
+            {sections?.length > 0
+              ? sections.reduce((total, section) => total + (parseInt(section.numQuestions, 10) || 0), 0)
+              : testConfiguration?.questions || 0}
+          </p>
         )}
+      </div>
+
+      {/* No. of Sections */}
+      {sections?.length > 0 && (
+        <div className="grid py-4 grid-cols-2 border-b border-gray-300">
+          <p className="p-3 border-r border-gray-300 font-medium text-center">No. of Sections</p>
+          {loading ? (
+            <Skeleton variant="text" width={50} height={20} />
+          ) : (
+            <p className="p-3 text-center w-1/2">{sections?.length || 0}</p>
+          )}
+        </div>
+      )}
+
+      {/* Total Marks */}
+      <div className="grid py-4 grid-cols-2">
+        <p className="p-3 border-r border-gray-300 font-medium text-center">Total Marks</p>
+        {loading ? (
+          <Skeleton variant="text" width={50} height={20} />
+        ) : (
+          <p className="p-3 text-center w-1/2">{testConfiguration?.totalMarks || 0}</p>
+        )}
+      </div>
+    </div>
+  </div>
+</div>
+
+
+            {/* Proctoring Enabled */}
+            <div className="flex-1 flex flex-col items-center bg-white text-[#111933] border border-gray-300 rounded-xl">
+              <p className="border border-[#111933] text-[#111933] rounded-t-xl py-3 text-lg font-medium w-full text-center">
+                Proctoring Enabled
+              </p>
+              <div className="w-full p-9 py-12">
+                {[
+                  {
+                    title: "Full Screen Mode",
+                    value: testConfiguration?.fullScreenMode ? "Enabled" : "Disabled",
+                    enabled: testConfiguration?.fullScreenMode,
+                  },
+                  {
+                    title: "Device Restriction",
+                    value: testConfiguration?.deviceRestriction ? "Enabled" : "Disabled",
+                    enabled: testConfiguration?.deviceRestriction,
+                  },
+                ].map((configParam) => (
+                  <div key={configParam.title} className="flex items-center p-3 w-full">
+                    {configParam.enabled ? (
+                      <FaCheck className="text-green-500 mr-5" />
+                    ) : (
+                      <FaXmark className="text-red-500 mr-5" />
+                    )}
+                    <p className="font-medium flex-1 text-left">{configParam.title}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Sections & Questions */}
+            <div className="flex-1 flex flex-col items-center bg-white text-[#111933] border border-gray-300 rounded-xl">
+              <p className="border border-[#111933] text-[#111933] rounded-t-xl py-3 text-lg font-medium w-full text-center">
+                Sections & Questions
+              </p>
+              <div className="w-full">
+                <div className="grid grid-cols-2 border-b border-gray-300 table-fixed w-full py-2">
+                  <p className="p-3 border-r border-gray-300 font-medium text-center">Sections</p>
+                  <p className="p-3 text-center font-medium">Questions</p>
+                </div>
+
+                {loading ? (
+                  <div className="flex items-center justify-center p-4">
+                    <Skeleton variant="rectangular" width="100%" height={100} />
+                  </div>
+                ) : (sections ?? []).length === 0 ? (
+                  <div className="flex items-center justify-center p-4">
+                    <p className="text-center font-semibold">!! No Sections here to Display !!</p>
+                  </div>
+                ) : (
+                  <>
+                    {sections?.map((section, index) => (
+                      <div key={index} className="grid grid-cols-2 py-2 border-b border-gray-300 table-fixed w-full">
+                        <p className="p-3 border-r border-gray-300 text-center flex items-center justify-center">
+                          {section.sectionName}
+                        </p>
+                        <p className="p-3 text-center flex items-center justify-center">
+                          {section.numQuestions}
+                        </p>
+                      </div>
+                    ))}
+
+                    {/* Calculate total correctly by ensuring numbers are summed properly */}
+                    <div className="grid grid-cols-2 border-t border-gray-300 py-3 table-fixed w-full">
+                      <p className="p-3 border-r border-gray-300 text-center font-medium">Total</p>
+                      <p className="p-3 text-center font-medium">
+                        {totalQuestions}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </section>
+        </section>
 
         <div className="flex justify-between">
           <div className="flex">
             {!isRegistrationPeriodOver && !isOverallStatusClosed && (
               <>
                 <button
-                  className={themeButtonStyle}
-                  onClick={() => setIsEditing(!isEditing)}
-                >
-                  {isEditing ? "Cancel" : "Edit"}
-                </button>
-
-                <button
-                  className={themeButtonStyle}
+                  className={`${themeButtonStyle} inline-flex items-center`}
                   onClick={() => setShowClosePopup(true)} // Show the close popup
                 >
-                  Close Assessment
+                  Close Assessment <FaXmark className="ml-2" />
                 </button>
               </>
             )}
             <button
-              className={themeButtonStyle}
+              className={`${themeButtonStyle} inline-flex items-center`}
               onClick={() => setShowDeletePopup(true)}
             >
-              Delete Assessment
+              Delete Assessment <MdDelete className="ml-2" />
             </button>
             <button
               className={themeButtonStyle}
-              onClick={() => setShowDownload(true)}
+              onClick={handleDownloadContestData}
             >
               Download Contest Data
             </button>
           </div>
 
-          <button className="px-7 p-1 rounded-lg bg-[#111933] border-[#111933] text-white border-[1px] mx-2 hover:bg-[#12204b] flex items-center" onClick={() => setShowPublishPopup(true)}>
-            <span className="mr-2">Publish Assessment</span>
-            <MdOutlinePublish />
-          </button>
+          <button
+          className={`px-7 p-1 rounded-lg border-[1px] mx-2 flex items-center ${
+            isResultsPublished || !hasCompletedStudents()
+              ? 'bg-gray-400 border-gray-400 cursor-not-allowed'
+              : 'bg-[#111933] border-[#111933] text-white hover:bg-[#12204b]'
+          }`}
+          onClick={() => setShowPublishPopup(true)}
+          disabled={isResultsPublished || !hasCompletedStudents()}
+        >
+          <span className="mr-2">
+            {isResultsPublished ? 'Results Published' : 'Publish Results'}
+          </span>
+          <MdOutlinePublish />
+        </button>
         </div>
 
-        <Dialog open={publishDialogOpen} onClose={() => setPublishDialogOpen(false)} fullWidth maxWidth="lg">
+        <Dialog
+          open={publishDialogOpen}
+          onClose={() => setPublishDialogOpen(false)}
+          fullWidth
+          maxWidth="lg"
+        >
           <DialogTitle>Select Students</DialogTitle>
           <DialogContent>
             <StudentTable
@@ -1496,11 +1540,21 @@ const ViewTest = () => {
               setRowsPerPage={setRowsPerPage}
               openFilterDialog={openFilterDialog}
               setOpenFilterDialog={setOpenFilterDialog}
+              testDetails={testDetails}
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setPublishDialogOpen(false)} sx={{ color: "navy" }}>Cancel</Button>
-            <Button onClick={handleAddStudent} sx={{ backgroundColor: "navy" }} variant="contained">
+            <Button
+              onClick={() => setPublishDialogOpen(false)}
+              sx={{ color: "#111933" }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddStudent}
+              sx={{ backgroundColor: "#111933" }}
+              variant="contained"
+            >
               Add
             </Button>
           </DialogActions>
@@ -1525,7 +1579,10 @@ const ViewTest = () => {
         )}
 
         {showDownload && (
-          <DownloadContestData contestId={contestId} contestName={assessmentOverview?.name} />
+          <DownloadContestData
+            contestId={contestId}
+            contestName={assessmentOverview?.name}
+          />
         )}
       </div>
     </div>

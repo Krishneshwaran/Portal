@@ -230,7 +230,7 @@ function Header({ sectionDuration }) {
     <div className="flex items-center justify-between bg-white shadow-sm border-b-2 px-4 py-3">
       {/* Left Section: Title */}
       <div className="text-left">
-        <h1 className="text-[#000975] text-xl font-bold">MCQ Mock Test</h1>
+        <h1 className="text-[#111933] text-xl font-bold">MCQ Mock Test</h1>
         <p className="text-[#2563eb] text-sm">Section 3</p>
       </div>
 

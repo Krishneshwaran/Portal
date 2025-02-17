@@ -1,145 +1,145 @@
-import React, { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import axios from "axios"
-import { CircularProgress, Box, Typography, Pagination, Button, Modal } from "@mui/material"
-import { Assessment, CheckCircle, Cancel, WatchLater, Search, Warning } from "@mui/icons-material"
-import { FaUserCog, FaUniversity, FaRegAddressBook, FaMailBulk } from "react-icons/fa"
-import { useParams } from "react-router-dom"
-import ProfileBg from "../../../assets/profilebg.svg"
-import ProfileImg from "../../../assets/Dashboard icon.png"
-import GoldBadge from "../../../assets/badges/Gold.png"
-import SilverBadge from "../../../assets/badges/Silver.png"
-import BronzeBadge from "../../../assets/badges/Bronze.png"
-import Loader from "../../../layout/Loader"
-import { toast } from "react-toastify"
-import { ToastContainer } from "react-toastify"
-import "react-toastify/dist/ReactToastify.css"
-import ReactDOM from "react-dom"
-import html2canvas from "html2canvas"
-import jsPDF from "jspdf"
-import StudentReport from "../Student_report"
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { CircularProgress, Box, Typography, Pagination, Button, Modal, Slider } from "@mui/material";
+import { Assessment, CheckCircle, Cancel, WatchLater, Search, Warning } from "@mui/icons-material";
+import { FaUserCog, FaUniversity, FaRegAddressBook, FaMailBulk } from "react-icons/fa";
+import { FaCircleXmark } from "react-icons/fa6";
+import { useParams } from "react-router-dom";
+import ProfileBg from "../../../assets/profilebg.svg";
+import ProfileImg from "../../../assets/Dashboard icon.png";
+import GoldBadge from "../../../assets/badges/Gold.png";
+import SilverBadge from "../../../assets/badges/Silver.png";
+import BronzeBadge from "../../../assets/badges/Bronze.png";
+import Loader from "../../../layout/Loader";
+import { toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import ReactDOM from "react-dom";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import StudentReport from "../Student_report";
 import { LuDownload } from "react-icons/lu";
 import { FaEye } from "react-icons/fa";
 
-
 const EnhancedStudentDashboard = () => {
-  const [openPopup, setOpenPopup] = useState(false)
-  const [popupMessage, setPopupMessage] = useState("")
-  const { regno } = useParams()
-  const [studentData, setStudentData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"
-  const navigate = useNavigate()
-  const [search, setSearch] = useState("")
+  const [openPopup, setOpenPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
+  const { regno } = useParams();
+  const [studentData, setStudentData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
 
   // State to manage pagination
-  const [currentPage, setCurrentPage] = useState(1)
-  const assessmentsPerPage = 5
+  const [currentPage, setCurrentPage] = useState(1);
+  const assessmentsPerPage = 5;
 
   useEffect(() => {
     const fetchStudentData = async () => {
       try {
-        const codingResponse = await axios.get(`${API_BASE_URL}/staff/studentstats/${regno}/`)
-        const mcqResponse = await axios.get(`${API_BASE_URL}/staff/mcq_stats/${regno}/`)
+        const codingResponse = await axios.get(`${API_BASE_URL}/staff/studentstats/${regno}/`);
+        const mcqResponse = await axios.get(`${API_BASE_URL}/staff/mcq_stats/${regno}/`);
 
         if (codingResponse.status === 200 && mcqResponse.status === 200) {
           setStudentData({
             coding: codingResponse.data,
             mcq: mcqResponse.data,
-          })
+          });
         }
       } catch (error) {
-        console.error("Error fetching student data:", error)
+        console.error("Error fetching student data:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchStudentData()
-  }, [regno, API_BASE_URL])
+    fetchStudentData();
+  }, [regno, API_BASE_URL]);
 
   if (loading) {
-    return <Loader message="Loading student data..." />
+    return <Loader message="Loading student data..." />;
   }
 
   if (!studentData) {
-    return <div className="text-center text-xl text-red-500">Error: Unable to load student data.</div>
+    return <div className="text-center text-xl text-red-500">Error: Unable to load student data.</div>;
   }
 
   const getBadgeImage = (overallScore) => {
     if (overallScore >= 80) {
-      return GoldBadge
+      return GoldBadge;
     } else if (overallScore >= 50) {
-      return SilverBadge
+      return SilverBadge;
     } else {
-      return BronzeBadge
+      return BronzeBadge;
     }
-  }
+  };
 
-  const handleDownloadReport = async (contestStatus, contestId, studentId, setLoading) => {
+  const handleDownloadReport = async (contestStatus, contestId, studentId, studentName, setLoading) => {
     if (contestStatus !== "Completed") {
-      toast.warning("The contest is not completed. You can download the report once it is completed.")
-      return
+      toast.warning("The contest is not completed. You can download the report once it is completed.");
+      return;
     }
 
     if (!contestId || !studentId) {
-      console.error("Invalid contestId or studentId")
-      return
+      console.error("Invalid contestId or studentId");
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
-    const container = document.createElement("div")
-    container.style.position = "absolute"
-    container.style.top = "-9999px"
-    document.body.appendChild(container)
+    const container = document.createElement("div");
+    container.style.position = "absolute";
+    container.style.top = "-9999px";
+    document.body.appendChild(container);
 
     try {
-      ReactDOM.render(<StudentReport contestId={contestId} regno={studentId} hideDetails={true} />, container)
+      ReactDOM.render(<StudentReport contestId={contestId} regno={studentId} hideDetails={true} />, container);
 
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      const canvas = await html2canvas(container, { scale: 1.5 })
-      const imgData = canvas.toDataURL("image/jpeg", 0.8)
+      const canvas = await html2canvas(container, { scale: 1.5 });
+      const imgData = canvas.toDataURL("image/jpeg", 0.8);
 
-      const pdf = new jsPDF("p", "mm", "a4")
-      const imgWidth = 210
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
+      const pdf = new jsPDF("p", "mm", "a4");
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight)
-      pdf.save(`Student-Report of ${studentId}.pdf`)
+      pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
+      pdf.save(`Student-Report of ${studentName}.pdf`); // Use the student's name
 
-      toast.success("Report downloaded successfully!")
+      toast.success("Report downloaded successfully!");
     } catch (error) {
-      console.error("Error generating PDF:", error)
-      toast.error("Failed to download report. Please try again.")
+      console.error("Error generating PDF:", error);
+      toast.error("Failed to download report. Please try again.");
     } finally {
-      document.body.removeChild(container)
-      setLoading(false)
+      document.body.removeChild(container);
+      setLoading(false);
     }
-  }
+  };
 
-  const { coding, mcq } = studentData
+  const { coding, mcq } = studentData;
 
-  const { student, performance: codingPerformance, assessments: codingAssessments } = coding || {}
-  const { performance: mcqPerformance, assessments: mcqAssessments } = mcq || {}
+  const { student, performance: codingPerformance, assessments: codingAssessments } = coding || {};
+  const { performance: mcqPerformance, assessments: mcqAssessments } = mcq || {};
 
-  const totalTests = (codingPerformance?.total_tests || 0) + (mcqPerformance?.total_tests || 0)
-  const completedTests = (codingPerformance?.completed_tests || 0) + (mcqPerformance?.completed_tests || 0)
+  const totalTests = (codingPerformance?.total_tests || 0) + (mcqPerformance?.total_tests || 0);
+  const completedTests = (codingPerformance?.completed_tests || 0) + (mcqPerformance?.completed_tests || 0);
 
-  const allAssessments = [...(codingAssessments || []), ...(mcqAssessments || [])]
+  const allAssessments = [...(codingAssessments || []), ...(mcqAssessments || [])];
 
-  const attendend = allAssessments.filter((assessment) => assessment.contestStatus === "started").length
-  const unAttended = allAssessments.filter((assessment) => assessment.contestStatus === "Yet to Start").length
+  const attended = allAssessments.filter((assessment) => assessment.contestStatus === "started").length;
+  const unAttended = allAssessments.filter((assessment) => assessment.contestStatus === "Yet to Start").length;
 
   const handleViewReport = (contestStatus, assessmentId, studentId) => {
     if (contestStatus === "Completed") {
-      navigate(`/viewtest/${assessmentId}/${studentId}`)
+      navigate(`/viewtest/${assessmentId}/${studentId}`);
     } else {
-      setPopupMessage("The student status is not completed. After completion, you can view the report.")
-      setOpenPopup(true)
+      setPopupMessage("The student status is not completed. After completion, you can view the report.");
+      setOpenPopup(true);
     }
-  }
+  };
 
   const averageScore = mcqPerformance?.average_score || 0
   const badgeImage = getBadgeImage(averageScore)
@@ -150,33 +150,32 @@ const EnhancedStudentDashboard = () => {
       <p className="m-0 text-xs font-semibold text-[#111933] mb-3">{label}</p>
       <p className="m-0 text-3xl font-semibold text-[#111933]">{value}</p>
     </div>
-  )
+  );
 
-  const indexOfLastAssessment = currentPage * assessmentsPerPage
-  const indexOfFirstAssessment = indexOfLastAssessment - assessmentsPerPage
-  const currentAssessments = allAssessments.slice(indexOfFirstAssessment, indexOfLastAssessment)
-  const recentAssessments = allAssessments.slice(0, 3)
+  const indexOfLastAssessment = currentPage * assessmentsPerPage;
+  const indexOfFirstAssessment = indexOfLastAssessment - assessmentsPerPage;
+  const currentAssessments = allAssessments.slice(indexOfFirstAssessment, indexOfLastAssessment);
+  const recentAssessments = allAssessments.slice(0, 3);
 
   const filteredAssessments = allAssessments.filter((assessment) =>
-    assessment.name.toLowerCase().includes(search.toLowerCase()),
-  )
+    assessment.name.toLowerCase().includes(search.toLowerCase())
+  );
 
-  const pageAssessments = search === "" ? currentAssessments : filteredAssessments
+  const pageAssessments = search === "" ? currentAssessments : filteredAssessments;
 
   const handleSearch = (e) => {
-    setSearch(e.target.value)
-  }
+    setSearch(e.target.value);
+  };
 
   const handlePageChange = (event, value) => {
-    setCurrentPage(value)
-  }
+    setCurrentPage(value);
+  };
 
   console.log(student);
 
-
   return (
-    <div className="min-h-screen bg-gray-100  py-10 px-4 sm:px-6 lg:px-20">
-      <div className="container-lg max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#f4f6ff86] py-20 px-24 ">
+      <div className="container-lg max-w-8xl mx-auto">
         <div className="mb-8 grid grid-cols-1 md:grid-cols-[30%,70%] gap-8 h-full">
           <div className="bg-white flex items-center space-x-1 rounded-lg shadow-md overflow-hidden h-full p-2">
             <div className="w-44">
@@ -213,13 +212,13 @@ const EnhancedStudentDashboard = () => {
                 <StatCard icon={Assessment} label="Total Tests Attended" value={totalTests} />
                 <StatCard icon={CheckCircle} label="Completed" value={completedTests} />
                 {/* <StatCard icon={Cancel} label="Not Completed" value={totalTests - completedTests} /> */}
-                <StatCard icon={WatchLater} label="In Progress" value={attendend} />
+                <StatCard icon={WatchLater} label="In Progress" value={attended} />
               </div>
             </div>
 
             <div className="h-full flex flex-col justify-around align-center">
               <div className="flex flex-col items-center justify-center">
-                <CircularProgressWithLabel value={averageScore} />
+                { averageScore && <CircularProgressWithLabel value={averageScore} />}
               </div>
             </div>
           </div>
@@ -260,7 +259,7 @@ const EnhancedStudentDashboard = () => {
                       }
                     >
                       View Report
-                      <FaEye className="ml-2"/>
+                      <FaEye className="ml-2" />
                     </button>
                     <button
                       className="text-sm flex items-center font-medium bg-[#111933] border-[#111933] text-white border hover:border-[#FFCC00] rounded px-4 py-2 hover:bg-[#FFCC00] hover:text-[#111933]"
@@ -269,6 +268,7 @@ const EnhancedStudentDashboard = () => {
                           assessment.contestStatus,
                           assessment.contestId,
                           mcq.student.student_id,
+                          mcq.student.name, // Pass the student's name
                           setLoading,
                         )
                       }
@@ -279,7 +279,7 @@ const EnhancedStudentDashboard = () => {
                           <div className="loading-ring"></div>
                         </div>
                       ) : (
-                        <>Download <LuDownload className="ml-2"/></>
+                        <>Download <LuDownload className="ml-2" /></>
                       )}
                     </button>
 
@@ -316,15 +316,15 @@ const EnhancedStudentDashboard = () => {
           >
             <Box
               sx={{
-                fontSize: 60,
-                color: "#007bff",
-                mb: 2,
+                fontSize: 40,
+                color: "#111933",
+                mb: 5,
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
               }}
             >
-              🛈
+              <FaCircleXmark />
             </Box>
             <Typography
               id="status-popup"
@@ -353,8 +353,8 @@ const EnhancedStudentDashboard = () => {
               onClick={() => setOpenPopup(false)}
               variant="contained"
               sx={{
-                bgcolor: "#007bff",
-                color: "#ffffff",
+                bgcolor: "#FFCC00",
+                color: "#111933",
                 fontWeight: 600,
                 textTransform: "none",
                 px: 5,
@@ -363,7 +363,8 @@ const EnhancedStudentDashboard = () => {
                 fontSize: "16px",
                 boxShadow: "0px 6px 12px rgba(0, 0, 0, 0.15)",
                 "&:hover": {
-                  bgcolor: "#0056b3",
+                  bgcolor: "#111933",
+                  color: "#fff",
                 },
                 transition: "all 0.3s ease",
               }}
@@ -375,17 +376,17 @@ const EnhancedStudentDashboard = () => {
 
         <style jsx global>
           {`
-          @keyframes fadeIn {
-            0% {
-              opacity: 0;
-              transform: translate(-50%, -50%) scale(0.9);
+            @keyframes fadeIn {
+              0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+              }
+              100% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+              }
             }
-            100% {
-              opacity: 1;
-              transform: translate(-50%, -50%) scale(1);
-            }
-          }
-        `}
+          `}
         </style>
 
         <div className="relative flex justify-center mt-6">
@@ -395,53 +396,86 @@ const EnhancedStudentDashboard = () => {
             page={currentPage}
             onChange={handlePageChange}
             sx={{
-              "& .MuiPaginationItem-root": {
-                color: "#111933",
+              '& .MuiPaginationItem-root': {
+                color: '#000975',
               },
-              "& .MuiPaginationItem-root.Mui-selected": {
-                backgroundColor: "#FDC500",
-                color: "#fff",
+              '& .MuiPaginationItem-root.Mui-selected': {
+                backgroundColor: '#111933',
+                color: '#fff',
               },
-              "& .MuiPaginationItem-root:hover": {
-                backgroundColor: "rgba(0, 9, 117, 0.1)",
+              '& .MuiPaginationItem-root:hover': {
+                backgroundColor: 'rgba(0, 9, 117, 0.4)',
+                color: '#fff'
               },
             }}
           />
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
+
 
 function CircularProgressWithLabel({ value }) {
+  const [showBadge, setShowBadge] = useState(false);
+
+  const getBadgeImage = (score) => {
+    if (score >= 80) {
+      return GoldBadge;
+    } else if (score >= 50) {
+      return SilverBadge;
+    } else {
+      return BronzeBadge;
+    }
+  };
+
+  const badgeImage = getBadgeImage(value);
+
+  const toggleView = () => {
+    setShowBadge(!showBadge);
+  };
+
   return (
     <div className="flex flex-col flex-1 p-2 items-center justify-center">
-      {/* progress */}
-      <div className="relative">
-        <CircularProgress
-          variant="determinate"
-          value={100}
-          size={120}
-          sx={{ color: "#fff5cc", backgroundColor: 'white', borderRadius: '50%' }}
-          thickness={8}
-        />
-        <div className="absolute z-10 w-full h-full top-0">
+      {showBadge ? (
+        <img src={badgeImage} alt="Badge" className="w-32 mb-2" />
+      ) : (
+        <div className="relative mb-2">
           <CircularProgress
             variant="determinate"
-            value={value}
+            value={100}
             size={120}
-            sx={{ color: "#fdc500" }}
+            sx={{
+              color: "#fff5cc",
+              backgroundColor: "white",
+              borderRadius: "50%",
+            }}
             thickness={8}
           />
+          <div className="absolute z-10 w-full h-full top-0">
+            <CircularProgress
+              variant="determinate"
+              value={value}
+              size={120}
+              sx={{ color: "#fdc500" }}
+              thickness={8}
+            />
+          </div>
+          <div className="rounded-full text-[#111933] font-bold absolute top-0 h-full w-full flex items-center justify-center">
+            {value}%
+          </div>
         </div>
-        <div className="rounded-full text-[#111933] font-bold absolute top-0 h-full w-full flex items-center justify-center">
-          {value}%
-        </div>
-      </div>
+      )}
 
-      <button className="text-[#111933] mt-3 text-md mb-1 font-semibold">Overall Stats {'>'}</button>
+      {/* Toggle Button */}
+      <button
+        onClick={toggleView}
+        className="mt-2 text-[#111933] font-semibold cursor-pointer"
+      >
+        {!showBadge ? "Overall Stats >" : "< Progress"}
+      </button>
     </div>
-  )
+  );
 }
 
 export default EnhancedStudentDashboard

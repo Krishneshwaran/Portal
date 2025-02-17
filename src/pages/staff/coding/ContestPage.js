@@ -271,12 +271,12 @@ function ContestPage() {
       <h1 className="text-3xl font-bold mb-4">Contest Page</h1>
       <div className="flex justify-end mb-4">
         <div className="flex items-center gap-2">
-          <span className="w-5 h-5 text-[#000975]">⏰</span>
+          <span className="w-5 h-5 text-[#111933]">⏰</span>
           <div>
-            <div className="text-[#000975] font-medium">
+            <div className="text-[#111933] font-medium">
               {formatTime(timeLeft)}
             </div>
-            <div className="text-[#000975] text-xs">Time Left</div>
+            <div className="text-[#111933] text-xs">Time Left</div>
           </div>
         </div>
       </div>

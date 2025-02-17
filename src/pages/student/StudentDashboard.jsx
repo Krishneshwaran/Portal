@@ -1,51 +1,61 @@
 import React, { useState, useEffect } from "react";
-import { Tabs, Tab, Typography, Box, Container, Grid, Pagination } from "@mui/material";
+import {
+  Tabs,
+  Tab,
+  Typography,
+  Box,
+  Container,
+  Grid,
+  Pagination,
+} from "@mui/material";
 import { styled } from "@mui/material";
+import { FaSearch } from "react-icons/fa";
 import TestCard from "./TestCard";
 import axios from "axios";
-import NoExams from "../../assets/happy.png";
-import backgroundImage from '../../assets/pattern.png';
-import { useTestContext } from './TestContext';
-import { SlBadge } from "react-icons/sl";
-import Loader from '../../layout/Loader'; // Import the Loader component
+import NoExams from "../../assets/testno.png";
+import Award from "../../assets/AwardNew.png";
+import backgroundImage from "../../assets/pattern.png";
+import { useTestContext } from "./TestContext";
 
-// Keep existing styled components
+
 const StyledTabs = styled(Tabs)({
-  backgroundColor: '#ffff',
-  borderRadius: '8px',
-  '& .MuiTabs-indicator': {
-    backgroundColor: '#2563eb',
-    height: '3px',
-    borderRadius: '3px',
+  backgroundColor: "#ffff",
+  borderRadius: "8px",
+  "& .MuiTabs-indicator": {
+    backgroundColor: "#111933",
+    height: "2px",
+    borderRadius: "2px",
   },
 });
 
 const StyledTab = styled(Tab)({
-  textTransform: 'none',
-  fontSize: '16px',
-  fontWeight: '600',
-  color: '#64748b',
-  padding: '12px 24px',
-  '&.Mui-selected': {
-    color: '#2563eb',
+  textTransform: "none",
+  fontSize: "16px",
+  fontWeight: "600",
+  color: "#64748b",
+  padding: "12px 24px",
+  "&.Mui-selected": {
+    color: "#111933",
   },
-  '&:hover': {
-    backgroundColor: '#f1f5f9',
-    borderRadius: '6px',
+  "&:hover": {
+    backgroundColor: "#f1f5f9",
+    borderRadius: "6px",
   },
 });
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
 
 const DashboardHeader = styled(Box)(({ theme }) => ({
-  background: 'linear-gradient(135deg, rgb(139, 135, 251), rgb(95, 121, 214) 2%)',
-  borderRadius: '16px',
-  padding: '32px',
-  marginBottom: '32px',
-  color: 'blue',
-  [theme.breakpoints.down('sm')]: {
-    padding: '16px',
-    marginBottom: '16px',
+  background:
+    "linear-gradient(135deg, rgb(139, 135, 251), rgb(95, 121, 214) 2%%)",
+  borderRadius: "16px",
+  padding: "32px",
+  marginBottom: "32px",
+  color: "blue",
+  [theme.breakpoints.down("sm")]: {
+    padding: "16px",
+    marginBottom: "16px",
   },
 }));
 
@@ -58,109 +68,80 @@ const StudentDashboard = () => {
     name: "",
     regno: "",
     email: "",
-    studentId: "",
   });
   const [page, setPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const itemsPerPage = 9;
-  const { setTestDetails } = useTestContext();
 
-  const clearPreviousTestData = () => {
-    // Clear specific test-related items from localStorage
-    const testKeys = [
-      'testDetails',
-      'currentTest',
-      'contestState',
-    ];
-    testKeys.forEach(key => localStorage.removeItem(key));
-  };
-
-  const fetchOpenTests = async (regno) => {
+  const fetchStudentData = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/student/tests?regno=${regno}`, {
+      const response = await axios.get(`${API_BASE_URL}/api/student/profile/`, {
         withCredentials: true,
       });
+      const { name, regno, studentId, email } = response.data;
+      setStudentData({ name, regno, studentId, email });
 
-      return response.data.map((test) => {
-        const { hours = "0", minutes = "0" } = test.testConfiguration?.duration || {};
-        const duration = (parseInt(hours) * 3600) + (parseInt(minutes) * 60);
-        const testConfig = {
-          duration,
-          fullScreenMode: test.testConfiguration?.fullScreenMode || false,
-          faceDetection: test.testConfiguration?.faceDetection || false,
-          deviceRestriction: test.testConfiguration?.deviceRestriction || false,
-          noiseDetection: test.testConfiguration?.noiseDetection || false,
-          fullScreenModeCount: test.testConfiguration?.fullScreenModeCount || 0,
-          passPercentage: test.testConfiguration?.passPercentage || "0"
-        };
+      localStorage.setItem("studentEmail", email);
+      localStorage.setItem("studentName", name);
 
-        // Store in context
-        setTestDetails(prev => ({
-          ...prev,
-          [test.contestId]: testConfig
-        }));
+      const [openTestsData, mcqTestsData, codingReportsData, mcqReportsData] =
+        await Promise.all([
+          fetchOpenTests(regno),
+          fetchMcqTests(regno),
+          fetchCodingReports(),
+          fetchMcqReports(),
+        ]);
 
-        return {
-          contestId: test.contestId,
-          name: test.assessmentOverview?.name || "Unknown Test",
-          description: test.assessmentOverview?.description || "No description available.",
-          starttime: test.assessmentOverview?.registrationStart || "No Time",
-          endtime: test.assessmentOverview?.registrationEnd || "No Time",
-          problems: parseInt(test.testConfiguration?.questions, 10) || 0,
-          assessment_type: "coding",
-          duration: { hours, minutes }
-        };
-      }).reverse();
-    } catch (error) {
-      console.error("Error fetching open tests:", error);
-      return [];
-    }
-  };
+      const completedContestIds = new Set(
+        codingReportsData
+          .filter((report) => report.status === "Completed")
+          .map((report) => report.contest_id)
+      );
+      const completedMcqTestIds = new Set(
+        mcqReportsData
+          .filter((report) => report.status === "Completed")
+          
+          .map((report) => report.contest_id)
+      );
+      const now = new Date();
 
-  const fetchMcqTests = async (regno) => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/api/student/mcq-tests?regno=${regno}`, {
-        withCredentials: true,
+      const allCompletedTests = [
+        ...openTestsData.filter(
+          (test) =>
+            completedContestIds.has(test.contestId) ||
+            now > new Date(test.endtime)
+        ),
+        ...mcqTestsData.filter(
+          (test) =>
+            completedMcqTestIds.has(test.testId) || now > new Date(test.endtime)
+        ),
+      ];
+
+      const completedTestIds = allCompletedTests.map(
+        (test) => test.contestId || test.testId
+      );
+      const publishStatusResponse = await fetchPublishStatus(completedTestIds);
+
+      const completedTestsWithPublishStatus = allCompletedTests.map((test) => {
+        const testId = test.contestId || test.testId;
+        return { ...test, ispublish: publishStatusResponse[testId] || false };
       });
 
-      return response.data.map((test) => {
-        const hours = test.testConfiguration?.duration?.hours || "0";
-        const minutes = test.testConfiguration?.duration?.minutes || "0";
-        const duration = (parseInt(hours) * 3600) + (parseInt(minutes) * 60);
-        const testConfig = {
-          duration,
-          fullScreenMode: test.testConfiguration?.fullScreenMode || false,
-          faceDetection: test.testConfiguration?.faceDetection || false,
-          deviceRestriction: test.testConfiguration?.deviceRestriction || false,
-          noiseDetection: test.testConfiguration?.noiseDetection || false,
-          fullScreenModeCount: test.testConfiguration?.fullScreenModeCount || 0,
-          faceDetectionCount: test.testConfiguration?.faceDetectionCount || 0,
-          noiseDetectionCount: test.testConfiguration?.noiseDetectionCount || 0,
-          passPercentage: test.testConfiguration?.passPercentage || "0",
-          resultVisibility: test.testConfiguration?.resultVisibility || "Unknown"
-        };
+      const ongoingCodingTests = openTestsData.filter(
+        (test) =>
+          !completedContestIds.has(test.contestId) &&
+          now <= new Date(test.endtime)
+      );
+      const ongoingMcqTests = mcqTestsData.filter(
+        (test) =>
+          !completedMcqTestIds.has(test.testId) && now <= new Date(test.endtime)
+      );
 
-        // Store in context
-        setTestDetails(prev => ({
-          ...prev,
-          [test._id]: testConfig
-        }));
-
-        return {
-          testId: test._id,
-          name: test.assessmentOverview?.name || "Unknown Test",
-          description: test.assessmentOverview?.description || "No description available.",
-          starttime: test.assessmentOverview?.registrationStart || "No Time",
-          endtime: test.assessmentOverview?.registrationEnd || "No Time",
-          questions: parseInt(test.testConfiguration?.questions || "0", 10),
-          assessment_type: "mcq",
-          duration: { hours, minutes },
-          status: test.status || "Unknown",
-        };
-      }).reverse();
+      setOpenTests(ongoingCodingTests);
+      setMcqTests(ongoingMcqTests);
+      setCompletedTests(completedTestsWithPublishStatus);
     } catch (error) {
-      console.error("Error fetching MCQ tests:", error);
-      return [];
+      console.error("Error fetching student data:", error);
     }
   };
 
@@ -169,7 +150,9 @@ const StudentDashboard = () => {
       const response = await axios.post(
         `${API_BASE_URL}/api/student/check-publish-status/`,
         { testIds },
-        { withCredentials: true }
+        {
+          withCredentials: true,
+        }
       );
       return response.data;
     } catch (error) {
@@ -178,77 +161,194 @@ const StudentDashboard = () => {
     }
   };
 
-  const fetchStudentData = async () => {
-    setIsLoading(true);
+  const fetchOpenTests = async (regno) => {
     try {
-      clearPreviousTestData();
-
-      const response = await axios.get(`${API_BASE_URL}/api/student/profile/`, {
-        withCredentials: true,
-      });
-      
-      const { name, regno, studentId, email } = response.data;
-      setStudentData({ name, regno, studentId, email });
-      
-      localStorage.setItem('studentEmail', email);
-      localStorage.setItem('studentName', name);
-      localStorage.setItem('studentId', studentId);
-
-      const [codingTests, mcqTestsData] = await Promise.all([
-        fetchOpenTests(regno),
-        fetchMcqTests(regno),
-      ]);
-
-      setOpenTests(codingTests);
-      setMcqTests(mcqTestsData);
-
-      // Fetch completion status
-      const [codingReports, mcqReports] = await Promise.all([
-        axios.get(`${API_BASE_URL}/api/student/coding-reports/`, { withCredentials: true }),
-        axios.get(`${API_BASE_URL}/api/student/mcq-reports/`, { withCredentials: true })
-      ]);
-
-      const completedCodingIds = new Set(
-        codingReports.data
-          .filter(report => report.status === "Completed")
-          .map(report => report.contest_id)
+      const response = await axios.get(
+        `${API_BASE_URL}/api/student/tests?regno=${regno}`,
+        {
+          withCredentials: true,
+        }
       );
 
-      const completedMcqIds = new Set(
-        mcqReports.data
-          .filter(report => report.status === "Completed")
-          .map(report => report.contest_id)
-      );
+      const formattedTests = response.data
+        .map((test) => {
+          const { hours, minutes } = test.testConfiguration.duration;
+          const duration = parseInt(hours) * 3600 + parseInt(minutes) * 60;
+          const fullScreenMode = test.testConfiguration.fullScreenMode;
+          const faceDetection = test.testConfiguration.faceDetection;
+          const deviceRestriction = test.testConfiguration.deviceRestriction;
+          const noiseDetection = test.testConfiguration.noiseDetection;
+          const fullScreenModeCount =
+            test.testConfiguration.fullScreenModeCount; // Add noiseDetection
+          const passPercentage = test.testConfiguration?.passPercentage || "0";
 
-      const now = new Date();
-      const allCompletedTests = [
-        ...codingTests.filter(test => 
-          completedCodingIds.has(test.contestId) || now > new Date(test.endtime)
-        ),
-        ...mcqTestsData.filter(test => 
-          completedMcqIds.has(test.testId) || now > new Date(test.endtime)
-        )
-      ];
+          localStorage.setItem(`testDuration_${test.contestId}`, duration);
+          localStorage.setItem(
+            `fullScreenMode_${test.contestId}`,
+            fullScreenMode
+          );
+          localStorage.setItem(
+            `faceDetection_${test.contestId}`,
+            faceDetection
+          );
+          localStorage.setItem(
+            `deviceRestriction_${test.contestId}`,
+            deviceRestriction
+          );
+          localStorage.setItem(
+            `noiseDetection_${test.contestId}`,
+            noiseDetection
+          );
+          localStorage.setItem(
+            `fullScreenModeCount_${test.contestID}`,
+            fullScreenModeCount
+          ); // Set noiseDetection in localStorage
+          localStorage.setItem(`passPercentage_${test._id}`, passPercentage);
 
-      const completedTestIds = allCompletedTests.map(test => test.contestId || test.testId);
-      const publishStatus = await fetchPublishStatus(completedTestIds);
+          return {
+            contestId: test.contestId,
+            name: test.assessmentOverview?.name || "Unknown Test",
+            description:
+              test.assessmentOverview?.description ||
+              "No description available.",
+            starttime: test.assessmentOverview?.registrationStart || "No Time",
+            endtime: test.assessmentOverview?.registrationEnd || "No Time",
+            problems: parseInt(test.testConfiguration?.questions, 10) || 0,
+            assessment_type: "coding",
+          };
+        })
+        .reverse(); // Reverse the order of the tests
 
-      setCompletedTests(
-        allCompletedTests.map(test => ({
-          ...test,
-          ispublish: publishStatus[test.contestId || test.testId] || false
-        }))
-      );
-
+      return formattedTests;
     } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setIsLoading(false);
+      console.error("Error fetching open tests:", error);
+      return [];
+    }
+  };
+
+  const { testDetails, setTestDetails } = useTestContext();
+
+  const fetchMcqTests = async (regno) => {
+    try {
+
+      const response = await axios.get(
+        `${API_BASE_URL}/api/student/mcq-tests?regno=${regno}`,
+        {
+          withCredentials: true,
+        }
+      );
+
+      const formattedTests = response.data
+        .map((test) => {
+          const durationConfig = test.testConfiguration?.duration;
+          const hours = parseInt(durationConfig?.hours || "0", 10);
+          const minutes = parseInt(durationConfig?.minutes || "0", 10);
+          const duration = hours * 3600 + minutes * 60;
+
+          const fullScreenMode =
+            test.testConfiguration?.fullScreenMode || false;
+          const faceDetection = test.testConfiguration?.faceDetection || false;
+          const deviceRestriction =
+            test.testConfiguration?.deviceRestriction || false;
+          const noiseDetection =
+            test.testConfiguration?.noiseDetection || false; // Add noiseDetection
+          const fullScreenModeCount =
+            test.testConfiguration?.fullScreenModeCount || 0; // Add fullScreenModeCount
+          const faceDetectionCount =
+            test.testConfiguration?.faceDetectionCount || 0; // Add faceDetectionCount
+          const noiseDetectionCount =
+            test.testConfiguration?.noiseDetectionCount || 0; // Add noiseDetectionCount
+          const passPercentage = test.testConfiguration?.passPercentage || "0";
+
+          const resultVisibility =
+            test.testConfiguration?.resultVisibility || "Unknown";
+
+          if (test.testConfiguration) {
+            setTestDetails((prevState) => ({
+              ...prevState,
+              [test._id]: {
+                duration,
+                fullScreenMode,
+                faceDetection,
+                deviceRestriction,
+                noiseDetection,
+                resultVisibility,
+                fullScreenModeCount,
+                faceDetectionCount,
+                noiseDetectionCount,
+                passPercentage,
+              },
+            }));
+          }
+
+          return {
+            testId: test._id,
+            name: test.assessmentOverview?.name || "Unknown Test",
+            description:
+              test.assessmentOverview?.description ||
+              "No description available.",
+            starttime: test.assessmentOverview?.registrationStart || "No Time",
+            endtime: test.assessmentOverview?.registrationEnd || "No Time",
+            questions: parseInt(test.testConfiguration?.questions || "0", 10),
+            assessment_type: "mcq",
+            duration: test.testConfiguration?.duration,
+            status: test.status || "Unknown",
+          };
+        })
+        .reverse();
+
+      return formattedTests;
+    } catch (error) {
+      console.error("Error fetching MCQ tests:", error);
+      return [];
+    }
+  };
+
+  const fetchCodingReports = async () => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/student/coding-reports/`,
+        {
+          withCredentials: true,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching coding reports:", error);
+      return [];
+    }
+  };
+
+  const fetchMcqReports = async () => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/student/mcq-reports/`,
+        {
+          withCredentials: true,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching MCQ reports:", error);
+      return [];
     }
   };
 
   useEffect(() => {
     fetchStudentData();
+  }, []);
+
+  useEffect(() => {
+    const hasRefreshed = localStorage.getItem("hasRefreshed");
+
+    if (!hasRefreshed) {
+      const timer = setTimeout(() => {
+        localStorage.setItem("hasRefreshed", "true");
+        window.location.reload();
+            }, 1500);
+
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   const handleTabChange = (event, newValue) => {
@@ -266,19 +366,39 @@ const StudentDashboard = () => {
     return items.slice(startIndex, endIndex);
   };
 
-  // Keep existing return JSX
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+    setPage(1); // Reset to first page when searching
+  };
+
+  const filteredOpenTests = openTests.filter(test =>
+    test.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredMcqTests = mcqTests.filter(test =>
+    test.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredCompletedTests = completedTests.filter(test =>
+    test.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Combine filtered open tests and mcq tests for the active tab
+  const combinedActiveTests = [...filteredOpenTests, ...filteredMcqTests];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {isLoading && <Loader message="Fetching data..." />}
-      <Container maxWidth="2xl" className="py-1 px-2 sm:px-4">
-        <DashboardHeader className="bg-white mt-4 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${backgroundImage})`}}>
+    <div className="min-h-screen  px-20 bg-[#f4f6ff86]">
+      <Container maxWidth="2xl" className="py-1 px-5 sm:px-4">
+        <DashboardHeader
+          className="bg-white mt-4 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${backgroundImage})` }}
+        >
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="bg-blue p-6 rounded-full">
-            <SlBadge className="h-20 w-20 text-[#111933]" />
+            <div className="bg-blue p-2 rounded-full">
+              <img src={Award} className="h-10 w-10 bg-blue" />
             </div>
             <div>
-              <Typography variant="h5" sx={{fontWeight:"800"}} className="text-[#111933]">
+              <Typography variant="h5" className="font-semibold text-[#111933]">
                 Welcome back, {studentData.name}!
               </Typography>
               <Typography variant="h6" className="text-[#111933]">
@@ -289,58 +409,108 @@ const StudentDashboard = () => {
         </DashboardHeader>
 
         <Box className="bg-white rounded-xl shadow-sm p-4">
-          <StyledTabs value={activeTab} onChange={handleTabChange}>
-            <StyledTab label="Assigned to you"  />
-            <StyledTab label="Completed/Closed" />
-          </StyledTabs>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+            <StyledTabs value={activeTab} onChange={handleTabChange}>
+              <StyledTab label="Assigned to you" />
+              <StyledTab label="Completed/Closed" />
+            </StyledTabs>
+            <div className="relative mr-16">
+              <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                className="px-10 py-2 rounded-full focus:outline-none focus:ring-1 focus:ring-[#111933] w-full ring-1 ring-[#111933]"
+              />
+            </div>
+          </Box>
 
           <Box className="mt-6">
             {activeTab === 0 && (
               <>
-                <Typography variant="h6" className="font-bold text-gray-900 mb-7">
+                <Typography
+                  variant="h6"
+                  className="font-bold text-gray-900 mb-7"
+                >
                   Active Assessments
                 </Typography>
                 <Grid container spacing={2}>
-                  {getPaginatedItems([...openTests, ...mcqTests]).map((test) => (
-                    <Grid item xs={12} sm={6} md={4} key={test.contestId || test.testId}>
-                      <TestCard
-                        test={test}
-                        assessment_type={test.assessment_type}
-                        isCompleted={false}
-                      />
+                  {getPaginatedItems(combinedActiveTests).map(
+                    (test) => (
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={4}
+                        key={test.contestId || test.testId}
+                      >
+                        <TestCard
+                          test={test}
+                          assessment_type={test.assessment_type}
+                          isCompleted={false}
+                          testDetails={testDetails[test.testId]} // Pass test details securely
+                        />
+                      </Grid>
+                    )
+                  )}
+                  {combinedActiveTests.length === 0 && (
+                    <Grid item xs={12}>
+                      <Box className="text-center py-12 flex flex-col items-center justify-center">
+                        <img
+                          src={NoExams}
+                          alt="No Exams"
+                          className="mb-6 w-48 h-48"
+                        />
+                        <Typography
+                          variant="h6"
+                          className="font-medium text-gray-900"
+                        >
+                          {searchQuery ? "No matching assessments found" : "Enjoy your free time!"}
+                        </Typography>
+                      </Box>
                     </Grid>
-                  ))}
-                  {openTests.length === 0 && mcqTests.length === 0 && (
-                    <Box className="col-span-3 text-center py-12">
-                      <img
-                        src={NoExams}
-                        alt="No Exams"
-                        className="mx-auto mb-6 w-48 h-48"
-                      />
-                      <Typography variant="h6" className="font-medium text-gray-900">
-                        No active assessments
-                      </Typography>
-                    </Box>
                   )}
                 </Grid>
                 <Box display="flex" justifyContent="center" mt={4}>
                   <Pagination
-                    count={Math.ceil((openTests.length + mcqTests.length) / itemsPerPage)}
+                    count={Math.ceil(combinedActiveTests.length / itemsPerPage)}
                     page={page}
                     onChange={handlePageChange}
-                    color="primary"
+                    sx={{
+                      "& .MuiPaginationItem-root": {
+                        color: "#111933",
+                      },
+                      "& .MuiPaginationItem-root.Mui-selected": {
+                        backgroundColor: "#111933",
+                        color: "#fff",
+                      },
+                      "& .MuiPaginationItem-root:hover": {
+                        backgroundColor: "rgba(0, 9, 117, 0.4)",
+                        color: "#fff",
+                      },
+                    }}
                   />
                 </Box>
               </>
             )}
             {activeTab === 1 && (
               <>
-                <Typography variant="h6" className="font-bold text-gray-900 mb-7">
+                <Typography
+                  variant="h6"
+                  className="font-bold text-gray-900 mb-4"
+                >
                   Completed Assessments
                 </Typography>
                 <Grid container spacing={2}>
-                  {getPaginatedItems(completedTests).map((test) => (
-                    <Grid item xs={12} sm={6} md={4} key={test.contestId || test.testId}>
+                  {getPaginatedItems(filteredCompletedTests).map((test) => (
+                    <Grid
+                      item
+                      xs={12}
+                      sm={6}
+                      md={4}
+                      key={test.contestId || test.testId}
+                    >
                       <TestCard
                         test={test}
                         assessment_type={test.assessment_type}
@@ -350,25 +520,42 @@ const StudentDashboard = () => {
                       />
                     </Grid>
                   ))}
-                  {completedTests.length === 0 && (
-                    <Box className="col-span-3 text-center py-12">
-                      <img
-                        src={NoExams}
-                        alt="No Exams"
-                        className="mx-auto mb-6 w-48 h-48"
-                      />
-                      <Typography variant="h6" className="font-medium text-gray-900">
-                        No completed assessments
-                      </Typography>
-                    </Box>
+                  {filteredCompletedTests.length === 0 && (
+                    <Grid item xs={12}>
+                      <Box className="text-center py-12 flex flex-col items-center justify-center">
+                        <img
+                          src={NoExams}
+                          alt="No Exams"
+                          className="mb-6 w-48 h-48"
+                        />
+                        <Typography
+                          variant="h6"
+                          className="font-medium text-gray-900"
+                        >
+                          {searchQuery ? "No matching completed assessments found" : "No completed assessments yet"}
+                        </Typography>
+                      </Box>
+                    </Grid>
                   )}
                 </Grid>
                 <Box display="flex" justifyContent="center" mt={4}>
                   <Pagination
-                    count={Math.ceil(completedTests.length / itemsPerPage)}
+                    count={Math.ceil(filteredCompletedTests.length / itemsPerPage)}
                     page={page}
                     onChange={handlePageChange}
-                    color="primary"
+                    sx={{
+                      "& .MuiPaginationItem-root": {
+                        color: "#111933",
+                      },
+                      "& .MuiPaginationItem-root.Mui-selected": {
+                        backgroundColor: "#111933",
+                        color: "#fff",
+                      },
+                      "& .MuiPaginationItem-root:hover": {
+                        backgroundColor: "rgba(0, 9, 117, 0.4)",
+                        color: "#fff",
+                      },
+                    }}
                   />
                 </Box>
               </>

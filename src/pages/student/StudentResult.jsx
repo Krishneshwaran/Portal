@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-import { FaUser, FaFilter, FaUniversity, FaRegAddressBook, FaMailBulk, FaSchool, FaDownload } from 'react-icons/fa';
-import { CircularProgress } from "@mui/material";
-import UserImg from "../../assets/userplaceholder.png";
+import {
+  FaUser,
+  FaFilter,
+  FaUserCog,
+  FaUniversity,
+  FaRegAddressBook,
+  FaMailBulk,
+  FaSchool,
+  FaDownload
+} from "react-icons/fa";
+import { CircularProgress, Pagination } from "@mui/material";
+import UserImg from "../../assets/Dashboard icon.png";
 import PptxGenJS from "pptxgenjs"; // for PowerPoint generation
 import { SHA256 } from 'crypto-js';
 import { jsPDF } from "jspdf"; // for PDF export
@@ -15,6 +24,9 @@ const StudentResult = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(7); // Number of items per page
+
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
@@ -46,87 +58,126 @@ const StudentResult = () => {
 
   const handleDownloadCertificate = async () => {
     if (!testData || !students.length) {
-      alert("Student or contest data is missing.");
-      return;
+        alert("Student or contest data is missing.");
+        return;
     }
-  
+
     const matchedStudent = students.find((s) => s.studentId === testData.student_id);
     if (!matchedStudent) {
-      alert("Student not found.");
-      return;
+        alert("Student not found.");
+        return;
     }
-  
+
     const studentName = matchedStudent.name || "Unknown Student";
     const contestName = testData.contest_name || "Unknown Contest";
-  
-    // Generate a unique ID by hashing the student name and contest name
+    const studentId = testData.student_id;
+
+    // Generate a unique ID
     const uniqueId = SHA256(`${studentName}-${contestName}`).toString();
-  
+
+    // Get the test date from API
+    let testDate = "Unknown Date";
+    try {
+        const response = await axios.get(`${API_BASE_URL}/api/mcq/get_cert_date/`, {
+            params: { student_id: studentId, contest_id: testData.contest_id }
+        });
+        
+        if (response.data && response.data.finish_time) {
+            testDate = new Date(response.data.finish_time).toLocaleDateString("en-US", {
+                year: "numeric", month: "long", day: "numeric"
+            });
+        }
+    } catch (error) {
+        console.error("Error fetching test date:", error);
+        alert("Failed to fetch test date.");
+        return;
+    }
+
+    // Get total correct answers
+    let correctAnswers = 0;
+    try {
+      
+      const scoreResponse = await axios.get(`${API_BASE_URL}/api/mcq/get-score/${testData.contest_id}/${studentId}/`);
+        if (scoreResponse.data && typeof scoreResponse.data.correct_answers === "number") {
+            correctAnswers = scoreResponse.data.correct_answers;
+        }
+    } catch (error) {
+        console.error("Error fetching correct answers:", error);
+        alert("Failed to fetch correct answers.");
+        return;
+    }
+
     // Store certificate data in MongoDB
     try {
-      await axios.post(`${API_BASE_URL}/api/mcq/store-certificate/`, {
-        uniqueId,
-        studentName,
-        contestName,
-        studentId: testData.student_id,
-      });
+        await axios.post(`${API_BASE_URL}/api/mcq/store-certificate/`, {
+            uniqueId,
+            studentName,
+            contestName,
+            studentId,
+
+            testDate,
+            correctAnswers,
+        });
+
     } catch (error) {
-      console.error('Error storing certificate data:', error);
-      alert('Failed to store certificate data.');
-      return;
+        console.error("Error storing certificate data:", error);
+        alert("Failed to store certificate data.");
+        return;
     }
-  
-    // Define the custom page size for 16:9 aspect ratio
-    const width = 250; // Width in mm
-    const height = 180.625; // Height in mm (16:9 aspect ratio)
-  
-    // Initialize jsPDF with custom page size
-    const pdf = new jsPDF("l", "mm", [width, height]);
-  
-    // Add a background color
-    pdf.setFillColor(255, 255, 204); // Light yellow background
-    pdf.rect(0, 0, width, height, "F");
-  
-    // Add a border
-    pdf.setDrawColor(0, 0, 0);
-    pdf.rect(5, 5, width - 10, height - 10);
-  
-    // Calculate the vertical center
-    const centerY = height / 2;
-  
-    // Add certificate title with a larger font size
-    pdf.setFontSize(36);
-    pdf.setFont("helvetica", "bold");
-    pdf.text("Certificate of Achievement", width / 2, centerY - 35, { align: "center" });
-  
-    // Add student name
-    pdf.setFontSize(24);
-    pdf.setFont("helvetica", "normal");
-    pdf.text(`This is to certify that`, width / 2, centerY - 10, { align: "center" });
-  
-    pdf.setFontSize(28);
-    pdf.setFont("helvetica", "bold");
-    pdf.text(studentName, width / 2, centerY + 10, { align: "center" });
-  
-    // Add contest name
-    pdf.setFontSize(22);
-    pdf.setFont("helvetica", "normal");
-    pdf.text(`has successfully completed the ${contestName} contest.`, width / 2, centerY + 30, { align: "center" });
-  
-    // Add additional text
-    pdf.setFontSize(18);
-    pdf.setFont("helvetica", "normal");
-    pdf.text("Congratulations on your achievement!", width / 2, centerY + 50, { align: "center" });
-  
-    // Add unique ID in the left bottom corner with font size 10
-    pdf.setFontSize(10);
-    pdf.setFont("helvetica", "normal");
-    pdf.text(`Unique ID: ${uniqueId}`, 10, height - 10);
-  
-    // Save the PDF
-    pdf.save("Certificate.pdf");
-  };
-  
+
+    // Initialize jsPDF
+    const pdf = new jsPDF("l", "mm", "a4");
+
+    // Load Certificate Template
+    const templateImage = "/cert_template.png";
+    const img = new Image();
+    img.src = templateImage;
+    img.onload = () => {
+        pdf.addImage(img, "PNG", 0, 0, 297, 210);
+        
+        // Text Styling
+        pdf.setFont("helvetica", "bold");
+
+        // Place Contest Name
+        pdf.setFontSize(16);
+        pdf.text(contestName, 148, 134, { align: "center" });
+
+        // Place Student Name
+        pdf.setFontSize(22);
+        pdf.text(studentName, 148, 105, { align: "center" });
+
+        // Place Test Date
+        pdf.setFontSize(14);
+        pdf.text(`On ${testDate}`, 148, 144, { align: "center" });
+        
+        // Place Total Correct Answers
+        pdf.setFontSize(14);
+        pdf.text(`${correctAnswers}`, 158, 153, { align: "center" });
+
+        // Place Unique ID
+        pdf.setFontSize(10);
+        pdf.text(`${uniqueId}`, 40, 193);
+
+        // Place Clickable Verify Link
+        const formattedDate = testDate.replace(/,/g, "").split(" ").join("-"); 
+
+        // Construct the verification URL with a clean format
+        const frontendBaseUrl = window.location.origin;
+        const verifyLink = `${frontendBaseUrl}/verify-certificate/${uniqueId}/${formattedDate}/${correctAnswers}`;
+        
+        pdf.setTextColor(0, 0, 255);
+        pdf.textWithLink("Verify Certificate", 268, 193, {
+            url: verifyLink, 
+            align: "center"
+        });
+
+        // Save PDF
+        pdf.save(`${studentName}_Certificate.pdf`);
+    };
+};
+
+
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
   if (!testData) return <div>No data available.</div>;
@@ -153,63 +204,108 @@ const StudentResult = () => {
     return false;
   });
 
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentQuestions = filteredQuestions.slice(indexOfFirstItem, indexOfLastItem);
+
+  const handlePageChange = (event, value) => {
+    setCurrentPage(value);
+  };
+
   return (
-    <div id="report-preview" className="space-y-6 p-6 bg-gray-100">
-      <div className="mb-8 flex items-stretch justify-between px-5">
-        <div className="flex items-center mr-5">
-          <img
-            src={UserImg}
-            className="w-[200px] w-max-[200px] h-[200px] h-max-[200px] rounded-full shadow-lg mx-auto border-[8px] border-white"
-            alt="Image"
-          />
-        </div>
-
-        <div className="flex-1 text-center flex flex-col items-start">
-          <div className="flex-1 text-[#000975] text-2xl mb-3">
-            <h3>{matchedStudent ? matchedStudent.name : "Unknown Student"}</h3>
+    <div id="report-preview" className="space-y-6 p-6 px-20 bg-gray-100">
+      <div className="flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-6 p-6 bg-gray-100">
+        {/* Student Info Card */}
+        <div className="flex flex-col md:flex-row items-center bg-white p-6 rounded-lg shadow-md w-full max-w-lg flex-shrink-0">
+          {/* Student Image */}
+          <div className="flex-shrink-0 mr-6">
+            <img
+              src={UserImg}
+              className="w-44 h-44 bg-[#ffcc00] rounded-full "
+              alt="Student"
+            />
           </div>
-          <div className="w-full h-full card bg-white p-5 rounded-2xl shadow-sm grid grid-cols-2 gap-4 md:gap-x-4 lg:gap-x-14">
-            {[ 
-              { title: "Designation", value: "Student", icon: <FaUser className="text-lg" /> },
-              { title: "College", value: matchedStudent?.collegename?.toUpperCase() || "N/A", icon: <FaUniversity className="text-lg" /> },
-              { title: "Register No.", value: matchedStudent?.regno?.toUpperCase() || "N/A", icon: <FaRegAddressBook className="text-lg" /> },
-              { title: "Email", value: matchedStudent?.email || "N/A", icon: <FaMailBulk className="text-lg" /> },
-              { title: "Department", value: matchedStudent?.dept?.toUpperCase() || "N/A", icon: <FaSchool className="text-lg" /> }
-            ].map((param, index) => (
-              <div key={index} className="flex-1 flex justify-center">
-                <div className="flex-1 flex justify-between text-sm max-w-[75%]">
-                  <span className="flex items-center space-x-1">{param.icon}{" "}<p className="text-[#5A606B]"> {param.title} </p></span>
-                  <p> {param.value} </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
 
-      <div className="flex items-stretch px-5">
-        <div className="flex flex-col flex-[2] p-5 rounded-xl bg-white border-[1px] border-gray-200 mr-8">
-          <p className="mb-4">Test Summary</p>
-          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-            {[ 
-              { title: "Total Questions", value: attended_questions.length },
-              { title: "Correct Answers", value: correct_answers },
-              { title: "Time Taken", value: `${timeTaken.toFixed(2)} minutes` },
-              { title: "Wrong Answers", value: attended_questions.length - correct_answers - notAnsweredQuestions },
-              { title: "Total Marks", value: `${correct_answers}/${attended_questions.length}` },
-              { title: "Fullscreen Policy Breach", value: fullscreen + tabswitchwarning },
-              { title: "Face Recognition Anomaly", value: facewarning },
-              { title: "Audio Disturbance Detected", value: noisewarning },
-            ].map((stat, index) => (
-              <div key={index} className="p-5 rounded-xl bg-[#ffcc00] bg-opacity-20 flex flex-col items-start text-[#151D48]">
-                <p className="text-xl font-bold text-[#000975]">{stat.value}</p>
-                <p className="text-xs font-semibold text-[#000975]">{stat.title}</p>
-              </div>
-            ))}
+          {/* Student Details */}
+          <div className="flex-1 bg-white p-4 rounded-2xl">
+            {/* Student Name */}
+            <div className="text-2xl font-semibold text-blue-900 mb-4 text-center uppercase">
+              {matchedStudent ? matchedStudent.name : "Unknown Student"}
+            </div>
+            <div className="text-start">
+              <p className="text-lg font-semibold text-gray-900">
+                1st Year - {matchedStudent?.regno?.toUpperCase() || "N/A"}
+              </p>
+              <p className="text-sm text-gray-700 mt-2">
+                {matchedStudent?.email || "N/A"}
+              </p>
+              <p className="text-sm font-semibold text-gray-900 mt-2">
+                {matchedStudent?.dept?.toUpperCase() || "N/A"}
+              </p>
+              <p className="text-sm text-gray-700 mt-2">
+                {matchedStudent?.collegename?.toUpperCase() || "N/A"}
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-col flex-1 p-8 rounded-xl border-[1px] bg-white border-gray-200 items-center justify-center">
+        {/* Test Marks Summary Table */}
+        <div className="w-full max-w-sm bg-white rounded-lg overflow-hidden shadow-lg">
+          <div className="bg-gray-800 text-white text-center py-3 font-semibold">
+            Test Marks Summary
+          </div>
+          <table className="w-full text-left border-collapse">
+            <tbody>
+              <tr className="bg-gray-50">
+                <td className="py-7 px-6 border-b border-r border-gray-200 font-semibold">Total Questions</td>
+                <td className="py-4 px-6 border-b border-gray-200 text-center">{attended_questions.length}</td>
+              </tr>
+              <tr className="bg-white">
+                <td className="py-7 px-6 border-b border-r border-gray-200 font-semibold">Correct Answers</td>
+                <td className="py-4 px-6 border-b border-gray-200 text-center">{correct_answers}</td>
+              </tr>
+              <tr className="bg-gray-50">
+                <td className="py-7 px-6 border-b border-r border-gray-200 font-semibold">Wrong Answers</td>
+                <td className="py-4 px-6 border-b border-gray-200 text-center">{attended_questions.length - correct_answers - notAnsweredQuestions}</td>
+              </tr>
+              <tr className="bg-white">
+                <td className="py-7 px-6 font-semibold border-r">Total Marks</td>
+                <td className="py-4 px-6 text-center">{`${correct_answers}/${attended_questions.length}`}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Test Policy Breaches Table */}
+        <div className="w-full max-w-lg bg-white rounded-lg overflow-hidden shadow-lg">
+          <div className="bg-gray-800 text-white text-center py-3 font-semibold">
+            Test Policy Breaches
+          </div>
+          <table className="w-full text-left border-collapse">
+            <tbody>
+              <tr className="bg-gray-50">
+                <td className="py-4 px-6 border-b border-r border-gray-200 font-semibold">Time Taken</td>
+                <td className="py-4 px-6 border-b border-gray-200 text-center">{timeTaken.toFixed(2)} minutes</td>
+              </tr>
+              <tr className="bg-white">
+                <td className="py-4 px-6 border-b border-r border-gray-200 font-semibold">Fullscreen Policy Breach</td>
+                <td className="py-4 px-6 border-b border-gray-200 text-center">{fullscreen + tabswitchwarning}</td>
+              </tr>
+              <tr className="bg-gray-50">
+                <td className="py-4 px-6 border-b border-r border-gray-200 font-semibold">Face Recognition Anomaly</td>
+                <td className="py-4 px-6 border-b border-gray-200 text-center">-</td>
+              </tr>
+              <tr className="bg-white">
+                <td className="py-4 px-6 font-semibold border-r">Audio Disturbance Detected</td>
+                <td className="py-4 px-6 text-center">-</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Progress Circle */}
+        <div className="flex flex-col flex-1 p-1 rounded-xl items-center justify-center">
           <div className="relative">
             <CircularProgress
               variant="determinate"
@@ -223,7 +319,7 @@ const StudentResult = () => {
                 variant="determinate"
                 value={score}
                 size={180}
-                sx={{ color: "#fdc500" }}
+                sx={{ color: "#ffcc00" }}
                 thickness={8}
               />
             </div>
@@ -231,14 +327,14 @@ const StudentResult = () => {
               {score.toFixed(1)}%
             </div>
           </div>
-
-          <p className="text-[#000975] mt-3 mb-1 font-medium"> Total Marks </p>
+          <p className="text-[#111933] mt-3 text-2xl font-bold">Total Marks</p>
         </div>
       </div>
 
+      {/* Filter Section */}
       <div className="bg-white p-4 m-5 rounded-xl shadow-md">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-[#00296B] text-xl">Question Details</h2>
+          <h2 className="text-[#111933] text-xl">Question Details</h2>
           <div className="flex items-center space-x-4">
             <FaFilter className="text-xl text-gray-500" />
             <select
@@ -256,18 +352,18 @@ const StudentResult = () => {
         </div>
         <div className="space-y-4 mt-4">
           <div className="bg-white overflow-hidden">
-            <div className="grid grid-cols-[30%_1fr_1fr_1fr] gap-4 p-4 bg-[#00296B] font-medium text-white">
-              <p>Question</p>
+            <div className="grid grid-cols-[30%_1fr_1fr_1fr] gap-4 p-4 bg-[#111933] font-medium text-white">
+              <p className="flex justify-center">Question</p>
               <p className="flex justify-center border-x-[1px]">Student Answer</p>
               <p className="flex justify-center border-r-[1px]">Correct Answer</p>
               <p className="flex justify-center">Result</p>
             </div>
-            {filteredQuestions.map((question) => (
+            {currentQuestions.map((question) => (
               <div
                 key={question.id}
-                className="grid grid-cols-[30%_1fr_1fr_1fr] gap-4 p-4 border-t"
+                className="grid grid-cols-[30%_1fr_1fr_1fr] gap-4 p-4 border-t hover:bg-gray-50"
               >
-                <p className="flex justify-center">{question.question}</p>
+                <p className="flex justify-start">{question.question}</p>
                 <p className={`flex justify-center ${question.isCorrect ? "text-green-600" : "text-red-600"}`}>
                   {question.userAnswer || "Not Answered"}
                 </p>
@@ -278,6 +374,27 @@ const StudentResult = () => {
               </div>
             ))}
           </div>
+          {/* Pagination Controls */}
+          <div className="flex justify-center mt-4">
+            <Pagination
+              count={Math.ceil(filteredQuestions.length / itemsPerPage)}
+              page={currentPage}
+              onChange={handlePageChange}
+              sx={{
+                '& .MuiPaginationItem-root': {
+                  color: '#111933',
+                },
+                '& .MuiPaginationItem-root.Mui-selected': {
+                  backgroundColor: '#111933',
+                  color: '#fff',
+                },
+                '& .MuiPaginationItem-root:hover': {
+                  backgroundColor: 'rgba(0, 9, 117, 0.4)',
+                  color: '#fff',
+                },
+              }}
+            />
+          </div>
         </div>
       </div>
 
@@ -285,7 +402,9 @@ const StudentResult = () => {
       <div className="flex justify-center mb-4">
         <button
           onClick={handleDownloadCertificate}
-          className="flex items-center bg-[#00296B] text-white px-4 py-2 rounded hover:bg-blue-600"
+          className="flex items-center bg-[#111933] text-white px-4 py-2 rounded hover:shadow-xl transition duration-300"
+
+
         >
           <FaDownload className="mr-2" />
           Download Certificate

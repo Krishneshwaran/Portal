@@ -7,7 +7,7 @@ import { withStyles } from '@mui/styles';
 // Custom styling for the checkbox
 const CustomCheckbox = withStyles({
   root: {
-    color: '#111933',
+    color: '#1119338f',
     '&$checked': {
       color: '#111933',
     },
@@ -35,7 +35,7 @@ const QuestionsList = ({
   };
 
   return (
-    <div className="bg-white p-4 shadow-sm   border-gray-200" >
+    <div className="bg-white p-4 shadow-sm border-gray-200" >
       <div className="space-y-2">
         {loading ? (
           <div className="flex justify-center items-center min-h-[400px]">
@@ -51,7 +51,7 @@ const QuestionsList = ({
             {currentQuestions.map((question, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between bg-white hover:bg-gray-50 transition-all duration-300 px-2   rounded-md border border-[#111933]"
+                className="flex items-center py-2 justify-between bg-white hover:bg-gray-50 transition-all duration-300 px-2 rounded-xl border border-[#1119338f]"
               >
                 <div className="flex items-center">
                   <CustomCheckbox

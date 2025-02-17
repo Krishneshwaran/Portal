@@ -149,8 +149,8 @@ const AIGenerate = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-12">
-      <div className="h-14 px-14 pb-10">
+    <div className="min-h-screen bg-[#f4f6ff86] p-12">
+      <div className="h-14 px-12 pb-10">
         <div className="flex items-center gap-2 text-[#111933]">
           <span className="opacity-60">Home</span>
           <span>{">"}</span>
@@ -180,7 +180,7 @@ const AIGenerate = () => {
           <div className="flex items-center justify-between">
             <label
               htmlFor="topic"
-              className="block text-md font-semibold text-gray-700"
+              className="block text-md font-semibold text-[#111933]"
             >
               Topic*
             </label>
@@ -200,7 +200,7 @@ const AIGenerate = () => {
           <div className="flex items-center justify-between">
             <label
               htmlFor="subtopic"
-              className="block text-md font-semibold text-gray-700"
+              className="block text-md font-semibold text-[#111933]"
             >
               Sub-Topic*
             </label>
@@ -218,7 +218,7 @@ const AIGenerate = () => {
 
           {/* Level Dropdown */}
           <div className="flex items-center justify-between">
-            <label className="block text-md font-semibold text-gray-700">
+            <label className="block text-md font-semibold text-[#111933]">
               Bloom's Taxonomy Levels*
             </label>
             <div className="w-1/2">
@@ -284,7 +284,7 @@ const AIGenerate = () => {
           <div className="flex items-center justify-between">
             <label
               htmlFor="question_type"
-              className="block text-md font-semibold text-gray-700"
+              className="block text-md font-semibold text-[#111933]"
             >
               Type of Questions*
             </label>
@@ -304,7 +304,7 @@ const AIGenerate = () => {
           <div className="flex items-center justify-between">
             <label
               htmlFor="num_questions"
-              className="block text-md font-semibold text-gray-700"
+              className="block text-md font-semibold text-[#111933]"
             >
               Number of Questions*
             </label>

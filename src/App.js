@@ -20,6 +20,7 @@ import StudentDashboard from './pages/student/StudentDashboard';
 import StudentProfile from './pages/student/StudentProfile';
 import Navbar from './pages/student/Navbar';
 import StaffNavbar from './pages/staff/StaffNavbar';
+import VerifyCertificate from './pages/student/VerifyCertificate'
 import TestInstructions from './pages/student/TestInstruction';
 import ViewContest from './pages/staff/coding/ViewContest';
 import Assesment from './pages/staff/coding/Assesment';
@@ -54,6 +55,7 @@ import ScrollToTop from './ScrollToTop';
 import { TestProvider } from './pages/student/TestContext';
 import AddTest from './components/McqLibrary/AddTest';
 import CertificateVerification from './pages/staff/mcq/CertificateVerification';
+import McqDraft from './pages/staff/mcq/McqDraft';
 
 
 
@@ -123,6 +125,9 @@ function App() {
           <Route path="mcq/aigenerator" element={<AIGenerate />} />
           <Route path="mcq/airesponse" element={<QuestionsDisplay />} />
           <Route path="/verify" element={<CertificateVerification />} />
+          <Route path="/mcqdraft" element={<McqDraft />}  />
+
+
 
 
           {/* <Route path="/coding" element={<ContestDashboard />} /> */}
@@ -151,6 +156,9 @@ function App() {
           <Route path='mcq/McqSectionLibrary' element = {<McqLibrary/>}/>
           <Route path='mcq/TestLibrary' element = {<SelectTestQuestion/>}/>
           <Route path='/mcq/TestLibrary/Questionlist' element={<QuestionListPage />} />
+
+
+
         </Route>
        
         {/* <Route path="/assessment-overview" element={<AssessmentOverview />} />
@@ -158,6 +166,8 @@ function App() {
         {/* <Route path='/UploadType' element = {<HomeTwo/>} />
         <Route path='/QuestionsDashboard' element = {<Dashboard/>}/>
         <Route path='/BulkUpload' element = {<Upload/>}/> */}
+                  {/* Certificate Verification*/}
+                  <Route path="/verify-certificate/:uniqueId/:finishdate/:userscore" element={<VerifyCertificate/>} />
       </Routes>
     </Router>
     </TestProvider>

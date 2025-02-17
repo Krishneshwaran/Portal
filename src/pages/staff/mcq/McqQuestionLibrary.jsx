@@ -8,7 +8,6 @@ import Pagination from '@mui/material/Pagination';
 
 import FiltersSidebar from '../../../components/McqLibrary/FiltersSidebar';
 import QuestionsList from '../../../components/McqLibrary/TestQuestionList';
-import TotalQuestions from '../../../components/McqLibrary/TotalQuestions'; // Import TotalQuestions component
 
 const McqLibrary = () => {
   const [questions, setQuestions] = useState([]);
@@ -169,7 +168,7 @@ const McqLibrary = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-8">
-      <div className="h-14 px-14 pb-10">
+      <div className="h-14 px-14 pb-10 ml-7">
           <div className="flex items-center gap-2 text-[#111933]">
             <span className="opacity-60">Home</span>
             <span>{">"}</span>
@@ -198,11 +197,11 @@ const McqLibrary = () => {
         draggable
         pauseOnHover
       />
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[90%] mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-4 border-b-2">
           <h1 className="text-3xl font-bold text-[#00975]">Question Library</h1>
-          <p className="text-[#00975]">Select and preview questions from your collection</p>
+          <p className="text-[#00975] mb-3">Select and preview questions from your collection</p>
         </div>
 
         {loading && <p className="text-sm text-[#00975]">Loading questions...</p>}
@@ -210,34 +209,38 @@ const McqLibrary = () => {
 
         <div className="grid grid-cols-4 gap-4">
           {/* Left Panel for Filters */}
-          <div>
-            <TotalQuestions totalQuestions={questions.length} /> {/* Add TotalQuestions component here */}
-            <div className="mb-4"></div> {/* Add margin for space */}
+          <div >
+             {/* Add TotalQuestions component here */}
+           
             <FiltersSidebar
               filters={filters}
               toggleFilter={toggleFilter}
               clearFilters={clearFilters}
               availableTags={availableTags}
             />
+    
           </div>
 
           {/* Middle Panel for Questions List */}
-          <div className="col-span-2 w-auto">
+          <div className="col-span-2 w-full">
             {/* Search Bar and Select/Deselect Button */}
-            <div className="sticky top-4 bg-white p-2 shadow rounded-lg flex items-center justify-between">
+            <div className="sticky top-4 bg-white p-2  rounded-lg flex  justify-between">
               <button
                 onClick={toggleSelectAll}
-                className="py-1 px-7 bg-white border-2 border-[#efeeee] shadow-blue-100 font-semibold text-[#111933] rounded-xl hover:bg-white h-full flex items-center justify-center gap-2"
+                className="py-1 px-7 bg-[#111933] border-2 border-[#efeeee] shadow-blue-100 font-semibold text-[#ffffff] rounded-xl hover:bg-[#111933e3] h-full flex items-center justify-center gap-2"
               >
                 {selectAll ? 'Deselect All' : 'Select All'}
               </button>
+              <div className='py-1 px-6 ml-2 bg-white border-2 border-[#111933] shadow-blue-100 font-semibold text-[#111933] rounded-xl hover:bg-white h-full flex items-center justify-center gap-2'>
+              Total Questions: {questions.length}
+              </div>
               <div className="flex items-center flex-grow ml-4">
                 <input
                   type="text"
                   placeholder="Search questions..."
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
-                  className="flex-grow px-3 py-2 border rounded-lg text-sm text-[#00975]"
+                  className="flex-grow px-3 py-2 border rounded-full text-sm text-[#00975]"
                 />
               </div>
             </div>
@@ -279,7 +282,7 @@ const McqLibrary = () => {
                   onChange={handleSelectedPageChange}
                   sx={{
                     '& .MuiPaginationItem-root': {
-                      color: '#000975', // Text color for pagination items
+                      color: '#111933', // Text color for pagination items
                     },
                     '& .MuiPaginationItem-root.Mui-selected': {
                       backgroundColor: '#FDC500', // Background color for selected item
@@ -293,7 +296,7 @@ const McqLibrary = () => {
               )}
               <button
                 onClick={handleSubmit}
-                className="mt-4 w-full py-2 px-4 rounded-lg text-sm bg-[#FFCC00] text-[#00296B]  border border-[#fdc500] text-[#00975] hover:bg-opacity-80"
+                className="mt-4 w-full py-2 px-4 rounded-lg text-sm bg-[#FFCC00] text-[#111933]  border border-[#fdc500] text-[#00975] hover:bg-opacity-80"
               >
                 Save Selected Questions
               </button>

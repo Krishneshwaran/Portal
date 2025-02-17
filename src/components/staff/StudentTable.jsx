@@ -43,6 +43,7 @@ const StudentTable = ({
   rowsPerPage,
   openFilterDialog,
   setOpenFilterDialog,
+  testDetails = {} // Provide a default empty object
 }) => {
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,7 +58,6 @@ const StudentTable = ({
           (filters.year === "" || student.year === filters.year)
       );
 
-      // Perform search filtering if searchQuery is not empty
       if (searchQuery.trim() !== "") {
         const lowerQuery = searchQuery.toLowerCase();
         filtered = filtered.filter(
@@ -67,16 +67,12 @@ const StudentTable = ({
         );
       }
 
-      // Set the filtered students to state
       setFilteredStudents(filtered);
-
-      // Reset pagination to the first page after filtering
       setPage(0);
     };
 
-
     applyFilters();
-  }, [filters, students, searchQuery, setPage, setFilteredStudents]);
+  }, [filters, students, searchQuery, setPage]);
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -158,12 +154,7 @@ const StudentTable = ({
 
   return (
     <>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        sx={{ mb: 2 }}
-      >
+      <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <TextField
           placeholder="Search students..."
           variant="outlined"
@@ -175,15 +166,23 @@ const StudentTable = ({
           }}
           sx={{
             "& .MuiOutlinedInput-root": {
-              "& fieldset": {
-                borderColor: "#003366",
-              },
-              "&:hover fieldset": {
-                borderColor: "#003366",
-              },
-              "&.Mui-focused fieldset": {
-                borderColor: "#003366",
-              },
+              borderRadius: "50px",
+              height: "40px",
+              padding: "0 16px",
+            },
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: "gray",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: "darkgray",
+            },
+            "& .MuiInputLabel-root": {
+              top: "-5px",
+              fontSize: "0.9rem",
+              color: "gray",
+            },
+            "& .MuiInputLabel-shrink": {
+              top: "0px",
             },
           }}
         />
@@ -192,11 +191,13 @@ const StudentTable = ({
           startIcon={<FilterListIcon />}
           onClick={handleFilterDialogOpen}
           sx={{
-            borderColor: "#003366",
-            color: "#003366",
+            borderColor: "#111933",
+            backgroundColor: "#111933",
+            color: "#fff",
             "&:hover": {
-              borderColor: "#003366",
-              backgroundColor: "#e0f7fa",
+              color: "#111933",
+              borderColor: "#111933",
+              backgroundColor: "#fff",
             },
           }}
         >
@@ -208,25 +209,24 @@ const StudentTable = ({
           <TableHead sx={{ backgroundColor: "#111933", color: "white" }}>
             <TableRow>
               <TableCell padding="checkbox" sx={{ width: 40 }}>
-              <Checkbox
-                indeterminate={
-                  selectedStudents.length > 0 &&
-                  selectedStudents.length < filteredStudents.length
-                }
-                checked={
-                  filteredStudents.length > 0 &&
-                  selectedStudents.length === filteredStudents.length
-                }
-                onChange={handleSelectAll}
-                sx={{
-                  color: "white",
-                  '&.Mui-checked': {
-                  },
-                  '&.MuiCheckbox-indeterminate': {
+                <Checkbox
+                  indeterminate={
+                    selectedStudents.length > 0 &&
+                    selectedStudents.length < filteredStudents.length
+                  }
+                  checked={
+                    filteredStudents.length > 0 &&
+                    selectedStudents.length === filteredStudents.length
+                  }
+                  onChange={handleSelectAll}
+                  sx={{
                     color: "white",
-                  },
-                }}
-              />
+                    '&.Mui-checked': {},
+                    '&.MuiCheckbox-indeterminate': {
+                      color: "white",
+                    },
+                  }}
+                />
               </TableCell>
               <TableCell
                 sx={{ fontWeight: "bold", cursor: "pointer", color: "white", width: 150 }}
@@ -273,9 +273,7 @@ const StudentTable = ({
                 )}
                 {sortConfig.key !== "collegename" && <FontAwesomeIcon icon={faSort} className="ml-3" />}
               </TableCell>
-              <TableCell
-                sx={{ cursor: "pointer", color: "white", width: 80 }}
-              >
+              <TableCell sx={{ cursor: "pointer", color: "white", width: 80 }}>
                 Year
               </TableCell>
             </TableRow>
@@ -289,6 +287,7 @@ const StudentTable = ({
                     <Checkbox
                       checked={selectedStudents.includes(student.regno)}
                       onChange={() => handleStudentSelect(student.regno)}
+                      disabled={testDetails?.visible_to?.includes(student.regno) || false} // Safely access visible_to
                     />
                   </TableCell>
                   <TableCell sx={{ width: 150 }}>{student.name}</TableCell>
@@ -308,14 +307,15 @@ const StudentTable = ({
           onChange={handlePageChange}
           sx={{
             '& .MuiPaginationItem-root': {
-              color: '#000975', // Text color for pagination items
+              color: '#111933',
             },
             '& .MuiPaginationItem-root.Mui-selected': {
-              backgroundColor: '#FDC500', // Background color for selected item
-              color: '#fff', // Text color for the selected item
+              backgroundColor: '#111933',
+              color: '#fff',
             },
             '& .MuiPaginationItem-root:hover': {
-              backgroundColor: 'rgba(0, 9, 117, 0.1)', // Hover effect
+              backgroundColor: 'rgba(0, 9, 117, 0.4)',
+              color:'#fff'
             },
           }}
         />
@@ -333,10 +333,7 @@ const StudentTable = ({
           Filter Options
         </DialogTitle>
         <DialogContent>
-          <Typography
-            variant="h6"
-            sx={{ mb: 2, fontWeight: "bold", color: "#003366" }}
-          >
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold", color: "#003366" }}>
             DEPARTMENT
           </Typography>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
@@ -371,10 +368,7 @@ const StudentTable = ({
             ))}
           </Box>
 
-          <Typography
-            variant="h6"
-            sx={{ mb: 2, fontWeight: "bold", color: "#003366" }}
-          >
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold", color: "#003366" }}>
             INSTITUTION
           </Typography>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
@@ -404,10 +398,7 @@ const StudentTable = ({
             ))}
           </Box>
 
-          <Typography
-            variant="h6"
-            sx={{ mb: 2, fontWeight: "bold", color: "#003366" }}
-          >
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold", color: "#003366" }}>
             YEAR
           </Typography>
           <FormControl fullWidth variant="outlined" size="small" sx={{ mb: 2 }}>

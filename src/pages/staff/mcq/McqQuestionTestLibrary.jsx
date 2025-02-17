@@ -120,7 +120,7 @@ const SelectTestQuestion = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#00975]">Test Library</h1>
+          <h1 className="text-3xl font-bold text-[#111933]">Test Library</h1>
           <p className="text-[#00975]">Select a test to view and submit all questions</p>
         </div>
 
@@ -131,7 +131,7 @@ const SelectTestQuestion = () => {
           {/* Left Panel for Test Names */}
           <div className="col-span-2 space-y-4">
             <div className="bg-white shadow rounded-lg" style={{ borderRadius: '10px' }}>
-              <div className='bg-[#000975] p-2 MB-1' style={{ borderRadius: '10px' }}>
+              <div className='bg-[#111933] p-2 MB-1' style={{ borderRadius: '10px' }}>
                 <p className="text-lg font-semibold pl-9 text-white">Test Name</p>
               </div>
               {tests.map((test, testIndex) => (
@@ -173,20 +173,20 @@ const SelectTestQuestion = () => {
           {/* Right Panel for Selected Test */}
           <div className="col-span-3">
             <div className="bg-white shadow p-4 rounded-lg">
-              <h2 className="text-sm font-bold mb-4 text-[#00296B]">Selected Test</h2>
+              <h2 className="text-sm font-bold mb-4 text-[#111933]">Selected Test</h2>
               {selectedTest ? (
                 <>
-                  <p className="text-sm text-[#00296B]">{selectedTest.test_name}</p>
-                  <p className="text-sm text-[#00296B]">{selectedTest.questions.length} questions</p>
+                  <p className="text-sm text-[#111933]">{selectedTest.test_name}</p>
+                  <p className="text-sm text-[#111933]">{selectedTest.questions.length} questions</p>
                   <button
                     onClick={handleSubmit}
-                    className="mt-4 w-full py-2 px-4 rounded-lg text-sm bg-[#fdc500] text-[#00296B] bg-opacity-40 border border-[#fdc500] text-[#00975] hover:bg-opacity-80"
+                    className="mt-4 w-full py-2 px-4 rounded-lg text-sm bg-[#fdc500] text-[#111933] bg-opacity-40 border border-[#fdc500] text-[#00975] hover:bg-opacity-80"
                   >
                     Save Selected Test
                   </button>
                 </>
               ) : (
-                <p className="text-sm text-[#00296B]">No test selected</p>
+                <p className="text-sm text-[#111933]">No test selected</p>
               )}
             </div>
           </div>

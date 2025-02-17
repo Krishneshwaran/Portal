@@ -1,82 +1,112 @@
-import { useEffect, useState } from "react"
-import { useNavigate, useLocation } from "react-router-dom"
-import axios from "axios"
-import { X } from "lucide-react"
-import QuestionModal from "../../../components/staff/McqSection/QuestionModal"
-import BulkUpload from "../../../components/staff/McqSection/BulkUploadModal"
-import McqLibrary from "../../../components/staff/McqSection/McqLibraryModal"
-import PublishDialog from "../../../components/staff/McqSection/PublishDialog"
-import ShareModal from "../../../components/staff/McqSection/ShareModal"
-import SelectTestQuestion from "../../../components/staff/McqSection/SelectTestQuestion"
-import Modal from "../../../components/staff/McqSection/Modal"
-import ManualUpload from "../../../components/staff/McqSection/ManualUpload"
-import { jwtDecode } from "jwt-decode"
-import LibraryModal from "../../../components/staff/mcq/McqLibraryModal"
-import CreateManuallyIcon from "../../../assets/createmanually.svg"
-import BulkUploadIcon from "../../../assets/bulkupload.svg"
-import QuestionLibraryIcon from "../../../assets/qlibrary.svg"
-import AIGeneratorIcon from "../../../assets/aigenerator.svg"
+import { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
+import { X } from "lucide-react";
+import QuestionModal from "../../../components/staff/McqSection/QuestionModal";
+import BulkUpload from "../../../components/staff/McqSection/BulkUploadModal";
+import McqLibrary from "../../../components/staff/McqSection/McqLibraryModal";
+import PublishDialog from "../../../components/staff/McqSection/PublishDialog";
+import ShareModal from "../../../components/staff/McqSection/ShareModal";
+import SelectTestQuestion from "../../../components/staff/McqSection/SelectTestQuestion";
+import Modal from "../../../components/staff/McqSection/Modal";
+import ManualUpload from "../../../components/staff/McqSection/ManualUpload";
+import { jwtDecode } from "jwt-decode";
+import LibraryModal from "../../../components/staff/mcq/McqLibraryModal";
+import CreateManuallyIcon from "../../../assets/createmanually.svg";
+import BulkUploadIcon from "../../../assets/bulkupload.svg";
+import QuestionLibraryIcon from "../../../assets/qlibrary.svg";
+import AIGeneratorIcon from "../../../assets/aigenerator.svg";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import AIGenerateModal from "../../../components/staff/McqSection/AIGenerateModal";
 
 const Mcq_CombinedDashboard = () => {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const { formData } = location.state
-  const [sections, setSections] = useState([])
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [activeComponent, setActiveComponent] = useState(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [questionsPerPage] = useState(5)
-  const [showImage, setShowImage] = useState(true)
-  const [publishDialogOpen, setPublishDialogOpen] = useState(false)
-  const [students, setStudents] = useState([])
-  const [selectedStudents, setSelectedStudents] = useState([])
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" })
-  const [openFilterDialog, setOpenFilterDialog] = useState(false)
-  const [filters, setFilters] = useState({ collegename: [], dept: [], year: "" })
-  const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(10)
-  const [sharingLink, setSharingLink] = useState("")
-  const [shareModalOpen, setShareModalOpen] = useState(false)
-  const [activeSectionIndex, setActiveSectionIndex] = useState(null)
-  const [questions, setQuestions] = useState([])
-  const [selectedQuestionsLocal, setSelectedQuestionsLocal] = useState([])
-  const [currentSectionQuestions, setCurrentSectionQuestions] = useState([])
-  const [isLibraryModalOpen, setIsLibraryModalOpen] = useState(false)
-  const [visibleSections, setVisibleSections] = useState([])
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { formData } = location.state;
+  const [sections, setSections] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeComponent, setActiveComponent] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [questionsPerPage] = useState(5);
+  const [showImage, setShowImage] = useState(true);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [students, setStudents] = useState([]);
+  const [selectedStudents, setSelectedStudents] = useState([]);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [openFilterDialog, setOpenFilterDialog] = useState(false);
+  const [filters, setFilters] = useState({ collegename: [], dept: [], year: "" });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [sharingLink, setSharingLink] = useState("");
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [activeSectionIndex, setActiveSectionIndex] = useState(null);
+  const [questions, setQuestions] = useState([]);
+  const [selectedQuestionsLocal, setSelectedQuestionsLocal] = useState([]);
+  const [currentSectionQuestions, setCurrentSectionQuestions] = useState([]);
+  const [isLibraryModalOpen, setIsLibraryModalOpen] = useState(false);
+  const [isAIGenerateModalOpen, setIsAIGenerateModalOpen] = useState(false);
+  const [visibleSections, setVisibleSections] = useState([]);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+  const [allSectionsSubmitted, setAllSectionsSubmitted] = useState(false);
 
   useEffect(() => {
-    if (formData.assessmentOverview.sectionDetails === "Yes" && sections.length === 0) {
+    const storedSections = JSON.parse(sessionStorage.getItem("sections")) || [];
+    const storedStudents = JSON.parse(sessionStorage.getItem("students")) || [];
+    const storedSelectedStudents = JSON.parse(sessionStorage.getItem("selectedStudents")) || [];
+
+if (formData.assessmentOverview.sectionDetails === "Yes" && storedSections.length === 0) {
       const defaultSection = {
         id: 1,
         sectionName: "Section 1",
         numQuestions: 10,
-        sectionDuration: 10,
+        durationHours: 0,   // New field
+        durationMinutes: 10, // New field
+        sectionDuration: 10, // Keep this for backward compatibility
         markAllotment: 1,
         passPercentage: 50,
         timeRestriction: false,
         submitted: false,
         selectedQuestions: [],
         showDropdown: false,
-      }
-      setSections([defaultSection])
+      };
+      setSections([defaultSection]);
+      sessionStorage.setItem("sections", JSON.stringify([defaultSection]));
+    } else {
+      setSections(storedSections);
+      // Initialize allSectionsSubmitted based on stored sections
+      const allSubmitted = storedSections.every((section) => section.submitted);
+      setAllSectionsSubmitted(allSubmitted);
+      const sectionsWithTimeFormat = storedSections.map(section => ({
+        ...section,
+        durationHours: Math.floor(section.sectionDuration / 60) || 0,
+        durationMinutes: section.sectionDuration % 60 || 0,
+      }));
+      setSections(sectionsWithTimeFormat);
     }
+  
+    setStudents(storedStudents);
+    setSelectedStudents(storedSelectedStudents);
+  }, [formData.assessmentOverview.sectionDetails]);
+  
 
-    const storedSections = JSON.parse(sessionStorage.getItem("sections")) || []
-    if (storedSections.length > 0) {
-      setSections(storedSections)
-    }
+  useEffect(() => {
+    sessionStorage.setItem("sections", JSON.stringify(sections));
+  }, [sections]);
 
-    const handleBeforeUnload = () => {
-      sessionStorage.clear()
-    }
+  useEffect(() => {
+    sessionStorage.setItem("students", JSON.stringify(students));
+  }, [students]);
 
-    window.addEventListener("beforeunload", handleBeforeUnload)
+  useEffect(() => {
+    const allSubmitted = sections.every((section) => section.submitted);
+    setAllSectionsSubmitted(allSubmitted);
+  }, [sections]);
+  
 
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload)
-    }
-  }, [formData.assessmentOverview.sectionDetails, sections.length])
+  useEffect(() => {
+    sessionStorage.setItem("selectedStudents", JSON.stringify(selectedStudents));
+  }, [selectedStudents]);
 
   const handleAddSection = () => {
     const newSection = {
@@ -90,76 +120,109 @@ const Mcq_CombinedDashboard = () => {
       submitted: false,
       selectedQuestions: [],
       showDropdown: false,
-    }
-    setSections([newSection, ...sections])
-    sessionStorage.setItem("sections", JSON.stringify([newSection, ...sections]))
-  }
+    };
+    setSections([newSection, ...sections]);
+  };
+
+  const handleQuestionsGenerated = (questions) => {
+    const updatedSections = sections.map((section, index) =>
+      index === activeSectionIndex
+        ? { ...section, selectedQuestions: [...section.selectedQuestions, ...questions] }
+        : section
+    );
+    setSections(updatedSections);
+    sessionStorage.setItem("sections", JSON.stringify(updatedSections));
+  };
+
 
   const handleInputChange = (e, sectionIndex) => {
-    const { name, value, type, checked } = e.target
-    const updatedSections = sections.map((section, index) =>
-      index === sectionIndex
-        ? {
+    const { name, value, type, checked } = e.target;
+    const updatedSections = sections.map((section, index) => {
+      if (index === sectionIndex) {
+        if (name === "durationHours" || name === "durationMinutes") {
+          // Convert empty string to 0 for internal processing
+          const numValue = value.trim() === '' ? 0 : parseInt(value) || 0;
+          const isHours = name === "durationHours";
+          const maxValue = isHours ? 23 : 59;
+  
+          const validValue = Math.max(0, Math.min(numValue, maxValue));
+  
+          // Calculate total minutes
+          const hours = isHours ? validValue : section.durationHours;
+          const minutes = isHours ? section.durationMinutes : validValue;
+          const totalMinutes = (hours * 60) + minutes;
+  
+          return {
             ...section,
-            [name]: name === "sectionDuration" ? Number.parseInt(value, 10) : type === "checkbox" ? checked : value,
-          }
-        : section,
-    )
-    setSections(updatedSections)
-    sessionStorage.setItem("sections", JSON.stringify(updatedSections))
-  }
+            [name]: value, // Keep the display value as is
+            sectionDuration: totalMinutes
+          };
+        }
+  
+        return {
+          ...section,
+          [name]: type === "checkbox" ? checked : value,
+        };
+      }
+      return section;
+    });
+  
+    setSections(updatedSections);
+  };
 
   const handleDeleteSection = (sectionIndex) => {
-    const updatedSections = sections.filter((_, index) => index !== sectionIndex)
-    setSections(updatedSections)
-    sessionStorage.setItem("sections", JSON.stringify(updatedSections))
-  }
+    const updatedSections = sections.filter((_, index) => index !== sectionIndex);
+    setSections(updatedSections);
+  };
 
   const handleAddQuestion = (sectionIndex) => {
-    setIsModalOpen(true)
-    setActiveSectionIndex(sectionIndex)
-    setSelectedQuestionsLocal([])
-    setCurrentSectionQuestions([])
-    setQuestions([])
-    setShowImage(true)
-    setCurrentPage(1)
-  }
+    setIsModalOpen(true);
+    setActiveSectionIndex(sectionIndex);
+    setSelectedQuestionsLocal([]);
+    setCurrentSectionQuestions([]);
+    setQuestions([]);
+    setShowImage(true);
+    setCurrentPage(1);
+  };
 
   const handleModalClose = () => {
-    setIsModalOpen(false)
-  }
+    setIsModalOpen(false);
+  };
 
   const handleOptionSelect = (component, sectionIndex) => {
-    setActiveSectionIndex(sectionIndex)
-    setActiveComponent(component)
-    handleModalClose()
-  }
+    setActiveSectionIndex(sectionIndex);
+    setActiveComponent(component);
+    handleModalClose();
+  };
 
   const handleSaveQuestions = async (sectionIndex) => {
-    const section = sections[sectionIndex]
-    const selectedQuestionCount = section.selectedQuestions.length
-
+    const section = sections[sectionIndex];
+  
+    // Check if the section is already submitted
+    if (section.submitted) {
+      toast.error("This section has already been submitted.");
+      return;
+    }
+  
+    const selectedQuestionCount = section.selectedQuestions.length;
+  
     if (selectedQuestionCount < section.numQuestions) {
-      alert(
-        `You have selected ${selectedQuestionCount} questions, but the limit is ${section.numQuestions}. Please add more questions.`,
-      )
-      return
+      toast.error(`You have selected ${selectedQuestionCount} questions, but the limit is ${section.numQuestions}. Please add more questions.`);
+      return;
     }
-
+  
     if (selectedQuestionCount > section.numQuestions) {
-      alert(
-        `You have selected ${selectedQuestionCount} questions, but the limit is ${section.numQuestions}. Please reduce the number of selected questions.`,
-      )
-      return
+      toast.error(`You have selected ${selectedQuestionCount} questions, but the limit is ${section.numQuestions}. Please reduce the number of selected questions.`);
+      return;
     }
-
+  
     try {
       const formattedQuestions = section.selectedQuestions.map((q) => ({
         question: q.question,
         options: q.options,
         correctAnswer: q.correctAnswer || q.answer,
-      }))
-
+      }));
+  
       const response = await axios.post(
         `${API_BASE_URL}/api/mcq/save-assessment-questions/`,
         {
@@ -178,111 +241,123 @@ const Mcq_CombinedDashboard = () => {
             Authorization: `Bearer ${localStorage.getItem("contestToken")}`,
           },
         },
-      )
-
+      );
+  
       if (response.data.success) {
-        alert("Questions saved successfully!")
+        toast.success("Section submitted successfully!");
         const updatedSections = sections.map((section, index) =>
-          index === sectionIndex ? { ...section, submitted: true } : section,
-        )
-        setSections(updatedSections)
-        sessionStorage.setItem("sections", JSON.stringify(updatedSections))
+          index === sectionIndex ? { ...section, submitted: true } : section
+        );
+        setSections(updatedSections);
+  
+        // Check if all sections are submitted
+        const allSubmitted = updatedSections.every((section) => section.submitted);
+        setAllSectionsSubmitted(allSubmitted);
       }
     } catch (error) {
       if (error.response && error.response.status === 401) {
-        alert("Unauthorized access. Please log in again.")
-        navigate("/login")
+        toast.error("Unauthorized access. Please log in again.");
+        navigate("/login");
       } else {
-        console.error("Error saving questions:", error)
-        alert(error.response?.data?.error || "Failed to save questions. Please try again.")
+        console.error("Error saving questions:", error);
+        toast.error(error.response?.data?.error || "Failed to save questions. Please try again.");
       }
     }
-  }
+  };
+  
 
   const handlePublish = async () => {
+    const unsubmittedSections = sections.filter(section => !section.submitted);
+    if (unsubmittedSections.length > 0) {
+      toast.error(`Please submit all sections before publishing. Sections ${unsubmittedSections.map(s => s.sectionName).join(', ')} are not submitted.`);
+      return;
+    }
     try {
-      const token = localStorage.getItem("contestToken")
+      const token = localStorage.getItem("contestToken");
       if (!token) {
-        alert("Unauthorized access. Please log in again.")
-        return
+        toast.error("Unauthorized access. Please log in again.");
+        return;
       }
 
-      const decodedToken = jwtDecode(token)
-      const contestId = decodedToken?.contestId
+      const decodedToken = jwtDecode(token);
+      const contestId = decodedToken?.contestId;
       if (!contestId) {
-        alert("Invalid contest token. Please log in again.")
-        return
+        toast.error("Invalid contest token. Please log in again.");
+        return;
       }
-
+      if (!selectedStudents.length) {
+        toast.error("Please select at least one student before publishing.");
+        return;
+      }
+  
       const uniqueQuestions = Array.from(
         new Set(sections.flatMap((section) => section.selectedQuestions).map(JSON.stringify)),
-      ).map(JSON.parse)
-
-      const selectedStudentDetails = students.filter((student) => selectedStudents.includes(student.regno))
-      const selectedStudentEmails = selectedStudentDetails.map((student) => student.email)
-
+      ).map(JSON.parse);
+      const selectedStudentDetails = students.filter((student) => selectedStudents.includes(student.regno));
+      const selectedStudentEmails = selectedStudentDetails.map((student) => student.email);
       const payload = {
         contestId,
         questions: uniqueQuestions,
         students: selectedStudents,
         studentEmails: selectedStudentEmails,
-      }
-
+      };
       const response = await axios.post(`${API_BASE_URL}/api/mcq/publish/`, payload, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-      })
-
+      });
       if (response.status === 200) {
-        setSharingLink(`${process.env.REACT_APP_FRONTEND_LINK}/testinstructions/${contestId}`)
-        setShareModalOpen(true)
-        alert("Questions published successfully!")
+        setSharingLink(`${process.env.REACT_APP_FRONTEND_LINK}/testinstructions/${contestId}`);
+        setShareModalOpen(true);
+        toast.success("Questions published successfully!");
+
+        // Clear session storage after successful publish
+        sessionStorage.clear();
       } else {
-        alert(`Failed to publish questions: ${response.data.message || "Unknown error."}`)
+        toast.error(`Failed to publish questions: ${response.data.message || "Unknown error."}`);
       }
     } catch (error) {
-      console.error("Error publishing questions:", error)
+      console.error("Error publishing questions:", error);
 
       if (error.response) {
-        alert(`Error: ${error.response.data.message || error.response.statusText}`)
+        toast.error(`Error: ${error.response.data.message || error.response.statusText}`);
       } else if (error.request) {
-        alert("No response from the server. Please try again later.")
+        toast.error("No response from the server. Please try again later.");
       } else {
-        alert("An error occurred while publishing questions. Please try again.")
+        toast.error("An error occurred while publishing questions. Please try again.");
       }
     } finally {
-      setPublishDialogOpen(false)
+      setPublishDialogOpen(false);
     }
-  }
+  };
 
   const toggleQuestionsVisibility = (sectionIndex) => {
     setVisibleSections((prev) =>
       prev.includes(sectionIndex)
         ? prev.filter((index) => index !== sectionIndex)
         : [...prev, sectionIndex]
-    )
-  }
+    );
+  };
 
   const handleShareModalClose = () => {
-    setShareModalOpen(false)
-    navigate(`/staffdashboard`)
-  }
+    setShareModalOpen(false);
+    navigate(`/staffdashboard`);
+  };
 
   const handleFileUpload = async (e) => {
-    const file = e.target.files[0]
+    const file = e.target.files[0];
     if (!file) {
-      alert("Please select a valid CSV file.")
-      return
+      toast.error("Please select a valid CSV file.");
+      return;
     }
 
-    const reader = new FileReader()
+    const reader = new FileReader();
     reader.onload = async (event) => {
       try {
-        const csvText = event.target.result
-        const rows = csvText.split("\n").map((row) => row.split(","))
-        const dataRows = rows.slice(1).filter((row) => row.length > 1)
+        const csvText = event.target.result;
+        const rows = csvText.split("\n").map((row) => row.split(","));
+        const dataRows = rows.slice(1).filter((row) => row.length > 1);
 
         const formattedQuestions = dataRows.map((row) => ({
           id: Date.now() + Math.random(),
@@ -300,83 +375,81 @@ const Mcq_CombinedDashboard = () => {
           mark: row[9]?.trim(),
           level: "easy",
           tags: [],
-        }))
+        }));
 
-        const usedQuestions = sections[activeSectionIndex].selectedQuestions
+        const usedQuestions = sections[activeSectionIndex].selectedQuestions;
 
         const availableNewQuestions = formattedQuestions.filter(
           (newQuestion) => !usedQuestions.some((usedQuestion) => usedQuestion.question === newQuestion.question),
-        )
+        );
 
-        setQuestions(availableNewQuestions)
-        setShowImage(false)
+        setQuestions(availableNewQuestions);
+        setShowImage(false);
 
         if (availableNewQuestions.length === 0) {
-          alert("All uploaded questions are already used in this section. Please upload different questions.")
+          toast.error("All uploaded questions are already used in this section. Please upload different questions.");
         } else if (availableNewQuestions.length < formattedQuestions.length) {
-          alert("Some questions were filtered out as they are already used in this section.")
+          toast.error("Some questions were filtered out as they are already used in this section.");
         }
       } catch (error) {
-        console.error("Error processing file:", error)
-        alert(`Error processing file: ${error.message}`)
+        console.error("Error processing file:", error);
+        toast.error(`Error processing file: ${error.message}`);
       }
-    }
+    };
 
     reader.onerror = (error) => {
-      console.error("File reading error:", error)
-      alert("Error reading file")
-    }
+      console.error("File reading error:", error);
+      toast.error("Error reading file");
+    };
 
-    reader.readAsText(file)
-  }
+    reader.readAsText(file);
+  };
 
   const handleSelectQuestion = (index) => {
-    setSelectedQuestionsLocal((prev) => (prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]))
-  }
+    setSelectedQuestionsLocal((prev) => (prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]));
+  };
 
   const handleSelectAll = () => {
     if (selectedQuestionsLocal.length === questions.length) {
-      setSelectedQuestionsLocal([])
+      setSelectedQuestionsLocal([]);
     } else {
-      setSelectedQuestionsLocal(questions.map((_, index) => index))
+      setSelectedQuestionsLocal(questions.map((_, index) => index));
     }
-  }
+  };
 
   const handleSubmitBulkUpload = async () => {
     if (activeSectionIndex === null) {
-      alert("Please select a section before adding questions.")
-      return
+      toast.error("Please select a section before adding questions.");
+      return;
     }
 
-    const selectedQuestions = selectedQuestionsLocal.map((index) => questions[index])
+    const selectedQuestions = selectedQuestionsLocal.map((index) => questions[index]);
 
     const updatedSections = sections.map((section, index) =>
       index === activeSectionIndex
         ? { ...section, selectedQuestions: [...section.selectedQuestions, ...selectedQuestions] }
         : section,
-    )
+    );
 
-    setSections(updatedSections)
-    sessionStorage.setItem("sections", JSON.stringify(updatedSections))
+    setSections(updatedSections);
 
-    setQuestions([])
-    setSelectedQuestionsLocal([])
-    setShowImage(true)
-    setActiveComponent(null)
+    setQuestions([]);
+    setSelectedQuestionsLocal([]);
+    setShowImage(true);
+    setActiveComponent(null);
 
-    alert("Questions added successfully!")
-  }
+    toast.success("Questions added successfully!");
+  };
 
   const handleQuestionAdded = (newQuestion) => {
     const updatedSections = sections.map((section, index) =>
       index === activeSectionIndex
         ? { ...section, selectedQuestions: [...section.selectedQuestions, newQuestion] }
         : section,
-    )
-    setSections(updatedSections)
-    sessionStorage.setItem("sections", JSON.stringify(updatedSections))
-    setActiveComponent(null)
-  }
+    );
+    setSections(updatedSections);
+    setActiveComponent(null);
+  };
 
   const handleRemoveQuestion = (sectionIndex, questionIndex) => {
     const updatedSections = sections.map((section, index) =>
@@ -386,38 +459,37 @@ const Mcq_CombinedDashboard = () => {
             selectedQuestions: section.selectedQuestions.filter((_, qIndex) => qIndex !== questionIndex),
           }
         : section,
-    )
-    setSections(updatedSections)
-    sessionStorage.setItem("sections", JSON.stringify(updatedSections))
-  }
+    );
+    setSections(updatedSections);
+  };
 
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/api/student/`)
-        setStudents(response.data)
+        const response = await axios.get(`${API_BASE_URL}/api/student/`);
+        setStudents(response.data);
       } catch (error) {
-        console.error("Failed to fetch students:", error)
+        console.error("Failed to fetch students:", error);
       }
-    }
+    };
 
-    fetchStudents()
-  }, [API_BASE_URL])
+    fetchStudents();
+  }, [API_BASE_URL]);
 
-  const paginate = (pageNumber) => setCurrentPage(pageNumber)
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const handleLibraryButtonClick = () => {
-    setIsLibraryModalOpen(true)
-  }
+    setIsLibraryModalOpen(true);
+  };
 
   const handleLibraryModalClose = () => {
-    setIsLibraryModalOpen(false)
-  }
+    setIsLibraryModalOpen(false);
+  };
 
   const updateSection = (id, updatedSection) => {
-    const updatedSections = sections.map((section) => (section.id === id ? updatedSection : section))
-    setSections(updatedSections)
-  }
+    const updatedSections = sections.map((section) => (section.id === id ? updatedSection : section));
+    setSections(updatedSections);
+  };
 
   return (
     <div className="min-h-[calc(100vh-95px)] bg-[#ECF2FE] p-6">
@@ -432,7 +504,7 @@ const Mcq_CombinedDashboard = () => {
                   <span>{">"}</span>
                   <span className="opacity-60">Assessment Overview</span>
                   <span>{">"}</span>
-                  <span className="opacity-60">Test Configuration</span>
+                  <span  onClick={() => window.history.back()} className="cursor-pointer opacity-60 hover:underline">Test Configuration</span>
                   <span>{">"}</span>
                   <span>Add Sections</span>
                 </div>
@@ -480,7 +552,9 @@ const Mcq_CombinedDashboard = () => {
                       <div>
                         <label className="block text-sm font-medium mb-1">Number of Questions*</label>
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           name="numQuestions"
                           value={section.numQuestions}
                           onChange={(e) => handleInputChange(e, sectionIndex)}
@@ -488,34 +562,56 @@ const Mcq_CombinedDashboard = () => {
                           className="w-full px-3 py-2 border rounded-md"
                         />
                       </div>
-                      <div>
+                      {/* <div>
                         <label className="block text-sm font-medium mb-1">Pass Percentage</label>
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           name="passPercentage"
                           value={section.passPercentage}
                           onChange={(e) => handleInputChange(e, sectionIndex)}
                           placeholder="Enter Pass Percentage"
                           className="w-full px-3 py-2 border rounded-md"
                         />
-                      </div>
+                      </div> */}
                     </div>
                     <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Section Duration</label>
-                        <input
-                          type="number"
-                          name="sectionDuration"
-                          value={section.sectionDuration}
-                          onChange={(e) => handleInputChange(e, sectionIndex)}
-                          placeholder="Enter Duration"
-                          className="w-full px-3 py-2 border rounded-md"
-                        />
-                      </div>
+                    <div>
+  <label className="block text-sm font-medium mb-1">Section Duration</label>
+  <div className="flex gap-4">
+    <div className="flex-1">
+      <input
+        type="number"
+        name="durationHours"
+        min="0"
+        max="23"
+        value={section.durationHours || ''}
+        onChange={(e) => handleInputChange(e, sectionIndex)}
+        placeholder="Hours"
+        className="w-full px-3 py-2 border rounded-md"
+      />
+    </div>
+    <div className="flex-1">
+      <input
+        type="number"
+        name="durationMinutes"
+        min="0"
+        max="59"
+        value={section.durationMinutes || ''}
+        onChange={(e) => handleInputChange(e, sectionIndex)}
+        placeholder="Minutes"
+        className="w-full px-3 py-2 border rounded-md"
+      />
+    </div>
+  </div>
+</div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Marks/Question*</label>
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           name="markAllotment"
                           value={section.markAllotment}
                           onChange={(e) => handleInputChange(e, sectionIndex)}
@@ -531,8 +627,8 @@ const Mcq_CombinedDashboard = () => {
                       <table className="min-w-full bg-white border border-gray-200">
                         <thead>
                           <tr>
-                            <th className="py-2 px-4 border-b">Question</th>
-                            <th className="py-2 px-4 border-b">Actions</th>
+                            <th className="py-2 px-4 border-b text-left">Question</th>
+                            <th className="py-2 px-4 border-b text-left">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -570,11 +666,15 @@ const Mcq_CombinedDashboard = () => {
                         Add Questions +
                       </button>
                       <button
-                        onClick={() => handleSaveQuestions(sectionIndex)}
-                        className="px-4 py-2 bg-[#111933] text-white rounded-md hover:bg-[#2a3958]"
-                      >
-                        Submit
-                      </button>
+                      onClick={() => handleSaveQuestions(sectionIndex)}
+                      className={`px-4 py-2 bg-[#111933] text-white rounded-md hover:bg-[#2a3958] ${
+                        section.submitted ? 'cursor-not-allowed opacity-50' : ''
+                      }`}
+                      disabled={section.submitted}
+                    >
+                      Submit
+                    </button>
+
                     </div>
                   </div>
                 </div>
@@ -584,7 +684,12 @@ const Mcq_CombinedDashboard = () => {
                 <div className="flex justify-end mt-6">
                   <button
                     onClick={() => setPublishDialogOpen(true)}
-                    className="px-4 py-2 bg-[#111933] text-white rounded-md hover:bg-[#2a3958]"
+                    className={`px-4 py-2 ${
+                      allSectionsSubmitted
+                        ? 'bg-[#111933] hover:bg-[#2a3958]'
+                        : 'bg-gray-400 cursor-not-allowed'
+                    } text-white rounded-md`}
+                    disabled={!allSectionsSubmitted}
                   >
                     Publish
                   </button>
@@ -600,7 +705,7 @@ const Mcq_CombinedDashboard = () => {
                   <span>{">"}</span>
                   <span className="opacity-60">Assessment Overview</span>
                   <span>{">"}</span>
-                  <span className="opacity-60">Test Configuration</span>
+                  <span  onClick={() => window.history.back()} className="cursor-pointer opacity-60 hover:underline">Test Configuration</span>
                   <span>{">"}</span>
                   <span>Add Questions</span>
                 </div>
@@ -653,6 +758,17 @@ const Mcq_CombinedDashboard = () => {
           )}
         </div>
       </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
 
       {isModalOpen && (
         <QuestionModal
@@ -691,10 +807,9 @@ const Mcq_CombinedDashboard = () => {
                 index === activeSectionIndex
                   ? { ...section, selectedQuestions: [...section.selectedQuestions, ...selected] }
                   : section,
-              )
-              setSections(updatedSections)
-              sessionStorage.setItem("sections", JSON.stringify(updatedSections))
-              setActiveComponent(null)
+              );
+              setSections(updatedSections);
+              setActiveComponent(null);
             }}
           />
         </Modal>
@@ -709,10 +824,9 @@ const Mcq_CombinedDashboard = () => {
                 index === activeSectionIndex
                   ? { ...section, selectedQuestions: [...section.selectedQuestions, ...selected] }
                   : section,
-              )
-              setSections(updatedSections)
-              sessionStorage.setItem("sections", JSON.stringify(updatedSections))
-              setActiveComponent(null)
+              );
+              setSections(updatedSections);
+              setActiveComponent(null);
             }}
           />
         </Modal>
@@ -723,6 +837,17 @@ const Mcq_CombinedDashboard = () => {
           <ManualUpload onClose={() => setActiveComponent(null)} onQuestionAdded={handleQuestionAdded} />
         </Modal>
       )}
+
+      {activeComponent === "ai" && (
+        <Modal isOpen={true} onClose={() => setActiveComponent(null)}>
+          <AIGenerateModal
+            isOpen={true}
+            onClose={() => setActiveComponent(null)}
+            onQuestionsGenerated={handleQuestionsGenerated}
+          />
+        </Modal>
+      )}
+
 
       <PublishDialog
         open={publishDialogOpen}
@@ -749,7 +874,7 @@ const Mcq_CombinedDashboard = () => {
         <LibraryModal onClose={handleLibraryModalClose} />
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Mcq_CombinedDashboard
+export default Mcq_CombinedDashboard;

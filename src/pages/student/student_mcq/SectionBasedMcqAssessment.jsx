@@ -5,7 +5,9 @@ import SectionBasedHeader from "../../../components/staff/mcq/SectionBasedHeader
 import SectionBasedQuestion from "../../../components/staff/mcq/SectionBasedQuestion";
 import SectionBasedSidebar from "../../../components/staff/mcq/SectionBasedSidebar";
 import useDeviceRestriction from "../../../components/staff/mcq/useDeviceRestriction";
-
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
+import FaceDetectionComponent from "../../../components/staff/mcq/useVideoDetection";
+import Legend from "../../../components/staff/mcq/Legend";
 
 export default function SectionBasedMcqAssessment() {
   const { contestId } = useParams();
@@ -34,8 +36,8 @@ export default function SectionBasedMcqAssessment() {
     return storedFaceDetection === "true";
   });
   const [fullScreenMode, setFullScreenMode] = useState(() => {
-    const storedFullScreenMode = localStorage.getItem(`fullScreenMode_${contestId}`);
-    return storedFullScreenMode === "true";
+    const currentTest = JSON.parse(localStorage.getItem("currentTest"));
+    return currentTest?.fullScreenMode === true;
   });
   const [fullscreenWarnings, setFullscreenWarnings] = useState(() => {
     return Number(sessionStorage.getItem(`fullscreenWarnings_${contestId}`)) || 0;
@@ -50,17 +52,15 @@ export default function SectionBasedMcqAssessment() {
   const [showNoiseWarningModal, setShowNoiseWarningModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [expandedSectionIndex, setExpandedSectionIndex] = useState(null);
   const [hasFocus, setHasFocus] = useState(true);
   const lastActiveTime = useRef(Date.now());
   const lastWarningTime = useRef(Date.now());
   const [isFreezePeriodOver, setIsFreezePeriodOver] = useState(false);
   const [faceDetectionWarning, setFaceDetectionWarning] = useState('');
-  const [showPopup, setShowPopup] = useState(false); // Add this state for the popup
-  const [expandedSectionIndex, setExpandedSectionIndex] = useState(null); // State for dropdown selection
-
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
-
   const disableAutoFullscreen = false;
 
   useEffect(() => {
@@ -160,26 +160,26 @@ export default function SectionBasedMcqAssessment() {
 
   const addWarning = useCallback((type) => {
     const currentTime = Date.now();
-    if (currentTime - lastWarningTime.current < 1000) {
+    if (currentTime - lastWarningTime.current < 100) {
       return;
     }
     lastWarningTime.current = currentTime;
 
-    if (type === 'fullscreen') {
+    if (type === 'fullscreen' || type === 'tabSwitch') {
+      const combinedWarnings = fullscreenWarnings + tabSwitchWarnings + 1;
       setFullscreenWarnings((prevWarnings) => {
-        const newWarnings = prevWarnings + 1;
+        const newWarnings = type === 'fullscreen' ? prevWarnings + 1 : prevWarnings;
         sessionStorage.setItem(`fullscreenWarnings_${contestId}`, newWarnings);
         return newWarnings;
       });
-    } else if (type === 'tabSwitch') {
       setTabSwitchWarnings((prevWarnings) => {
-        const newWarnings = prevWarnings + 1;
+        const newWarnings = type === 'tabSwitch' ? prevWarnings + 1 : prevWarnings;
         sessionStorage.setItem(`tabSwitchWarnings_${contestId}`, newWarnings);
         return newWarnings;
       });
+      setShowWarningModal(true);
     }
-    setShowWarningModal(true);
-  }, [contestId]);
+  }, [contestId, fullscreenWarnings, tabSwitchWarnings]);
 
   const actuallyEnforceFullScreen = async () => {
     try {
@@ -206,18 +206,26 @@ export default function SectionBasedMcqAssessment() {
   };
 
   useEffect(() => {
-    if (!isTestFinished && !disableAutoFullscreen && fullScreenMode) {
-      actuallyEnforceFullScreen();
+    const currentTest = JSON.parse(localStorage.getItem("currentTest"));
+    const isFullScreenEnabled = currentTest?.fullScreenMode === true;
+
+    if (!isTestFinished && isFullScreenEnabled) {
+      (async () => {
+        try {
+          await actuallyEnforceFullScreen();
+        } catch (error) {
+          console.error("Error initializing fullscreen:", error);
+        }
+      })();
     }
 
     const onFullscreenChange = async () => {
-      const isFullscreen =
-        document.fullscreenElement ||
-        document.webkitFullscreenElement ||
-        document.mozFullScreenElement ||
-        document.msFullscreenElement;
+      const isFullscreen = document.fullscreenElement ||
+                             document.webkitFullscreenElement ||
+                             document.mozFullScreenElement ||
+                             document.msFullscreenElement;
 
-      if (!isFullscreen && !isTestFinished && !disableAutoFullscreen && fullScreenMode) {
+      if (!isFullscreen && !isTestFinished && isFullScreenEnabled) {
         addWarning("fullscreen");
         await actuallyEnforceFullScreen();
       }
@@ -232,15 +240,21 @@ export default function SectionBasedMcqAssessment() {
       if (!isTestFinished) {
         e.preventDefault();
         e.returnValue = "";
+        addWarning("tabSwitch");
         return e.returnValue;
       }
     };
 
     const handleKeyDown = async (e) => {
+      const currentTest = JSON.parse(localStorage.getItem("currentTest"));
+      const isFullScreenEnabled = currentTest?.fullScreenMode === true;
+
       if (!isTestFinished && fullScreenMode) {
-        if (e.key === "Escape") {
+        if (e.key === "Escape" && !disableAutoFullscreen && isFullScreenEnabled) {
           e.preventDefault();
           e.stopPropagation();
+          addWarning("fullscreen");
+          await actuallyEnforceFullScreen();
           return false;
         }
         if (e.key === "F5" || (e.ctrlKey && e.key === "r")) {
@@ -287,23 +301,24 @@ export default function SectionBasedMcqAssessment() {
       }
     };
 
-    const handleClick = () => {
-      if (!isTestFinished && !disableAutoFullscreen && !fullScreenMode) {
-        actuallyEnforceFullScreen();
+    const handleClick = async () => {
+      const currentTest = JSON.parse(localStorage.getItem("currentTest"));
+      const isFullScreenEnabled = currentTest?.fullScreenMode === true;
+
+      if (!isTestFinished && isFullScreenEnabled && !fullScreenMode) {
+        await actuallyEnforceFullScreen();
       }
     };
 
     window.addEventListener("beforeunload", preventReload);
     document.addEventListener("keydown", handleKeyDown, true);
+    document.addEventListener("click", handleClick);
     document.addEventListener("fullscreenchange", onFullscreenChange);
     document.addEventListener("webkitfullscreenchange", onFullscreenChange);
     document.addEventListener("mozfullscreenchange", onFullscreenChange);
     document.addEventListener("MSFullscreenChange", onFullscreenChange);
-    document.addEventListener("click", handleClick);
 
     return () => {
-      window.removeEventListener("beforeunload", preventReload);
-      document.removeEventListener("keydown", handleKeyDown, true);
       document.removeEventListener("fullscreenchange", onFullscreenChange);
       document.removeEventListener("webkitfullscreenchange", onFullscreenChange);
       document.removeEventListener("mozfullscreenchange", onFullscreenChange);
@@ -359,19 +374,6 @@ export default function SectionBasedMcqAssessment() {
   };
 
   const handleFinish = useCallback(async () => {
-    // Save all selected answers across all sections
-    sections.forEach((section, sectionIndex) => {
-      section.questions.forEach((question, questionIndex) => {
-        sessionStorage.setItem(
-          `section_${sectionIndex}_question_${questionIndex}`,
-          JSON.stringify({
-            question,
-            selectedOption: selectedAnswers[sectionIndex]?.[questionIndex],
-          })
-        );
-      });
-    });
-
     try {
       const formattedAnswers = {};
 
@@ -386,15 +388,42 @@ export default function SectionBasedMcqAssessment() {
       const resultVisibility = localStorage.getItem(`resultVisibility_${contestId}`);
       const isPublish = resultVisibility === "Immediate release";
 
+      let correctAnswers = 0;
+      sections.forEach((section) => {
+        section.questions.forEach((question, questionIndex) => {
+          if (selectedAnswers[currentSectionIndex]?.[questionIndex] === question.correctAnswer) {
+            correctAnswers++;
+          }
+        });
+      });
+
+      const passPercentage =
+        parseFloat(sessionStorage.getItem(`passPercentage_${contestId}`)) || 50;
+
+      const totalQuestions = sections.reduce((total, section) => total + section.questions.length, 0);
+      const percentage = (correctAnswers / totalQuestions) * 100;
+      const grade = percentage >= passPercentage ? "Pass" : "Fail";
+
+      console.log("Correct Answers:", correctAnswers);
+      console.log("Total Questions:", totalQuestions);
+      console.log("Percentage:", percentage);
+      console.log("Pass Percentage:", passPercentage);
+      console.log("Grade:", grade);
+
+      const fullscreenWarning = sessionStorage.getItem(`fullscreenWarnings_${contestId}`);
+      const faceWarning = sessionStorage.getItem(`faceDetectionCount_${contestId}`);
+
       const payload = {
         contestId,
         studentId: localStorage.getItem("studentId"),
         answers: formattedAnswers,
         FullscreenWarning: fullscreenWarnings,
         NoiseWarning: noiseDetectionCount,
-        FaceWarning: sessionStorage.getItem(`FaceDetectionCount_${contestId}`),
+        FaceWarning: faceWarning,
         TabSwitchWarning: tabSwitchWarnings,
         isPublish: isPublish,
+        grade: grade,
+        passPercentage: passPercentage,
       };
 
       const response = await axios.post(
@@ -409,20 +438,21 @@ export default function SectionBasedMcqAssessment() {
       );
 
       if (response.status === 200) {
-        setIsTestFinished(true);
         navigate("/studentdashboard");
-
-        // Clear session storage
-        sessionStorage.removeItem(`fullscreenWarnings_${contestId}`);
-        sessionStorage.removeItem(`tabSwitchWarnings_${contestId}`);
-        sessionStorage.removeItem(`keydownWarnings_${contestId}`);
-        sessionStorage.removeItem(`reloadWarnings_${contestId}`);
-        sessionStorage.removeItem(`inspectWarnings_${contestId}`);
-
-        localStorage.setItem(`testFinished_${contestId}`, "true");
-
-        alert("Test submitted successfully!");
       }
+
+      console.log("Test submitted successfully:", response.data);
+      alert("Test submitted successfully!");
+
+      setIsTestFinished(true);
+
+      sessionStorage.removeItem(`fullscreenWarnings_${contestId}`);
+      sessionStorage.removeItem(`tabSwitchWarnings_${contestId}`);
+      sessionStorage.removeItem(`keydownWarnings_${contestId}`);
+      sessionStorage.removeItem(`reloadWarnings_${contestId}`);
+      sessionStorage.removeItem(`inspectWarnings_${contestId}`);
+
+      localStorage.setItem(`testFinished_${contestId}`, "true");
     } catch (error) {
       console.error("Error submitting test:", error);
       alert("Failed to submit the test.");
@@ -483,7 +513,8 @@ export default function SectionBasedMcqAssessment() {
       if (!isTestFinished && fullScreenMode) {
         e.preventDefault();
         e.returnValue = "";
-        return e.returnValue;
+        addWarning("tabSwitch");
+        return "";
       }
     };
     const handleBlur = () => {
@@ -522,7 +553,7 @@ export default function SectionBasedMcqAssessment() {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("blur", handleBlur);
       window.removeEventListener("focus", handleFocus);
-      window.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       clearInterval(focusCheckInterval);
     };
   }, [isTestFinished, fullScreenMode, addWarning]);
@@ -539,7 +570,7 @@ export default function SectionBasedMcqAssessment() {
       fullscreenWarnings >= warningLimits.fullscreen &&
       tabSwitchWarnings >= warningLimits.tabSwitch &&
       noiseDetectionCount >= warningLimits.noiseDetection &&
-      parseInt(sessionStorage.getItem(`FaceDetectionCount_${contestId}`)) >= warningLimits.faceDetection;
+      parseInt(sessionStorage.getItem(`faceDetectionCount_${contestId}`)) >= warningLimits.faceDetection;
 
     if (allLimitsExceeded) {
       handleFinish();
@@ -547,14 +578,29 @@ export default function SectionBasedMcqAssessment() {
   }, [fullscreenWarnings, tabSwitchWarnings, noiseDetectionCount, handleFinish, contestId, warningLimits]);
 
   const handleFullscreenReEntry = async () => {
+    const currentTest = JSON.parse(localStorage.getItem("currentTest"));
+    const isFullScreenEnabled = currentTest?.fullScreenMode === true;
+
+    if (!isFullScreenEnabled) {
+      setShowWarningModal(false);
+      return;
+    }
+
     setShowWarningModal(false);
-    if (!disableAutoFullscreen && !fullScreenMode) {
-      try {
-        await actuallyEnforceFullScreen();
-      } catch (error) {
-        console.error("Error returning to fullscreen:", error);
-        setTimeout(handleFullscreenReEntry, 500);
+    const element = document.documentElement;
+    try {
+      if (element.requestFullscreen) {
+        await element.requestFullscreen();
+      } else if (element.webkitRequestFullscreen) {
+        await element.webkitRequestFullscreen();
+      } else if (element.mozRequestFullScreen) {
+        await element.mozRequestFullScreen();
+      } else if (element.msRequestFullscreen) {
+        await element.msRequestFullscreen();
       }
+    } catch (error) {
+      console.error("Error entering fullscreen mode:", error);
+      setTimeout(handleFullscreenReEntry, 500);
     }
   };
 
@@ -648,7 +694,7 @@ export default function SectionBasedMcqAssessment() {
                 currentQuestionIndex={currentQuestionIndex}
                 onNext={handleNext}
                 onPrevious={handlePrevious}
-                onFinish={() => setShowPopup(true)} // Update the finish button click handler
+                onFinish={() => setShowPopup(true)}
                 onAnswerSelect={handleAnswerSelect}
                 selectedAnswers={selectedAnswers}
                 onReviewMark={handleReviewMark}
@@ -669,7 +715,6 @@ export default function SectionBasedMcqAssessment() {
               }`}
             >
               <div className="sticky top-6 p-4 sm:p-0">
-                
                 <SectionBasedSidebar
                   sections={sections}
                   currentSectionIndex={currentSectionIndex}
@@ -690,129 +735,287 @@ export default function SectionBasedMcqAssessment() {
 
       <div className="fixed bottom-0 left-0 right-0 bg-white p-4 shadow-md flex justify-between items-center z-50">
         <button
-          className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full flex items-center gap-2"
+          className="bg-[#fdc500] text-[#111933] px-8 py-2 rounded-full flex items-center gap-2"
           onClick={handlePrevious}
           disabled={currentQuestionIndex === 0 && currentSectionIndex === 0}
         >
           ← Previous
         </button>
         <button
-          className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full flex items-center gap-2"
+          className="bg-[#fdc500] text-[#111933] px-8 py-2 rounded-full flex items-center gap-2"
           onClick={handleNext}
           disabled={currentQuestionIndex === sections[currentSectionIndex].questions.length - 1 && currentSectionIndex === sections.length - 1}
         >
           Next →
         </button>
         <button
-          className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full"
-          onClick={() => setShowPopup(true)} // Update the finish button click handler
+          className="bg-[#fdc500] text-[#111933] px-8 py-2 rounded-full"
+          onClick={() => setShowPopup(true)}
           disabled={isSubmitting}
         >
           Finish
         </button>
       </div>
 
-      {/* Popup UI Code */}
       {showPopup && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-white w-[800px] p-8 rounded-xl shadow-lg max-h-[90vh] overflow-y-auto">
-      <h3 className="text-[#00296b] text-lg font-bold mb-4">
-        MCT Mock Test
-      </h3>
-      <p className="text-center text-sm mb-4">
-        You have gone through all the questions. <br />
-        Either browse through them once again or finish your assessment.
-      </p>
-      {sections.map((section, sectionIndex) => (
-        <div key={sectionIndex} className="mb-6">
-          <div
-            className="flex justify-between items-center mb-2 cursor-pointer"
-            onClick={() =>
-              setExpandedSectionIndex(expandedSectionIndex === sectionIndex ? null : sectionIndex)
-            }
-          >
-            <h4 className="text-[#00296b] font-semibold flex items-center">
-              {section.sectionName}
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white w-[800px] p-8 rounded-xl shadow-lg max-h-[90vh] overflow-y-auto">
+            <h3 className="text-[#111933] text-lg font-bold mb-4">
+              MCT Mock Test
+            </h3>
+            <p className="text-center text-sm mb-4">
+              You have gone through all the questions. <br />
+              Either browse through them once again or finish your assessment.
+            </p>
+            {sections.map((section, sectionIndex) => (
+              <div key={sectionIndex} className="mb-6">
+                <div
+                  className="flex justify-between items-center mb-2 cursor-pointer"
+                  onClick={() =>
+                    setExpandedSectionIndex(expandedSectionIndex === sectionIndex ? null : sectionIndex)
+                  }
+                >
+                  <h4 className="text-[#111933] font-semibold flex items-center">
+                    {section.sectionName}
+                    <svg
+                      className={`ml-2 transition-transform ${expandedSectionIndex === sectionIndex ? 'rotate-180' : 'rotate-0'}`}
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M7 10L12 15L17 10"
+                        stroke="#111933"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </h4>
+                </div>
+                {expandedSectionIndex === sectionIndex && (
+                  <div className="mt-2">
+                    <div className="grid grid-cols-6 gap-2 mb-2">
+                      {section.questions.map((_, questionIndex) => (
+                        <div
+                          key={questionIndex}
+                          className={`w-10 h-10 flex items-center justify-center rounded-md text-white ${
+                            selectedAnswers[sectionIndex]?.[questionIndex]
+                              ? "bg-green-500"
+                              : reviewStatus[sectionIndex]?.[questionIndex]
+                              ? "bg-yellow-500"
+                              : "bg-red-500"
+                          }`}
+                        >
+                          {questionIndex + 1}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-between mb-2">
+                      <p className="text-sm text-gray-700">
+                        Attempted: {Object.keys(selectedAnswers[sectionIndex] || {}).length}/{section.questions.length}
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        Unattempted: {section.questions.length - Object.keys(selectedAnswers[sectionIndex] || {}).length}
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        Marked for Review: {Object.values(reviewStatus[sectionIndex] || {}).filter(Boolean).length}
+                      </p>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
+                      <div
+                        className="bg-blue-600 h-4 rounded-full"
+                        style={{
+                          width: `${(Object.keys(selectedAnswers[sectionIndex] || {}).length / section.questions.length) * 100}%`,
+                        }}
+                      ></div>
+                    </div>
+                    <p className="text-center text-sm">
+                      {((Object.keys(selectedAnswers[sectionIndex] || {}).length / section.questions.length) * 100).toFixed(0)}% Completed
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))}
+            <div className="flex justify-between mt-4">
+              <button
+                className="border border-red-500 text-red-500 px-6 py-2 rounded-full"
+                onClick={() => setShowPopup(false)}
+              >
+                Close
+              </button>
+              <button
+                className="bg-[#fdc500] text-[#111933] px-6 py-2 rounded-full"
+                onClick={handleFinish}
+              >
+                Finish
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showWarningModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-md w-full mx-4">
+            <div className="text-red-600 mb-4">
               <svg
-                className={`ml-2 transition-transform ${expandedSectionIndex === sectionIndex ? 'rotate-180' : 'rotate-0'}`}
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
+                className="w-12 h-12 mx-auto"
                 fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
                 <path
-                  d="M7 10L12 15L17 10"
-                  stroke="#00296b"
-                  strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                 />
               </svg>
-            </h4>
-          </div>
-          {expandedSectionIndex === sectionIndex && (
-            <div className="mt-2">
-              <div className="grid grid-cols-6 gap-2 mb-2">
-                {section.questions.map((_, questionIndex) => (
-                  <div
-                    key={questionIndex}
-                    className={`w-10 h-10 flex items-center justify-center rounded-md text-white ${
-                      selectedAnswers[sectionIndex]?.[questionIndex]
-                        ? "bg-green-500"
-                        : reviewStatus[sectionIndex]?.[questionIndex]
-                        ? "bg-yellow-500"
-                        : "bg-red-500"
-                    }`}
-                  >
-                    {questionIndex + 1}
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-between mb-2">
-                <p className="text-sm text-gray-700">
-                  Attempted: {Object.keys(selectedAnswers[sectionIndex] || {}).length}/{section.questions.length}
-                </p>
-                <p className="text-sm text-gray-700">
-                  Unattempted: {section.questions.length - Object.keys(selectedAnswers[sectionIndex] || {}).length}
-                </p>
-                <p className="text-sm text-gray-700">
-                  Marked for Review: {Object.values(reviewStatus[sectionIndex] || {}).filter(Boolean).length}
-                </p>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
-                <div
-                  className="bg-blue-600 h-4 rounded-full"
-                  style={{
-                    width: `${(Object.keys(selectedAnswers[sectionIndex] || {}).length / section.questions.length) * 100}%`,
-                  }}
-                ></div>
-              </div>
-              <p className="text-center text-sm">
-                {((Object.keys(selectedAnswers[sectionIndex] || {}).length / section.questions.length) * 100).toFixed(0)}% Completed
-              </p>
             </div>
-          )}
+            <h3 className="text-xl font-semibold text-center mb-4">
+              Warning
+            </h3>
+            <p className="text-gray-700 mb-6">
+              You have {fullscreenWarnings + tabSwitchWarnings} warnings. Please return to fullscreen mode and avoid switching tabs to continue the test.
+            </p>
+            <button
+              onClick={handleFullscreenReEntry}
+              className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition-colors"
+            >
+              Return to Test
+            </button>
+          </div>
         </div>
-      ))}
-      <div className="flex justify-between mt-4">
-        <button
-          className="border border-red-500 text-red-500 px-6 py-2 rounded-full"
-          onClick={() => setShowPopup(false)}
-        >
-          Close
-        </button>
-        <button
-          className="bg-[#fdc500] text-[#00296b] px-6 py-2 rounded-full"
-          onClick={handleFinish}
-        >
-          Finish
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold text-center mb-4">
+              Submit Assessment
+            </h3>
+            <p className="text-gray-700 mb-6">
+              Are you sure you want to submit your assessment? This action
+              cannot be undone.
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 py-3 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  handleFinish();
+                }}
+                className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Submitting..." : "Confirm Submit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Dialog
+        open={openDeviceRestrictionModal}
+        onClose={handleDeviceRestrictionModalClose}
+        aria-labelledby="device-restriction-modal-title"
+        aria-describedby="device-restriction-modal-description"
+      >
+        <DialogTitle id="device-restriction-modal-title">{"Device Restriction"}</DialogTitle>
+        <DialogContent>
+          <DialogContent id="device-restriction-modal-description">
+            This test cannot be taken on a mobile or tablet device.
+          </DialogContent>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeviceRestrictionModalClose} color="primary">
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {showNoiseWarningModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-md w-full mx-4">
+            <div className="text-red-600 mb-4">
+              <svg
+                className="w-12 h-12 mx-auto"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-center mb-4">
+              Noise Detected
+            </h3>
+            <p className="text-gray-700 mb-6">
+              Noise has been detected. Please ensure a quiet environment to continue the test.
+            </p>
+            <button
+              onClick={() => setShowNoiseWarningModal(false)}
+              className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition-colors"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
+
+      {faceDetection && (
+        <FaceDetectionComponent
+          contestId={contestId}
+          onWarning={handleFaceDetection}
+        />
+      )}
+
+      {faceDetectionWarning && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-md w-full mx-4">
+            <div className="text-red-600 mb-4">
+              <svg
+                className="w-12 h-12 mx-auto"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-center mb-4">
+              Face Detection Warning
+            </h3>
+            <p className="text-gray-700 mb-6">
+              {faceDetectionWarning}
+            </p>
+            <button
+              onClick={() => setFaceDetectionWarning('')}
+              className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition-colors"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

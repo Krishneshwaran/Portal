@@ -11,7 +11,7 @@ const ImportModal = ({ isModalOpen, setIsModalOpen, handleBulkUpload, uploadStat
     link.click();
     document.body.removeChild(link);
   };
-
+      
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-10 transform transition-all duration-300 scale-100 opacity-100">
@@ -23,7 +23,7 @@ const ImportModal = ({ isModalOpen, setIsModalOpen, handleBulkUpload, uploadStat
             onClick={() => setIsModalOpen(false)}
             className="text-gray-400 hover:text-gray-500"
           >
-            <X className="w-5 h-5" />
+            <X className="absolute top-5 right-5 w-6 h-6" />
           </button>
         </div>
         <p className="text-sm text-[#111933] mb-4">

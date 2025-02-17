@@ -1,24 +1,56 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import axios from 'axios';
-import Cookies from 'js-cookie';
-import { Mail } from 'lucide-react';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import loginScattered from '../../assets/login-image.png';
-import DTimg from '../../assets/SNS-DT Logo.png';
+
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import axios from "axios";
+import Cookies from "js-cookie";
+import { Mail } from "lucide-react";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import loginScattered from "../../assets/LoginImg1.png";
+import loginScattered2 from "../../assets/LoginImg2.png";
+import loginScattered3 from "../../assets/LoginImg3.png";
+import DTimg from "../../assets/SNS-DT Logo.png";
 
 const StaffLogin = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+  const [errorMessage, setErrorMessage] = useState("");
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+
+  const images = [loginScattered, loginScattered2, loginScattered3];
+
+  // Updated Image slideshow effect with pause
+  useEffect(() => {
+    const slideInterval = setInterval(() => {
+      if (!isTransitioning) {
+        setIsTransitioning(true);
+        
+        // Move to next image
+        setCurrentImageIndex((prevIndex) => {
+          if (prevIndex === images.length - 1) {
+            return 0;
+          }
+          return prevIndex + 1;
+        });
+
+        // Reset transition flag after animation completes
+        setTimeout(() => {
+          setIsTransitioning(false);
+        }, 1000); // Match this with transition duration
+      }
+    }, 4000); // Total time for each slide (including transition)
+
+    return () => clearInterval(slideInterval);
+  }, [isTransitioning, images.length]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -31,7 +63,7 @@ const StaffLogin = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMessage('');
+    setErrorMessage("");
 
     try {
       const response = await axios.post(
@@ -40,13 +72,16 @@ const StaffLogin = () => {
         { withCredentials: true }
       );
 
-      Cookies.set('staffToken', response.data.tokens.access_token, { expires: 7 });
-      Cookies.set('username', response.data.name, { expires: 7 });
+      Cookies.set("staffToken", response.data.tokens.access_token, {
+        expires: 7,
+      });
+      Cookies.set("username", response.data.name, { expires: 7 });
 
-      toast.success('Login successful!');
-      navigate('/staffdashboard');
+      toast.success("Login successful!");
+      navigate("/staffdashboard");
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Invalid email or password';
+      const errorMessage =
+        error.response?.data?.message || "Invalid email or password";
       setErrorMessage(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -55,7 +90,7 @@ const StaffLogin = () => {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleLogin(e);
     }
   };
@@ -64,20 +99,26 @@ const StaffLogin = () => {
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
       <ToastContainer />
 
-      {/* Login Card */}
       <div className="relative bg-white shadow-lg rounded-2xl flex max-w-6xl w-full">
+        <form
+          onKeyDown={handleKeyDown}
+          className="flex flex-1 flex-col justify-center mt-10 p-20"
+        >
+          <img
+            src={DTimg}
+            className="w-[200px] absolute top-10 left-56"
+            alt="SNS Institutions Logo"
+          />
 
-        {/* Left Side - Login Form */}
-        <form onKeyDown={handleKeyDown} className="flex flex-1 flex-col justify-center mt-10 p-20">
-          {/* SNS Logo */}
-          <img src={DTimg} className="w-[150px] absolute top-5 left-5" alt="SNS Institutions Logo" />
+          <h1 className="text-3xl font-medium text-center mb-2 ml-5 mt-5 text-[#111933]">
+            Staff Portal
+          </h1>
+          <p className="text-md ml-4 text-center text-gray-500 ">
+            Please enter your details
+          </p>
 
-          <h1 className="text-2xl font-Urbanist mb-2 text-[#111933]">Welcome back!</h1>
-          <p className="text-md text-gray-500 mb-6">Please enter your details</p>
-
-          {/* Email Input */}
-          <div className="relative mb-4">
-            <label className="text-sm font-Urbanist mb-1">Username</label>
+          <div className="relative mb-4 mt-10">
+            <label className="text-sm font-Urbanist mb-1">Email address</label>
             <div className="flex items-center border rounded-lg p-3 shadow-sm">
               <input
                 type="email"
@@ -92,12 +133,11 @@ const StaffLogin = () => {
             </div>
           </div>
 
-          {/* Password Input */}
           <div className="relative mb-4">
             <label className="text-sm font-Urbanist mb-1">Password</label>
             <div className="flex items-center border rounded-lg p-3 shadow-sm">
               <input
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
@@ -110,36 +150,49 @@ const StaffLogin = () => {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 text-gray-400 hover:text-gray-600"
               >
-                {showPassword ? <FaEyeSlash className="h-5 w-5" /> : <FaEye className="h-5 w-5" />}
+                {showPassword ? (
+                  <FaEye className="h-5 w-5" />
+                ) : (
+                  <FaEyeSlash className="h-5 w-5" />
+                )}
               </button>
             </div>
-            {/* Forgot Password */}
             <div className="text-right mt-2">
-              <Link to="/forgotpassword" className="text-sm text-blue-600 underline">
+              <Link
+                to="/forgotpassword"
+                className="text-sm text-blue-600 underline"
+              >
                 Forgot Password?
               </Link>
             </div>
           </div>
 
-          {/* Login Button */}
           <button
             type="submit"
             disabled={loading}
             onClick={handleLogin}
             className="w-[70%] mx-auto bg-[#111933] text-white font-Urbanist py-2 rounded-lg shadow hover:shadow-md transition-all mt-5"
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 
-        {/* Right Side - Image and Text */}
-        <div className="flex flex-1 bg-[#ffcc00] justify-center items-center flex-col text-[#111933] p-10">
-          <div className="relative w-[100%] flex justify-center items-center">
-            <img src={loginScattered} className="w-full h-auto" alt="Illustration" />
-          </div>
-          <div className='absolute bottom-10 text-center'>
-            <h2 className="text-3xl font-Urbanist mt-4 ">SNS Assessment Platform</h2>
-            <p className="text-sm ">just a couple of clicks and we start</p>
+        {/* Updated Image Slideshow */}
+        <div className="flex flex-1 justify-center items-center flex-col p-10 overflow-hidden">
+          <div className="relative w-full h-full">
+            {images.map((img, index) => (
+              <img
+                key={index}
+                src={img}
+                alt={`Slide ${index + 1}`}
+                className="absolute w-full h-full object-cover transition-all duration-1000 ease-in-out"
+                style={{
+                  opacity: currentImageIndex === index ? 1 : 0,
+                  transform: `scale(${currentImageIndex === index ? 1 : 0.95})`,
+                  zIndex: currentImageIndex === index ? 1 : 0
+                }}
+              />
+            ))}
           </div>
         </div>
       </div>

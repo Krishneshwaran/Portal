@@ -5,12 +5,9 @@ import TestQuestionDetails from '../../../components/McqLibrary/TestQuestionDeta
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faEdit, faSave, faPlus, faUpload, faTimes, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
-import Papa from 'papaparse';
-import { useDropzone } from 'react-dropzone';
-import { X, Download } from 'lucide-react';
-import Pagination from '@mui/material/Pagination';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import submiticon from '../../../assets/submit.svg';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
@@ -26,35 +23,34 @@ const QuestionListPage = () => {
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedTest, setEditedTest] = useState({ ...test, tags: test?.tags || [] });
-  const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false);
-  const [uploadFile, setUploadFile] = useState(null);
-  const [previewQuestions, setPreviewQuestions] = useState([]);
-  const [isManualAddModalOpen, setIsManualAddModalOpen] = useState(false);
-  const [testTags, setTestTags] = useState([]);
-
+  const [testTags, setTestTags] = useState(test?.tags || []);
   const [manualCategory, setManualCategory] = useState("");
   const [testTagsInput, setTestTagsInput] = useState("");
-  const [newQuestion, setNewQuestion] = useState({
-    question: '',
-    option1: '',
-    option2: '',
-    option3: '',
-    option4: '',
-    correctAnswer: '',
-    level: '',
-    tags: []
-  });
-  const [currentPreviewPage, setCurrentPreviewPage] = useState(1);
-  const questionsPerPage = 3;
+  const toastShownRef = useRef(false);
 
   const handleTestTagsChange = (e) => {
-    setTestTagsInput(e.target.value);
-    if (e.target.value.endsWith(',')) {
-      const newTag = e.target.value.slice(0, -1).trim();
+    const value = e.target.value;
+    setTestTagsInput(value);
+    if (value.endsWith(',')) {
+      const newTag = value.slice(0, -1).trim();
       if (newTag && !testTags.includes(newTag)) {
-        setTestTags([...testTags, newTag]);
+        const updatedTags = [...testTags, newTag];
+        setTestTags(updatedTags);
+        setEditedTest({ ...editedTest, tags: updatedTags }); // Synchronize with editedTest
       }
       setTestTagsInput('');
+    } else if(!toastShownRef.current) {
+      toast.info('Press Enter to Add the Tag', {
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+      toastShownRef.current = true;
     }
   };
 
@@ -63,7 +59,9 @@ const QuestionListPage = () => {
       e.preventDefault();
       const newTag = testTagsInput.trim();
       if (newTag && !testTags.includes(newTag)) {
-        setTestTags([...testTags, newTag]);
+        const updatedTags = [...testTags, newTag];
+        setTestTags(updatedTags);
+        setEditedTest({ ...editedTest, tags: updatedTags }); // Synchronize with editedTest
       }
       setTestTagsInput('');
     }
@@ -72,6 +70,7 @@ const QuestionListPage = () => {
   const removeTestTag = (tagIndex) => {
     const newTags = testTags.filter((_, i) => i !== tagIndex);
     setTestTags(newTags);
+    setEditedTest({ ...editedTest, tags: newTags }); // Synchronize with editedTest
   };
 
   const handleQuestionClick = (question) => {
@@ -142,229 +141,12 @@ const QuestionListPage = () => {
     }
   };
 
-  const handleManualAdd = () => {
-    setIsManualAddModalOpen(true);
-  };
-
-  const handleManualAddSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/append-question-to-test/`,
-        {
-          test_id: editedTest.test_id,
-          ...newQuestion
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (response.status === 200) {
-        setIsManualAddModalOpen(false);
-        setNewQuestion({
-          question: '',
-          option1: '',
-          option2: '',
-          option3: '',
-          option4: '',
-          correctAnswer: '',
-          level: '',
-          tags: []
-        });
-        setEditedTest(prevTest => ({
-          ...prevTest,
-          questions: [...prevTest.questions, response.data.new_question],
-        }));
-        toast.success('Question added successfully');
-      } else {
-        setError('Failed to add question');
-        toast.error('Failed to add question');
-      }
-    } catch (error) {
-      setError('An error occurred while adding the question');
-      toast.error('An error occurred while adding the question');
-      console.error('Error adding question:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleBulkUpload = () => {
-    setIsBulkUploadModalOpen(true);
-  };
-
-  const handleFileChange = (event) => {
-    setUploadFile(event.target.files[0]);
-    setPreviewQuestions([]);
-    setError(null);
-
-    if (event.target.files[0]) {
-      Papa.parse(event.target.files[0], {
-        header: true,
-        dynamicTyping: true,
-        complete: (results) => {
-          const questions = results.data
-            .filter(question => question.question && question.correctAnswer)
-            .map(question => ({
-              ...question,
-              level: question.level || question.Level,
-              tags: question.tags ? question.tags.split(', ') : []
-            }));
-          setPreviewQuestions(questions);
-        },
-        error: (error) => {
-          setError('Failed to parse the CSV file');
-          console.error('Error parsing CSV file:', error);
-        },
-      });
-    }
-  };
-
-  const onDrop = (acceptedFiles) => {
-    setUploadFile(acceptedFiles[0]);
-    setPreviewQuestions([]);
-    setError(null);
-
-    if (acceptedFiles[0]) {
-      Papa.parse(acceptedFiles[0], {
-        header: true,
-        dynamicTyping: true,
-        complete: (results) => {
-          const questions = results.data
-            .filter(question => question.question && question.correctAnswer)
-            .map(question => ({
-              ...question,
-              level: question.level || question.Level,
-              tags: question.tags ? question.tags.split(', ') : []
-            }));
-          setPreviewQuestions(questions);
-        },
-        error: (error) => {
-          setError('Failed to parse the CSV file');
-          console.error('Error parsing CSV file:', error);
-        },
-      });
-    }
-  };
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
-
-  const handleFileUpload = async () => {
-    if (!uploadFile) {
-      setError('Please select a file to upload');
-      return;
-    }
-
-    const payload = {
-      test_id: editedTest.test_id,
-      questions: previewQuestions,
-    };
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/bulk-upload-questions-to-test/`,
-        payload,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (response.status === 200) {
-        const uploadedQuestions = Array.isArray(response.data.questions) ? response.data.questions : [];
-        setIsBulkUploadModalOpen(false);
-        setUploadFile(null);
-        setPreviewQuestions([]);
-        setEditedTest(prevTest => ({
-          ...prevTest,
-          questions: [...prevTest.questions, ...uploadedQuestions],
-        }));
-        toast.success('Questions uploaded successfully');
-      } else {
-        setError('Failed to upload questions');
-        toast.error('Failed to upload questions');
-      }
-    } catch (error) {
-      setError('An error occurred while uploading the questions');
-      toast.error('An error occurred while uploading the questions');
-      console.error('Error uploading questions:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCloseModal = () => {
-    setIsBulkUploadModalOpen(false);
-    setUploadFile(null);
-    setPreviewQuestions([]);
-    setError(null);
-  };
-
-  const handleCloseManualAddModal = () => {
-    setIsManualAddModalOpen(false);
-    setNewQuestion({
-      question: '',
-      option1: '',
-      option2: '',
-      option3: '',
-      option4: '',
-      correctAnswer: '',
-      level: '',
-      tags: []
-    });
-    setError(null);
-  };
-
-  const handlePrevPage = () => {
-    setCurrentPreviewPage(prevPage => Math.max(prevPage - 1, 1));
-  };
-
-  const handleNextPage = () => {
-    setCurrentPreviewPage(prevPage => Math.min(prevPage + 1, Math.ceil(previewQuestions.length / questionsPerPage)));
-  };
-
-  const getCurrentQuestions = () => {
-    const startIndex = (currentPreviewPage - 1) * questionsPerPage;
-    const endIndex = startIndex + questionsPerPage;
-    return previewQuestions.slice(startIndex, endIndex);
-  };
-
-  const handleDownloadSample = () => {
-    const link = document.createElement('a');
-    link.href = '/sample_document.csv';
-    link.download = 'sample_document.csv';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const inputRef = useRef(null);
-
-  const handleDrag = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-  };
-
-  const onButtonClick = () => {
-    inputRef.current.click();
-  };
-
   if (!test) {
     return <div>No test selected</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col p-4 relative px-12">
+    <div className=" bg-[#f4f6ff86] flex flex-col py-6 relative px-24">
       {view === 'details' && selectedQuestion && (
         <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-filter backdrop-blur-sm flex items-start justify-center pt-4" style={{ zIndex: 1000 }}>
           <TestQuestionDetails
@@ -380,147 +162,59 @@ const QuestionListPage = () => {
         </div>
       )}
 
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex space-x-4">
-          {isEditing && (
-            <button
-              onClick={handleSave}
-              className="bg-[#00296b] text-white p-2 rounded-full flex items-center px-4"
-              disabled={loading}
-            >
-              <FontAwesomeIcon icon={faSave} className='mr-2' /> <p className='text-sm'> Save Test Details </p>
-            </button>
-          )}
+      {isEditing && (
+        <EditTestModal
+          editedTest={editedTest}
+          setEditedTest={setEditedTest}
+          handleSave={handleSave}
+          setIsEditing={setIsEditing}
+          testTags={testTags}
+          setTestTags={setTestTags}
+          testTagsInput={testTagsInput}
+          setTestTagsInput={setTestTagsInput}
+          handleTestTagsChange={handleTestTagsChange}
+          handleTestTagsKeyPress={handleTestTagsKeyPress}
+          removeTestTag={removeTestTag}
+          manualCategory={manualCategory}
+          setManualCategory={setManualCategory}
+        />
+      )}
+
+<div className="bg-white p-4 mt-2 mb-4 rounded-lg border shadow-sm">
+  <div className='flex flex-1 justify-between items-center bg-white rounded-lg'>
+    <div className='flex flex-col space-y-3'>
+      <h1 className="text-2xl font-semibold text-[#111933]">{toCamelCase(test.test_name)}</h1>
+      <div className='flex space-x-6'>
+        <p className='text-lg font-normal text-[#111933]  border border-[#111933] rounded-lg px-2 py-1'>
+          Category: <span className='font-semibold' >{toCamelCase(test.category)}</span>
+        </p>
+        <div className='flex space-x-2'>
+          {test.tags.map((tag, index) => (
+            <span key={index} className='text-lg font-light text-[#111933] bg-gray-200 rounded-lg px-3 py-1'>
+              {toCamelCase(tag)}
+            </span>
+          ))}
         </div>
       </div>
+    </div>
+    <div className='flex flex-col items-end space-y-2 pr-4'>
+      <p className={`text-lg  ${getLevelColor(test.level)}`}>{toCamelCase(test.level)}</p>
+      {!isEditing && (
+        <button
+          onClick={handleEdit}
+          className="bg-blue-500 text-white py-2 rounded-lg    flex "
+          style={{ backgroundColor: '#ffffff' }}
+        >
+          <FontAwesomeIcon style={{color:"#111933"}} icon={faEdit} />
+        </button>
+      )}
+    </div>
+  </div>
+</div>
 
-      <div className="my-8">
-        {isEditing ? (
-          <div className='flex flex-col'>
-            <input
-              type="text"
-              value={editedTest.test_name}
-              onChange={(e) => setEditedTest({ ...editedTest, test_name: e.target.value })}
-              className="text-2xl border rounded-lg px-3 mb-2 p-2 bg-transparent outline-blue-400 text-[#00296b]"
-            />
 
-            {/* new */}
-            <div className='flex items-start my-6 space-x-4'>
-              <div className="flex-1">
-                <label className="block text-gray-700 text-sm font-semibold mb-1" style={{ color: '#00296b' }}>Test Level:</label>
-                <select
-                  required
-                  value={editedTest.level}
-                  onChange={(e) => setEditedTest({ ...editedTest, level: e.target.value })}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  style={{ width: '100%', color: '#00296b' }} // Increase width to 100%
-                >
-                  <option value="">Select Level</option>
-                  {["Easy", "Medium", "Hard"].map((level, idx) => (
-                    <option key={idx} value={level} style={{ color: '#00296b' }}>{level}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex-1">
-                <label className="block text-gray-700 text-sm font-semibold mb-1" style={{ color: '#00296b' }}>Select Category:</label>
-                <select
-                  required
-                  value={editedTest.category}
-                  onChange={(e) => setEditedTest({ ...editedTest, category: e.target.value })}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  style={{ width: '100%', color: '#00296b' }} // Increase width to 100%
-                >
-                  <option value="">Select Category</option>
-                  {["Math", "Science", "History", "Geography"].map((category, idx) => (
-                    <option key={idx} value={category} style={{ color: '#00296b' }}>{category}</option>
-                  ))}
-                  <option value="Others" style={{ color: '#00296b' }}>Others</option>
-                </select>
-                {editedTest.category === "Others" && (
-                  <input
-                    type="text"
-                    value={manualCategory}
-                    onChange={(e) => setManualCategory(e.target.value)}
-                    placeholder="Enter category manually"
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mt-2"
-                    style={{ width: '100%', color: '#00296b' }} // Increase width to 100%
-                  />
-                )}
-              </div>
-            </div>
-            <div className="">
-              <label className="block text-gray-700 text-sm font-semibold" style={{ color: '#00296b' }}>Test Tags:</label>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {testTags.map((tag, tagIndex) => (
-                  <span
-                    key={tagIndex}
-                    className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm flex items-center"
-                    style={{ color: '#00296b' }}
-                  >
-                    {tag}
-                    <button
-                      onClick={() => removeTestTag(tagIndex)}
-                      className="ml-2 text-blue-800 hover:text-blue-900"
-                      style={{ color: '#00296b' }}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <input
-                type="text"
-                value={testTagsInput}
-                onChange={handleTestTagsChange}
-                onKeyPress={handleTestTagsKeyPress}
-                placeholder="Type and press Enter or comma to add tags"
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                style={{ width: '100%', color: '#00296b' }} // Increase width to 100%
-              />
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className='flex flex-1 justify-between items-center'>
-              <div className='flex flex-col space-y-3'>
-                <h1 className="text-3xl font-bold text-[#00296B]">{test.test_name}</h1>
-                <div className='flex space-x-4'>
-                  <p className='text-xl text-[#00296B] pr-4 border-r border-r-[#00296B]'> Category: {test.category} </p>
-                  <p className='text-xl text-[#00296B] pr-4 border-r border-r-[#00296B]'> Level: {test.level} </p>
-                  <p className='text-xl text-[#00296B]'> # {test.tags.join(', ')} </p>
-                </div>
-              </div>
-              <div className='flex space-x-2'>
-                {!isEditing && (
-                  <>
-                    <button
-                      onClick={handleEdit}
-                      className="bg-blue-500 text-white p-2 rounded-lg px-3 flex items-center"
-                      style={{ backgroundColor: '#00296b' }}
-                    >
-                      <FontAwesomeIcon icon={faEdit} />
-                    </button>
-                    <button
-                      onClick={handleManualAdd}
-                      className="bg-blue-500 text-white p-2 rounded-lg px-3 flex items-center"
-                      style={{ backgroundColor: '#00296b' }}
-                    >
-                      <FontAwesomeIcon icon={faPlus} />
-                    </button>
-                    <button
-                      onClick={handleBulkUpload}
-                      className="bg-blue-500 text-white p-2 rounded-lg px-3 flex items-center"
-                      style={{ backgroundColor: '#00296b' }}
-                    >
-                      <FontAwesomeIcon icon={faUpload} />
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+
+
       <McqTestQuestionList
         testId={test.test_id}
         questions={editedTest.questions || []}
@@ -534,284 +228,145 @@ const QuestionListPage = () => {
         deleteSelectedQuestions={() => { }}
       />
       {error && <div className="text-red-500">{error}</div>}
-      {isBulkUploadModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 ">
-          <div className='max-h-full py-4'>
-            <div className="bg-white overflow-auto max-h-full rounded-xl shadow-xl max-w-2xl w-full p-6 transform transition-all duration-300 scale-100 opacity-100">
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="text-xl font-semibold text-[#00296b]">
-                  Bulk Upload
-                </h2>
-                <button
-                  onClick={handleCloseModal}
-                  className="text-gray-400 hover:text-gray-500"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <p className="text-sm text-[#00296b] mb-2">
-                Upload a CSV file containing multiple questions. Maximum file size: 5MB
-              </p>
-              <button
-                onClick={handleDownloadSample}
-                className="mb-2 w-full bg-[#E3E3E3] bg-opacity-70 text-[#00296b] hover:bg-[#E3E3E3] hover:bg-opacity-100 py-2 px-4 rounded-md text-sm font-medium flex justify-between items-center"
-              >
-                <span>Download Sample</span>
-                <Download className="w-5 h-5 text-[#00296b]" />
-              </button>
-              <div
-                className={`
-                  w-full
-                  border-2
-                  border-dashed
-                  rounded-lg
-                  p-6
-                  text-center
-                  transition-colors
-                  duration-300
-                  mb-2
-                  ${isDragActive
-                    ? 'border-[#FDC500] bg-[#FDC500] bg-opacity-10'
-                    : 'border-[#00296b] border-opacity-20'
-                  }
-                `}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={onDrop}
-                onClick={onButtonClick}
-              >
-                <input
-                  ref={inputRef}
-                  type="file"
-                  onChange={handleFileChange}
-                  accept=".csv"
-                  className="hidden"
-                />
-                <div className="flex flex-col items-center justify-center space-y-2">
-                  <FontAwesomeIcon icon={faUpload} className="w-10 h-10 text-[#00296b] opacity-50" />
-                  <p className="text-sm text-[#00296b]">
-                    Drag and drop CSV file here, or{' '}
-                    <span
-                      onClick={onButtonClick}
-                      className="text-[#FDC500] cursor-pointer hover:underline"
-                    >
-                      browse
-                    </span>
-                  </p>
-                  <p className="text-xs text-gray-500">CSV files only (max 5MB)</p>
-                </div>
-              </div>
-
-              {uploadFile && (
-                <div className="mt-2">
-                  <p>Selected file: {uploadFile.name}</p>
-                </div>
-              )}
-
-              {previewQuestions.length > 0 && (
-                <div className="mb-2">
-                  <h3 className="text-lg font-bold mb-1">Preview</h3>
-                  <div className="flex justify-between mb-1">
-                    <button
-                      onClick={() => setPreviewQuestions(previewQuestions.map(q => ({ ...q, selected: true })))}
-                      className="bg-blue-500 text-white p-2 rounded-full flex items-center"
-                      style={{ backgroundColor: '#00296b' }}
-                    >
-                      Select All
-                    </button>
-                    <button
-                      onClick={() => setPreviewQuestions(previewQuestions.map(q => ({ ...q, selected: false })))}
-                      className="bg-blue-500 text-white p-2 rounded-full flex items-center"
-                      style={{ backgroundColor: '#00296b' }}
-                    >
-                      Deselect All
-                    </button>
-                  </div>
-                  <ul className="overflow-x-auto">
-                    {getCurrentQuestions().map((question, index) => (
-                      <li key={index} className="mb-1 p-2 border-b border-gray-200 flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={question.selected}
-                          onChange={() => setPreviewQuestions(prevQuestions =>
-                            prevQuestions.map(q => q.question === question.question ? { ...q, selected: !q.selected } : q)
-                          )}
-                          className="mr-2"
-                        />
-                        <div>
-                          <strong>Question:</strong> {question.question}<br />
-                          <strong>Correct Answer:</strong> {question.correctAnswer}<br />
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="flex justify-center mt-2">
-                    <Pagination
-                      count={Math.ceil(previewQuestions.length / questionsPerPage)}
-                      page={currentPreviewPage}
-                      onChange={(event, value) => setCurrentPreviewPage(value)}
-                      sx={{
-                        '& .MuiPaginationItem-root': {
-                          color: '#00296b',
-                        },
-                        '& .MuiPaginationItem-root.Mui-selected': {
-                          backgroundColor: '#FDC500',
-                          color: '#fff',
-                        },
-                        '& .MuiPaginationItem-root:hover': {
-                          backgroundColor: 'rgba(0, 9, 117, 0.1)',
-                        },
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <button
-                onClick={handleFileUpload}
-                className="bg-blue-500 text-white p-2 flex items-center mt-2"
-                style={{ backgroundColor: '#00296b', borderRadius: '9px' }}
-                disabled={loading}
-              >
-                Upload
-              </button>
-
-              {error && (
-                <div className={`mt-2 p-2 rounded-md ${error.startsWith("Success")
-                  ? "bg-green-50 text-green-700"
-                  : "bg-red-50 text-red-700"
-                  }`}>
-                  {error}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-      {isManualAddModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-filter backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-lg w-4/5 max-w p-4 overflow-hidden transform transition-all duration-300">
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-lg font-bold text-[#00296b]">Add New Question</h2>
-              <button
-                onClick={handleCloseManualAddModal}
-                className="text-[#00296b] hover:text-black"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleManualAddSubmit} className="space-y-2">
-              <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-[#00296b] mb-1">
-                    Question <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    name="question"
-                    value={newQuestion.question}
-                    onChange={(e) => setNewQuestion({ ...newQuestion, question: e.target.value })}
-                    className="w-full p-2 rounded-lg border-2 border-gray-300 shadow-sm focus:border-gray-500 focus:ring focus:ring-gray-300"
-                    rows={2}
-                    required
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-[#00296b] mb-1">
-                    Choice
-                  </label>
-                  {['option1', 'option2', 'option3', 'option4'].map((optionKey, index) => (
-                    <div key={optionKey} className="flex items-center space-x-2 mb-1">
-                      <input
-                        type="text"
-                        name={optionKey}
-                        value={newQuestion[optionKey]}
-                        onChange={(e) => setNewQuestion({ ...newQuestion, [optionKey]: e.target.value })}
-                        className="flex-1 p-2 rounded-lg border-2 border-gray-300 shadow-sm focus:border-gray-500 focus:ring focus:ring-gray-300"
-                        required
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-[#00296b] mb-1">
-                    Select correct answer <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="correctAnswer"
-                    value={newQuestion.correctAnswer}
-                    onChange={(e) => setNewQuestion({ ...newQuestion, correctAnswer: e.target.value })}
-                    className="w-full p-2 rounded-lg border-2 border-gray-300 shadow-sm focus:border-gray-500 focus:ring focus:ring-gray-300"
-                    required
-                  >
-                    <option value="">Select Correct Answer</option>
-                    {['option1', 'option2', 'option3', 'option4'].map((optionKey, index) => (
-                      newQuestion[optionKey] && (
-                        <option key={optionKey} value={newQuestion[optionKey]}>
-                          Option {index + 1}: {newQuestion[optionKey]}
-                        </option>
-                      )
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-[#00296b] mb-1">
-                    Difficulty Level <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="level"
-                    value={newQuestion.level}
-                    onChange={(e) => setNewQuestion({ ...newQuestion, level: e.target.value })}
-                    className="w-full p-2 rounded-lg border-2 border-gray-300 shadow-sm focus:border-gray-500 focus:ring focus:ring-gray-300"
-                    required
-                  >
-                    <option value="">Select Level</option>
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-[#00296b] mb-1">
-                    Tags
-                  </label>
-                  <input
-                    type="text"
-                    name="tags"
-                    value={newQuestion.tags.join(', ')}
-                    onChange={(e) => setNewQuestion({ ...newQuestion, tags: e.target.value.split(', ') })}
-                    className="w-full p-2 rounded-lg border-2 border-gray-300 shadow-sm focus:border-gray-500 focus:ring focus:ring-gray-300"
-                    placeholder="e.g., math, algebra, geometry"
-                  />
-                  <p className="mt-1 text-sm text-[#00296b]">Separate tags with commas</p>
-                </div>
-              </div>
-              <div style={{ paddingLeft: '64rem' }}>
-                <button
-                  type="submit"
-                  className="p-2 bg-[#FDC500] rounded-lg border-[#fdc500] bg-opacity-40 text-[#00296b] hover:bg-[#FDC500] focus:outline-none focus:ring focus:ring-blue-300"
-                >
-                  Submit
-                </button>
-              </div>
-              {error && (
-                <div
-                  className={`p-2 rounded-lg text-sm font-medium text-center shadow-sm ${error.startsWith("Success")
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                    }`}
-                >
-                  {error}
-                </div>
-              )}
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
 export default QuestionListPage;
+
+const EditTestModal = ({ editedTest, setEditedTest, handleSave, setIsEditing, testTags, setTestTags, testTagsInput, setTestTagsInput, handleTestTagsChange, handleTestTagsKeyPress, removeTestTag, manualCategory, setManualCategory }) => {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-filter backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Edit Test Details</h2>
+          <button onClick={() => setIsEditing(false)} className="text-gray-600 hover:text-gray-800">
+            <FontAwesomeIcon icon={faTimes} />
+          </button>
+        </div>
+        <div className="flex flex-col">
+          <div className="flex flex-col mb-4">
+            <input
+              type="text"
+              value={editedTest.test_name}
+              onChange={(e) => setEditedTest({ ...editedTest, test_name: e.target.value })}
+              className="text-2xl border rounded-lg px-3 py-2 bg-transparent outline-blue-400 text-[#111933] w-full mb-2"
+              placeholder="Test Name"
+            />
+            <div className="flex flex-wrap items-center gap-2 my-2">
+              {testTags.map((tag, tagIndex) => (
+                <span
+                  key={tagIndex}
+                  className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm flex items-center"
+                  style={{ color: '#111933' }}
+                >
+                  {toCamelCase(tag)}
+                  <button
+                    onClick={() => removeTestTag(tagIndex)}
+                    className="ml-2 text-blue-800 hover:text-blue-900"
+                    style={{ color: '#111933' }}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <input
+              type="text"
+              value={testTagsInput}
+              onChange={handleTestTagsChange}
+              onKeyPress={handleTestTagsKeyPress}
+              placeholder="Type and press Enter or comma to add tags"
+              className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              style={{ color: '#111933' }}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-6 items-start my-2">
+            <div className="flex flex-col">
+              <label className="text-gray-700 text-sm font-semibold mb-1" style={{ color: '#111933' }}>
+                Test Level:
+              </label>
+              <select
+                required
+                value={editedTest.level}
+                onChange={(e) => setEditedTest({ ...editedTest, level: e.target.value })}
+                className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                style={{ color: '#111933' }}
+              >
+                <option value="">Select Level</option>
+                {["Easy", "Medium", "Hard"].map((level, idx) => (
+                  <option key={idx} value={level} style={{ color: '#111933' }}>{level}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col">
+              <label className="text-gray-700 text-sm font-semibold mb-1" style={{ color: '#111933' }}>
+                Select Category:
+              </label>
+              <select
+                required
+                value={editedTest.category}
+                onChange={(e) => {
+                  const category = e.target.value;
+                  setEditedTest({ ...editedTest, category: category });
+                  if (category !== "Others") {
+                    setManualCategory(""); // Clear manual category if a predefined category is selected
+                  }
+                }}
+                className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                style={{ color: '#111933' }}
+              >
+                <option value="">Select Category</option>
+                {["Math", "Science", "History", "Geography"].map((category, idx) => (
+                  <option key={idx} value={category} style={{ color: '#111933' }}>{category}</option>
+                ))}
+                <option value="Others" style={{ color: '#111933' }}>Others</option>
+              </select>
+              {editedTest.category === "Others" && (
+                <input
+                  type="text"
+                  value={manualCategory}
+                  onChange={(e) => setManualCategory(e.target.value)}
+                  placeholder="Enter category manually"
+                  className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mt-2"
+                  style={{ color: '#111933' }}
+                />
+              )}
+            </div>
+          </div>
+          <div className='flex justify-end'>
+          <button
+            onClick={handleSave}
+            className="bg-[#111933] mt-2 text-white py-2 px-6 rounded-lg flex items-center space-x-2 shadow-md hover:bg-[#001d4a] transition duration-200 ease-in-out"
+          >
+            <p className="text-sm">Save Test Details</p>
+          </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+function toCamelCase(str) {
+  return str
+    .split(' ') // Split the string into words
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Capitalize the first letter and make the rest lowercase
+    .join(' '); // Join the words back together with spaces
+}
+
+
+
+// Helper function to get the color class based on level
+function getLevelColor(level) {
+  switch (level.toLowerCase()) {
+    case 'easy':
+      return 'text-green-500';
+    case 'medium':
+      return 'text-yellow-500';
+    case 'hard':
+      return 'text-red-500';
+    default:
+      return 'text-[#111933]';
+  }
+}

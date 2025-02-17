@@ -66,7 +66,7 @@ const CenteredModal = ({ isConfirmModalOpen, setIsConfirmModalOpen, targetPath }
             />
           </svg>
         </div>
-        <Typography variant="h6" fontWeight="bold" color='#00296B' align="center">
+        <Typography variant="h6" fontWeight="bold" color='#111933' align="center">
           Warning
         </Typography>
         
@@ -100,12 +100,12 @@ const CenteredModal = ({ isConfirmModalOpen, setIsConfirmModalOpen, targetPath }
           sx={{
             flex: 1,
             padding: '0.75rem',
-            backgroundColor: '#000975',
+            backgroundColor: '#111933',
             color: 'white',
             borderRadius: '0.75rem',
             '&:hover': {
               backgroundColor: '#eab308',
-              color: '#000975',
+              color: '#111933',
             },
           }}
         >

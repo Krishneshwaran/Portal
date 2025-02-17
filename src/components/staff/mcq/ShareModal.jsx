@@ -9,10 +9,19 @@ import {
   Box,
   TextField,
 } from '@mui/material';
-import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+// import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import CopyIcon from '@mui/icons-material/FileCopy';
+import WhatsAppIcon from '../../../assets/icons/wp.png'
 
-const ShareModal = ({ open, onClose, shareLink, handleCopyLink }) => {
+const ShareModal = ({ open, onClose, shareLink }) => {
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(shareLink).then(() => {
+      alert('Link copied to clipboard!');
+    }).catch((err) => {
+      console.error('Failed to copy link: ', err);
+    });
+  };
+
   return (
     <Dialog
       open={open}
@@ -35,12 +44,13 @@ const ShareModal = ({ open, onClose, shareLink, handleCopyLink }) => {
           textAlign: 'center',
         }}
       >
-        <DialogTitle sx={{ mb: 2 }}>Share Link</DialogTitle>
+        <DialogTitle sx={{ color: '#111933', fontWeight: 'bold', fontSize: '30px' }}>Share Link</DialogTitle>
         <Box display="flex" justifyContent="center" mb={2}>
           <IconButton
-            onClick={() => window.open(`https://wa.me/?text=${shareLink}`, "_blank")}
+            onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareLink)}`, "_blank")}
           >
-            <WhatsAppIcon style={{ color: "#25D366" }} />
+            {/* <WhatsAppIcon style={{ backgroundColor: "#25D366", fontSize: '50px' }} /> */}
+            <img src={WhatsAppIcon} className='w-16 h-16'/>
           </IconButton>
         </Box>
         <Box display="flex" alignItems="center" mb={2}>
@@ -52,17 +62,20 @@ const ShareModal = ({ open, onClose, shareLink, handleCopyLink }) => {
             }}
             sx={{
               '& .MuiInputBase-root': {
+                color: '#111933',
                 borderRadius: '8px',
               },
             }}
           />
           <IconButton onClick={handleCopyLink} sx={{ ml: 2 }}>
-            <CopyIcon />
+            <CopyIcon sx={{
+              color: '#111933'
+            }} />
           </IconButton>
         </Box>
-        <Button onClick={onClose} variant="contained" 
+        <Button onClick={onClose} variant="contained"
         sx={{
-          backgroundColor: '#25D366',
+          backgroundColor: '#111933',
         }}>
           Close
         </Button>

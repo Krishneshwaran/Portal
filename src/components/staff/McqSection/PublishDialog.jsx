@@ -8,6 +8,15 @@ import {
 } from "@mui/material";
 import StudentTable from "../../../components/staff/StudentTable";
 
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#111933',
+    },
+  },
+});
+
 const PublishDialog = ({
   open,
   onClose,
@@ -52,16 +61,25 @@ const PublishDialog = ({
         />
       </DialogContent>
       <DialogActions>
-        <Button
-          onClick={onClose}
-          color="primary"
-          variant="outlined"
-        >
-          Cancel
-        </Button>
-        <Button onClick={handlePublish} color="primary" variant="contained">
-          Confirm
-        </Button>
+      <Button
+        onClick={onClose}
+        variant="outlined"
+        sx={{
+          color: '#111933', 
+          borderColor: '#111933',
+          '&:hover': { 
+            backgroundColor: '#111933', 
+            color: 'white' 
+          }
+        }}
+      >
+        Cancel
+      </Button>
+        <ThemeProvider theme={theme}>
+          <Button onClick={handlePublish} variant="contained" color="primary">
+            Confirm
+          </Button>
+        </ThemeProvider>
       </DialogActions>
     </Dialog>
   );

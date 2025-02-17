@@ -8,16 +8,20 @@ import "react-toastify/dist/ReactToastify.css"
 import { Upload } from "lucide-react";
 import { Download } from "lucide-react"
 import PreviewTable from "../previewtable";
+import { X } from 'lucide-react';
 
 const Modal = ({ isOpen, onClose, children }) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-4xl relative">
-        <button onClick={onClose} className="absolute top-2 right-2 text-gray-500 hover:text-gray-700">
-          &times;
-        </button>
+      <div className="bg-white rounded-lg p-6 w-full max-w-7xl relative">
+      <button
+            onClick={() => onClose(false)}
+            className="text-gray-400 hover:text-gray-500"
+          >
+            <X className="absolute top-5 right-5 w-6 h-6" />
+          </button>
         {children}
       </div>
     </div>
@@ -178,8 +182,8 @@ const Mcq_bulkUpload = () => {
   const paginate = (pageNumber) => setCurrentPage(pageNumber)
 
   return (
-    <div className="h-[calc(100vh-95px)] overflow-hidden bg-[#ECF2FE]">
-      <div className="w-full max-w-[1500px] mx-auto px-4 h-full">
+    <div className="h-[calc(100vh-95px)] overflow-hidden bg-[#f4f6ff86]">
+      <div className="w-full max-w-[1500px] mx-auto px-12 h-full">
         <div className="h-14 py-10">
           <div className="flex items-center gap-2 text-[#111933]">
             <span className="opacity-60">Home</span>

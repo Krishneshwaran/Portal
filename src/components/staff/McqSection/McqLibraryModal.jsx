@@ -106,14 +106,14 @@ const McqLibrary = ({ onClose, onQuestionsSelected }) => {
 
       <div className="mb-6">
         <h4 className="font-medium mb-2">Level</h4>
-        {['Easy', 'Medium', 'Hard'].map((level) => (
+        {['easy', 'medium', 'hard'].map((level) => (
           <label key={level} className="flex items-center mb-2">
             <input
               type="checkbox"
               checked={filters.level.includes(level)}
               onChange={() => toggleFilter('level', level)}
               className="mr-2"
-            />
+            />      
             {level}
           </label>
         ))}

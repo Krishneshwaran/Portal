@@ -64,9 +64,9 @@ export default function Question({
   };
 
   return (
-    <div className="flex-1 relative">
+    <div className="flex-1 relative p-3 border-r-2">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-[#00296b] text-2xl font-bold">
+        <h2 className="text-[#111933] text-2xl font-bold">
           Question {currentIndex + 1}/{totalQuestions}
         </h2>
         <button
@@ -90,13 +90,13 @@ export default function Question({
           >
             <button
               className={`w-8 h-8 flex items-center justify-center mr-4 border rounded-lg transition-colors text-1xl font-semibold ${
-                selectedOption === option ? "border-[#00296b] bg-[#fdc500]" : ""
+                selectedOption === option ? "border-[#111933] bg-[#fdc500]" : ""
               }`}
             >
               {String.fromCharCode(65 + idx)} {/* 65 is the ASCII code for 'A' */}
             </button>
             <span className={`flex-1 p-4 border rounded-lg transition-colors text-1xl font-semibold ${
-              selectedOption === option ? "border-[#00296b] bg-[#fdc500]" : ""
+              selectedOption === option ? "border-[#111933] bg-[#fdc500]" : ""
             }`}>
               {option}
             </span>
@@ -114,9 +114,9 @@ export default function Question({
         ))}
       </div>
 
-      <div className="flex justify-between mt-8">
+      <div className="flex justify-between mt-28">
         <button
-          className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full flex items-center gap-2"
+          className="bg-[#fdc500] text-[#111933] px-8 py-2 rounded-full flex items-center gap-2"
           onClick={onPrevious}
           disabled={currentIndex === 0}
         >
@@ -124,7 +124,7 @@ export default function Question({
         </button>
         {currentIndex === totalQuestions - 1 ? (
           <button
-            className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full flex items-center gap-2"
+            className="bg-[#fdc500] text-[#111933] px-8 py-2 rounded-full flex items-center gap-2"
             onClick={handleFinishClick}
           >
             Finish →
@@ -132,13 +132,13 @@ export default function Question({
         ) : (
           <>
             <button
-              className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full"
+              className="bg-[#fdc500] text-[#111933] px-8 py-2 rounded-full"
               onClick={handleFinishClick}
             >
               Finish
             </button>
             <button
-              className="bg-[#fdc500] text-[#00296b] px-8 py-2 rounded-full flex items-center gap-2"
+              className="bg-[#fdc500] text-[#111933] px-8 py-2 rounded-full flex items-center gap-2"
               onClick={onNext}
               disabled={currentIndex === totalQuestions - 1}
             >
@@ -151,7 +151,7 @@ export default function Question({
       {showPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white w-[600px] p-6 rounded-xl shadow-lg">
-            <h3 className="text-[#00296b] text-lg font-bold mb-4">
+            <h3 className="text-[#111933] text-lg font-bold mb-4">
               MCT Mock Test
             </h3>
             <p className="text-center text-sm mb-4">
@@ -189,7 +189,7 @@ export default function Question({
                     cx="50%"
                     cy="50%"
                     r="38"
-                    stroke="#00296B"
+                    stroke="#111933"
                     strokeWidth="8"
                     fill="none"
                     strokeDasharray="238"
@@ -203,7 +203,7 @@ export default function Question({
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <p className="text-[#00296b] font-bold text-xl">
+                  <p className="text-[#111933] font-bold text-xl">
                     {Object.keys(selectedAnswers).length}/{totalQuestions}
                   </p>
                 </div>
@@ -217,7 +217,7 @@ export default function Question({
                 Close
               </button>
               <button
-                className="bg-[#fdc500] text-[#00296b] px-6 py-2 rounded-full"
+                className="bg-[#fdc500] text-[#111933] px-6 py-2 rounded-full"
                 onClick={confirmFinish}
               >
                 Finish

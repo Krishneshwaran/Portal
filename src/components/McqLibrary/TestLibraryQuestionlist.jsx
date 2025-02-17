@@ -52,10 +52,10 @@ const QuestionsList = ({ questions, loading, error, currentQuestions, setSelecte
                 key={index}
                 className="flex items-center justify-between bg-white hover:bg-gray-50 transition-all duration-300 p-6 mb-4 rounded-md shadow-md"
               >
-                <div className="text-left text-sm font-medium text-[#00296B] truncate w-7/12">
+                <div className="text-left text-sm font-medium text-[#111933] truncate w-7/12">
                   {question.question}
                 </div>
-                <div className="text-left text-sm text-[#00296B] w-3/12">
+                <div className="text-left text-sm text-[#111933] w-3/12">
                   <strong>Answer:</strong> {question.correctAnswer}
                 </div>
               </div>
@@ -68,7 +68,7 @@ const QuestionsList = ({ questions, loading, error, currentQuestions, setSelecte
                   onChange={handlePageChange}
                   sx={{
                     '& .MuiPaginationItem-root': {
-                      color: '#000975', // Text color for pagination items
+                      color: '#111933', // Text color for pagination items
                     },
                     '& .MuiPaginationItem-root.Mui-selected': {
                       backgroundColor: '#FDC500', // Background color for selected item

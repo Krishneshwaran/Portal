@@ -9,7 +9,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { format } from 'date-fns-tz';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import notest from '../../assets/testno.png';
+import notest from '../../assets/testno.png'; // Import the image
 import dashboard1 from '../../assets/dashboard1.svg';
 import dashboard2 from '../../assets/dashboard2.svg';
 import dashboard3 from '../../assets/dashboard3.svg';
@@ -108,17 +108,79 @@ const Dashboard = () => {
     }
   }, [location, fetchData]);
 
+  // Replace the existing filteredTests useMemo in your Dashboard component with this:
   const filteredTests = useMemo(() => {
-    const allTests = [...tests, ...mcqTests];
+    const allTests = [...tests, ...mcqTests].map(test => {
+      const currentUTC = new Date(
+        formatInTimeZone(new Date(), 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ss'Z'")
+      ).getTime();
+      const startUTC = new Date(test.registrationStart).getTime();
+      const endUTC = new Date(test.endDate).getTime();
+  
+      let status;
+      if (currentUTC < startUTC) {
+        status = "Upcoming";
+      } else if (currentUTC >= startUTC && currentUTC <= endUTC) {
+        status = "Live";
+      } else {
+        status = "Completed";
+      }
+  
+      return { ...test, currentStatus: status };
+    });
+  
     if (activeFilter === 'All') {
       return allTests.filter((test) =>
         (test.assessmentName || test.name || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
+  
     return allTests.filter(
-      (test) => test.status === activeFilter && (test.assessmentName || test.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+      (test) =>
+        test.currentStatus === activeFilter &&
+        (test.assessmentName || test.name || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [tests, mcqTests, activeFilter, searchQuery]);
+
+  useEffect(() => {
+    const calculateTestCounts = () => {
+      const allTests = [...tests, ...mcqTests];
+      const liveTests = allTests.filter(test => {
+        const currentUTC = new Date(
+          formatInTimeZone(new Date(), 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ss'Z'")
+        ).getTime();
+        const startUTC = new Date(test.registrationStart).getTime();
+        const endUTC = new Date(test.endDate).getTime();
+        return currentUTC >= startUTC && currentUTC <= endUTC;
+      }).length;
+  
+      const completedTests = allTests.filter(test => {
+        const currentUTC = new Date(
+          formatInTimeZone(new Date(), 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ss'Z'")
+        ).getTime();
+        const endUTC = new Date(test.endDate).getTime();
+        return currentUTC > endUTC;
+      }).length;
+  
+      const upcomingTests = allTests.filter(test => {
+        const currentUTC = new Date(
+          formatInTimeZone(new Date(), 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ss'Z'")
+        ).getTime();
+        const startUTC = new Date(test.registrationStart).getTime();
+        return currentUTC < startUTC;
+      }).length;
+  
+      setStats(prevStats => ({
+        ...prevStats,
+        liveTests,
+        completedTests,
+        upcomingTest: upcomingTests,
+      }));
+    };
+  
+    calculateTestCounts();
+  }, [tests, mcqTests]);
+  
 
   const getItemsPerPage = useCallback(() => {
     return activeFilter === 'All' ? 8 : 9;
@@ -168,7 +230,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-[#f4f6ff86]'}`}>
+    <div className={`min-h-screen py-10 px-5 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-[#f4f6ff86]'}`}>
       <ToastContainer />
 
       <div className="bg-transparent mx-5 ml-16 mr-14 rounded-b-2xl p-6 ">
@@ -190,25 +252,19 @@ const Dashboard = () => {
             >
               <div className="absolute -top-5 -right-4 flex items-center justify-center w-14 h-14 bg-white rounded-full shadow-md">
                 <div className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden">
-                  
-                    <img src={icon} alt={title} />
-                  
+                  <img src={icon} alt={title} />
                 </div>
               </div>
 
               <div className="flex flex-col items-start justify-between h-full">
                 <div>
                   {isLoading ? (
-                    <Skeleton variant="text" width={35} height={30}
-                    
-                    />
+                    <Skeleton variant="text" width={35} height={30} />
                   ) : (
                     <p className="text-2xl font-medium text-[#111933]">{value}</p>
                   )}
                   {isLoading ? (
-                    <Skeleton variant="text" width={100} height={30}
-                    
-                    />
+                    <Skeleton variant="text" width={100} height={30} />
                   ) : (
                     <p className="text-[#111933] text-md font-medium mt-1 whitespace-nowrap">{title}</p>
                   )}
@@ -250,7 +306,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className={`grid rounded-2xl grid-cols-1 md:grid-cols-3 p-7 ml-14 mr-12 gap-6 ${isDarkMode ? 'bg-black' : 'bg-white'}`}>
+        <div className={`grid rounded-2xl grid-cols-1 md:grid-cols-3 p-7 ml-14 mr-12 gap-5 ${isDarkMode ? 'bg-black' : 'bg-white'}`}>
           {activeFilter === 'All' && searchQuery === '' && <CreateTestCard />}
           {isLoading ? (
             // Render skeleton TestCards while loading
@@ -258,30 +314,32 @@ const Dashboard = () => {
               <TestCard key={index} isLoading={true} />
             ))
           ) : (
-            paginatedTests.map((test) => (
-              <TestCard
-                key={test._id}
-                contestId={test.contestId || test._id}
-                title={test.assessmentName || test.name || 'Unnamed Test'}
-                type={test.type || 'General'}
-                date={test.endDate ? format(new Date(test.endDate), 'MM/dd/yyyy') : 'Date Unavailable'}
-                time={
-                  test.endDate
-                    ? formatInTimeZone(new Date(test.endDate), 'UTC', 'hh:mm a')
-                    : 'Time Unavailable'
-                }
-                stats={{
-                  Assigned: test.assignedCount || 0,
-                  'Yet to Complete': (test.assignedCount || 0) - (test.completedCount || 0),
-                  Completed: test.completedCount || 0,
-                }}
-                status={
-                  test.overall_status === 'closed' ? 'Completed' :
-                  (test.status || 'Upcoming')
-                }
-                isDarkMode={isDarkMode}
-              />
-            ))
+            paginatedTests.length > 0 ? (
+              paginatedTests.map((test) => (
+                <TestCard
+                  key={test._id}
+                  contestId={test.contestId}
+                  title={test.name}
+                  type={test.type}
+                  date={format(new Date(test.endDate), 'MM/dd/yyyy')}
+                  time={formatInTimeZone(new Date(test.endDate), 'UTC', 'hh:mm a')}
+                  stats={{
+                    Assigned: test.assignedCount || 0,
+                    'Yet to Complete': Math.max((test.assignedCount || 0) - (test.completedCount || 0), 0), // Ensuring non-negative
+                    Completed: test.completedCount || 0,
+                  }}
+                  registrationStart={test.registrationStart}
+                  endDate={test.endDate}
+                  isDarkMode={isDarkMode}
+                />
+
+              ))
+            ) : (
+              <div className="col-span-full flex flex-col items-center justify-center">
+                <img src={notest} alt="No tests found" className="h-64 object-contain" />
+                <p className="text-gray-600 text-lg mt-4">No tests found</p>
+              </div>
+            )
           )}
         </div>
 
@@ -292,14 +350,15 @@ const Dashboard = () => {
             onChange={handlePageChange}
             sx={{
               '& .MuiPaginationItem-root': {
-                color: '#000975',
+                color: '#111933',
               },
               '& .MuiPaginationItem-root.Mui-selected': {
-                backgroundColor: '#FDC500',
+                backgroundColor: '#111933',
                 color: '#fff',
               },
               '& .MuiPaginationItem-root:hover': {
-                backgroundColor: 'rgba(0, 9, 117, 0.1)',
+                backgroundColor: 'rgba(0, 9, 117, 0.4)',
+                color:'#fff'
               },
             }}
           />

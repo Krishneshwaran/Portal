@@ -9,7 +9,7 @@ const TotalQuestions = ({ totalQuestions }) => {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        width: '16rem', // Match the width of FiltersSidebar
+        width: '10rem', // Match the width of FiltersSidebar
         height: '30px', // Adjust as needed
         borderRadius: '10px',
         backgroundColor: '#FFCC00', // Updated background color with 20% opacity
@@ -20,12 +20,12 @@ const TotalQuestions = ({ totalQuestions }) => {
   const numberStyle = {
     fontSize: '16px', // Adjust as needed
     fontWeight: 'extrabold',  
-    color: '#000975',
+    color: '#111933',
   };
 
   const labelStyle = {
     fontSize: '14px', // Adjust as needed
-    color: '#000975',
+    color: '#111933',
   };
 
   return (

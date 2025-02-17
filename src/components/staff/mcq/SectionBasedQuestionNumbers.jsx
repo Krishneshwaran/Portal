@@ -2,7 +2,7 @@ import React from "react";
 
 export default function SectionBasedQuestionNumbers({ questionNumbers, questionStatuses, onQuestionClick }) {
   return (
-    <div className="grid grid-cols-5 gap-2">
+    <div className="grid grid-cols-5 gap-1">
       {questionNumbers.map((num, index) => (
         <button
           key={num}

@@ -1,29 +1,43 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import submiticon from '../../assets/submit.svg';
 
-
 const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen, singleQuestionData, handleSingleQuestionInputChange, handleSingleQuestionSubmit, uploadStatus }) => {
+  const [error, setError] = useState('');
+
+  const validateOptions = () => {
+    const options = ['option1', 'option2', 'option3', 'option4'];
+    const filledOptions = options.filter(option => singleQuestionData[option].trim() !== '');
+    return filledOptions.length >= 2;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!validateOptions()) {
+      setError('At least two choices are required.');
+    } else {
+      setError('');
+      handleSingleQuestionSubmit(e);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-lg w-4/5 max-w px-16 py-8  overflow-hidden transform transition-all duration-300">
+      <div className="bg-white rounded-lg shadow-lg w-4/5 max-w px-16 py-8 overflow-hidden transform transition-all duration-300">
         <div className="flex mb-10">
-         
-          <div className='w-full '>
-          <h2 className="text-lg font-semibold text-[#111933] pb-2">Add New Question</h2>
-          <h2 className="text-sm font-light  text-[#111933] pb-4">Choose how you’d like to add questions to your assessment. Select the method that works best for you to quickly build your test.</h2>
-          <div className='border-b-2 border-[#111933]  ' > </div> 
+          <div className='w-full'>
+            <h2 className="text-lg font-semibold text-[#111933] pb-2">Add New Question</h2>
+            <h2 className="text-sm font-light text-[#111933] pb-4">Choose how you’d like to add questions to your assessment. Select the method that works best for you to quickly build your test.</h2>
+            <div className='border-b-2 border-[#111933]'></div>
           </div>
-          
-        
           <button
             onClick={() => setIsSingleQuestionModalOpen(false)}
-            className="text-[#111933] hover:text-[#fc2c2c]"
+            className="text-gray-400 hover:text-gray-500"
           >
-            <X className="w-5 h-5" />
+            <X className="absolute top-5 right-5 w-6 h-6" />
           </button>
         </div>
-        <form onSubmit={handleSingleQuestionSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
             <div className="flex-1 mr-4">
               <label className="block text-sm font-medium text-[#111933] mb-1">
@@ -33,9 +47,9 @@ const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen
                 name="question"
                 value={singleQuestionData.question}
                 onChange={handleSingleQuestionInputChange}
-                Placeholder="Type your question here"
-                style={{paddingBottom:'10rem'}}
-                className="w-full p-2  rounded-lg border-2 border-gray-300 shadow-sm focus:border-gray-500 focus:ring focus:ring-gray-300"
+                placeholder="Type your question here"
+                style={{ paddingBottom: '10rem' }}
+                className="w-full p-2 rounded-lg border-2 border-gray-300 shadow-sm focus:border-gray-500 focus:ring focus:ring-gray-300"
                 rows={2}
                 required
               />
@@ -53,14 +67,13 @@ const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen
                     placeholder='Type your choice here'
                     onChange={handleSingleQuestionInputChange}
                     className="flex-1 p-2 rounded-lg border-2 border-gray-300 shadow-sm focus:border-gray-500 focus:ring focus:ring-gray-300"
-                    required
                   />
                 </div>
               ))}
             </div>
           </div>
-          <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 ">
-            <div className="flex-1 pr-20 ">
+          <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+            <div className="flex-1 pr-20">
               <label className="block text-sm font-medium text-[#111933] mb-1">
                 Select correct answer <span className="text-red-500">*</span>
               </label>
@@ -97,7 +110,7 @@ const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen
                 <option value="hard">Hard</option>
               </select>
             </div>
-            <div className="flex-1 ">
+            <div className="flex-1">
               <label className="block text-sm font-medium text-[#111933] mb-1">
                 Tags
               </label>
@@ -113,16 +126,20 @@ const QuestionModal = ({ isSingleQuestionModalOpen, setIsSingleQuestionModalOpen
             </div>
           </div>
           <div className="flex justify-center mt-4">
-          <button
-         type='submit'
-          className="inline-flex items-center px-4 py-1 w-144px mt-2 font-medium bg-[#111933] text-[#ffffff] hover:bg-[#111933] focus:outline-none focus:ring-2 focus:ring-offset-2 transform transition-transform duration-300 hover:scale-102 cursor-pointer"
-          style={{ borderRadius: '0.5rem' }}
-          
-        >
+            <button
+              type='submit'
+              className="inline-flex items-center px-4 py-1 w-144px mt-2 font-medium bg-[#111933] text-[#ffffff] hover:bg-[#111933] focus:outline-none focus:ring-2 focus:ring-offset-2 transform transition-transform duration-300 hover:scale-102 cursor-pointer"
+              style={{ borderRadius: '0.5rem' }}
+            >
               Submit
-            <img src={submiticon} alt="submit" className="w-4 h-4 ml-2" /> 
+              <img src={submiticon} alt="submit" className="w-4 h-4 ml-2" />
             </button>
           </div>
+          {error && (
+            <div className="p-2 rounded-lg text-sm font-medium text-center shadow-sm bg-red-100 text-red-800">
+              {error}
+            </div>
+          )}
           {uploadStatus && (
             <div
               className={`p-2 rounded-lg text-sm font-medium text-center shadow-sm ${

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import FiltersSidebar from '../../../components/McqLibrary/FiltersSidebar';
 import Header from '../../../components/McqLibrary/Header';
 import QuestionsList from '../../../components/McqLibrary/QuestionsList';
 import QuestionModal from '../../../components/McqLibrary/QuestionModal';
 import ImportModal from '../../../components/McqLibrary/ImportModal';
 import QuestionDetails from '../../../components/McqLibrary/QuestionDetails';
-import ConfirmationModal from '../../../components/McqLibrary/ConfirmationModal'; 
+import ConfirmationModal from '../../../components/McqLibrary/ConfirmationModal';
 
 const Mcq = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,8 +28,6 @@ const Mcq = () => {
     question: "", option1: "", option2: "", option3: "", option4: "",
     answer: "", level: "easy", tags: ""
   });
-  const [successMessage, setSuccessMessage] = useState('');
-  const [showSuccess, setShowSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -49,7 +49,7 @@ const Mcq = () => {
         throw new Error(data.error || 'Failed to delete question');
       }
 
-      alert('Question deleted successfully');
+      toast.success('Question deleted successfully');
     } catch (error) {
       console.error('Delete error:', error);
     }
@@ -83,12 +83,10 @@ const Mcq = () => {
         }
 
         setIsEditing(false);
-        setSuccessMessage('Question Updated Successfully !');
-        setShowSuccess(true);  // Show the success card
+        toast.success('Question Updated Successfully!');
 
         // Hide the success message after 2 seconds and reload
         setTimeout(() => {
-            setShowSuccess(false);
             window.location.reload();  // Reload the page to reflect changes
         }, 1000);
 
@@ -99,7 +97,6 @@ const Mcq = () => {
         setIsLoading(false);
     }
 };
-
 
   useEffect(() => {
     const tags = new Set();
@@ -144,7 +141,7 @@ const Mcq = () => {
     e.preventDefault();
     const { question, option1, option2, option3, option4, answer, level } = singleQuestionData;
 
-    if (!question || !option1 || !option2 || !option3 || !option4 || !answer || !level) {
+    if (!question || !option1 || !option2 ||  !answer || !level) {
       setUploadStatus("Error: Please fill in all required fields");
       return;
     }
@@ -163,8 +160,7 @@ const Mcq = () => {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setUploadStatus(`Success: Question uploaded successfully! ID: ${data.question_id}`);
+        toast.success('Question uploaded successfully!');
         setSingleQuestionData({
           question: "", option1: "", option2: "", option3: "", option4: "",
           answer: "", level: "easy", tags: ""
@@ -206,7 +202,7 @@ const Mcq = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setUploadStatus("Success: " + data.message);
+        toast.success(data.message);
         fetchQuestions();
         setTimeout(() => setIsModalOpen(false), 1500);
       } else {
@@ -263,20 +259,20 @@ const Mcq = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#ECF2FE]">
-      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h3 className="font-semibold text-2xl mb-3 text-[#111933]">Question Library</h3>
+    <div className="min-h-screen bg-[#f4f6ff86]">
+      <ToastContainer />
+      <div className="max-w-full mx-auto px-24 py-12">
+      <h3 className="font-semibold text-2xl mb-1.5 text-[#111933]">Question Library</h3>
       <h4 className="font-light text-lg mb-3 text-[#111933]">Select and preview question from your collection</h4>
       <div className="flex  items-center mb-6 border-b-2 border-[#11193380]"></div>
-      <div className=""> 
- 
+      <div className="">
+
 </div>
-        <div className="flex flex-col lg:flex-row gap-6"> {/* Reduced gap from 8 to 4 */}
-        
+        <div className="flex flex-col lg:flex-row gap-6">
+
         <div>
-          
-            
-            <div > {/* Add margin-top to create space */}
+
+            <div >
               <FiltersSidebar
                 filters={filters}
                 toggleFilter={toggleFilter}
@@ -313,8 +309,6 @@ const Mcq = () => {
           setSelectedQuestion={setSelectedQuestion}
           isEditing={isEditing}
           setIsEditing={setIsEditing}
-          successMessage={successMessage}
-          setSuccessMessage={setSuccessMessage}
           handleUpdate={handleUpdate}
           isLoading={isLoading}
           setShowConfirm={setShowConfirm}
@@ -338,17 +332,6 @@ const Mcq = () => {
           uploadStatus={uploadStatus}
         />
       )}
-      {showSuccess && (
-        
-        <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center p-5">
-          <div className="bg-green-500 text-white p-4 rounded-lg shadow-lg flex items-center gap-4">
-            <div className="success-card">
-              <p>{successMessage}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showConfirm && (
         <ConfirmationModal
           showConfirm={showConfirm}
@@ -364,4 +347,3 @@ const Mcq = () => {
 };
 
 export default Mcq;
-

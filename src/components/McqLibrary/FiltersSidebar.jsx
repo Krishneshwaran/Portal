@@ -8,14 +8,14 @@ const FiltersSidebar = ({ filters, toggleFilter, clearFilters, availableTags }) 
   const styles = {
     customBlue: {
       backgroundColor: 'rgba(0, 41, 107, 0.030)',
-      color: '#000975',
+      color: '#111933',
       borderRadius: '0.375rem',
       padding: '0.5rem',
     },
     checkboxStyle: {
       backgroundColor: 'rgba(0, 41, 107, 0.2)',
-      borderColor: '#000975',
-      color: '#000975',
+      borderColor: '#111933',
+      color: '#111933',
     },
     textStyle: {
       color: '#111933',
@@ -25,8 +25,13 @@ const FiltersSidebar = ({ filters, toggleFilter, clearFilters, availableTags }) 
     },
   };
 
+  // Helper function to convert a lowercase string to camel case
+  const toCamelCase = (str) => {
+    return str.replace(/(^|\s)\S/g, (t) => t.toUpperCase());
+  };
+
   return (
-    <div className="lg:w-64 flex-shrink-0">
+    <div className="w-64 flex-shrink-0">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-8 ">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold flex items-center gap-2" style={styles.textStyle}>
@@ -69,7 +74,7 @@ const FiltersSidebar = ({ filters, toggleFilter, clearFilters, availableTags }) 
                   {availableTags.map(tag => (
                     <label key={tag} className="flex items-center text-sm" style={styles.customBlue}>
                       <input type="checkbox" checked={filters.tags.includes(tag)} onChange={() => toggleFilter('tags', tag)} style={styles.checkboxStyle} />
-                      <span className="ml-2 text-sm" style={styles.textStyle}>{tag}</span>
+                      <span className="ml-2 text-sm" style={styles.textStyle}>{toCamelCase(tag)}</span>
                     </label>
                   ))}
                 </div>

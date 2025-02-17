@@ -100,7 +100,7 @@ const PreviewTable = ({
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto bg-white rounded-lg shadow-lg p-6 font-urbanist">
+    <div className="w-full  mx-auto  p-6 font-urbanist">
       <div className="text-center mb-4">
         <h2 className="text-xl">Question Preview</h2>
         <p className="text-gray-500 text-sm">Preview and verify the extracted questions before proceeding</p>
@@ -199,7 +199,7 @@ const PreviewTable = ({
             className="bg-[#111933] text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-opacity-90"
           >
             Submit
-            <RotateCw className="w-4 h-4" />
+            
           </button>
         </div>
       </div>

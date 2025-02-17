@@ -39,12 +39,12 @@ const QuestionImportModal = ({ isOpen, onClose, onUpload, uploadStatus }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 transform transition-all duration-300 scale-100 opacity-100">
         <div className="flex justify-between items-center mb-4">
-          <h2 style={{ color: '#000975' }} className="text-xl font-semibold">Import Question</h2>
+          <h2 style={{ color: '#111933' }} className="text-xl font-semibold">Import Question</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
             <X className="w-5 h-5" />
           </button>
         </div>
-        <p style={{ color: '#000975' }} className="text-sm mb-4">
+        <p style={{ color: '#111933' }} className="text-sm mb-4">
           Upload a CSV file containing multiple questions. Maximum file size: 5MB
         </p>
         
@@ -61,7 +61,7 @@ const QuestionImportModal = ({ isOpen, onClose, onUpload, uploadStatus }) => {
             duration-300 
             ${dragActive 
               ? 'border-[#FDC500] bg-[#FDC500] bg-opacity-10' 
-              : 'border-[#000975] border-opacity-20'
+              : 'border-[#111933] border-opacity-20'
             }
           `}
           onDragEnter={handleDrag}
@@ -78,8 +78,8 @@ const QuestionImportModal = ({ isOpen, onClose, onUpload, uploadStatus }) => {
             className="hidden"
           />
           <div className="flex flex-col items-center justify-center space-y-2">
-            <FileUp className="w-10 h-10 text-[#000975] opacity-50" />
-            <p style={{ color: '#000975' }} className="text-sm">
+            <FileUp className="w-10 h-10 text-[#111933] opacity-50" />
+            <p style={{ color: '#111933' }} className="text-sm">
               Drag and drop CSV file here, or{' '}
               <span 
                 onClick={onButtonClick} 
