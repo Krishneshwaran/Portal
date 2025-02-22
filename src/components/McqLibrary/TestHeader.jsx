@@ -252,6 +252,10 @@ const Header = ({ searchQuery, setSearchQuery, totalQuestions }) => {
     }
   };
 
+  const selectedall = () => {
+    setPreviewQuestions(previewQuestions.map(q => ({ ...q, selected: true })));
+  };
+
   const onDrop = (acceptedFiles) => {
     setUploadFile(acceptedFiles[0]);
     setPreviewQuestions([]);
@@ -283,7 +287,6 @@ const Header = ({ searchQuery, setSearchQuery, totalQuestions }) => {
 
   const handleFileUpload = async () => {
     if (!uploadFile) {
-      setError('Please select a file to upload');
       return;
     }
 
@@ -324,14 +327,18 @@ const Header = ({ searchQuery, setSearchQuery, totalQuestions }) => {
         toast.error('Failed to upload questions');
       }
     } catch (error) {
-      setError('An error occurred while uploading the questions');
       setUploadStatus('Error: An error occurred while uploading the questions');
-      toast.error('An error occurred while uploading the questions');
       console.error('Error uploading questions:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (previewQuestions.every(q => q.selected)) {
+      handleFileUpload();
+    }
+  }, [previewQuestions]);
 
   const handleCloseModal = () => {
     setIsBulkUploadModalOpen(false);
@@ -468,68 +475,9 @@ const Header = ({ searchQuery, setSearchQuery, totalQuestions }) => {
               </div>
             )}
 
-            {previewQuestions.length > 0 && (
-              <div className="mb-4">
-                <h3 className="text-lg font-bold mb-2">Preview</h3>
-                <div className="flex justify-between mb-2">
-                  <button
-                    onClick={() => setPreviewQuestions(previewQuestions.map(q => ({ ...q, selected: true })))}
-                    className="bg-blue-500 text-white p-2 rounded-full flex items-center"
-                    style={{ backgroundColor: '#111933' }}
-                  >
-                    Select All
-                  </button>
-                  <button
-                    onClick={() => setPreviewQuestions(previewQuestions.map(q => ({ ...q, selected: false })))}
-                    className="bg-blue-500 text-white p-2 rounded-full flex items-center"
-                    style={{ backgroundColor: '#111933' }}
-                  >
-                    Deselect All
-                  </button>
-                </div>
-                <ul className="overflow-x-auto">
-                  {getCurrentQuestions().map((question, index) => (
-                    <li key={index} className="mb-2 p-2 border-b border-gray-200 flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={question.selected}
-                        onChange={() => setPreviewQuestions(prevQuestions =>
-                          prevQuestions.map(q => q.question === question.question ? { ...q, selected: !q.selected } : q)
-                        )}
-                        className="mr-2"
-                      />
-                      <div>
-                        <strong>Question:</strong> {question.question}<br />
-                        <strong>Correct Answer:</strong> {question.correctAnswer}<br />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                <div className="flex justify-center mt-2">
-                  <Pagination
-                    count={Math.ceil(previewQuestions.length / questionsPerPage)}
-                    page={currentPreviewPage}
-                    onChange={(event, value) => setCurrentPreviewPage(value)}
-                    sx={{
-                      '& .MuiPaginationItem-root': {
-                        color: '#111933',
-                      },
-                      '& .MuiPaginationItem-root.Mui-selected': {
-                        backgroundColor: '#FDC500',
-                        color: '#fff',
-                      },
-                      '& .MuiPaginationItem-root:hover': {
-                        backgroundColor: 'rgba(17, 25, 51, 0.1)',
-                      },
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
             {uploadFile && (
               <button
-                onClick={handleFileUpload}
+                onClick={selectedall}
                 className="bg-blue-500 text-white p-2 flex items-center mt-4 w-full justify-center"
                 style={{ backgroundColor: '#111933', borderRadius: '9px' }}
                 disabled={loading}

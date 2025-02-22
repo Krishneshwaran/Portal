@@ -173,6 +173,7 @@ const McqLibrary = ({ onClose, onQuestionsSelected }) => {
 
   const handleSubmit = () => {
     const selected = selectedQuestions.map((index) => questions[index]);
+    toast.success("Questions added successfully");
     onQuestionsSelected(selected);
     onClose();
   };

@@ -1,5 +1,6 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight, RotateCw, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Edit2, Check } from 'lucide-react';
+import { IoIosArrowForward } from "react-icons/io";
 
 const PreviewTable = ({
   questions = [],
@@ -11,11 +12,16 @@ const PreviewTable = ({
   onPageChange,
   onSubmit,
   indexOfFirstQuestion,
-  totalPages
+  totalPages,
+  onEdit
 }) => {
   const maxPagesToShow = 3;
   const emptyRows = questionsPerPage - questions.length;
-  
+  const handleEdit = (questionIndex) => {
+    if (onEdit) {
+      onEdit(questionIndex);
+    }
+  };
   const currentPageQuestions = questions.map((_, idx) => indexOfFirstQuestion + idx);
   const isAllSelected = currentPageQuestions.every(index => selectedQuestions.includes(index));
 
@@ -100,7 +106,7 @@ const PreviewTable = ({
   };
 
   return (
-    <div className="w-full  mx-auto  p-6 font-urbanist">
+    <div className="w-full mx-auto p-6 font-urbanist">
       <div className="text-center mb-4">
         <h2 className="text-xl">Question Preview</h2>
         <p className="text-gray-500 text-sm">Preview and verify the extracted questions before proceeding</p>
@@ -134,6 +140,20 @@ const PreviewTable = ({
                   style={{ marginTop: "0.001rem", marginBottom: "2rem" }}
                 ></span>
               </th>
+              <th className="relative py-4 px-6 text-left">
+                <span className="text-sm font-semibold">Blooms</span>
+                <span
+                  className="absolute top-1/2 -translate-y-1/2 left-0 h-3/4 w-[1px] bg-gray-200"
+                  style={{ marginTop: "0.001rem", marginBottom: "2rem" }}
+                ></span>
+              </th>
+              <th className="relative py-4 px-6 text-left">
+                <span className="text-sm font-semibold">Edit</span>
+                <span
+                  className="absolute top-1/2 -translate-y-1/2 left-0 h-3/4 w-[1px] bg-gray-200"
+                  style={{ marginTop: "0.001rem", marginBottom: "2rem" }}
+                ></span>
+              </th>
             </tr>
           </thead>
           <tbody className="h-[350px] bg-gray-100">
@@ -160,11 +180,23 @@ const PreviewTable = ({
                     <span className="font-medium">Answer: </span>
                     {question.correctAnswer}
                   </td>
+                  <td className="py-4 px-6">{question.blooms}</td>
+                  <td className="py-4 px-6">
+                    <button
+                      onClick={() => handleEdit(actualIndex)}
+                      className="p-2 rounded-lg border border-[#111933] text-[#111933] hover:bg-opacity-80 flex items-center gap-2"
+                    >  
+                      <span>Edit</span>
+                      <IoIosArrowForward />
+                    </button>
+                  </td>
                 </tr>
               );
             })}
             {emptyRows > 0 && Array(emptyRows).fill(null).map((_, index) => (
               <tr key={`empty-${index}`} className="h-20 bg-gray-100">
+                <td className="py-4 px-6"></td>
+                <td className="py-4 px-6"></td>
                 <td className="py-4 px-6"></td>
                 <td className="py-4 px-6"></td>
                 <td className="py-4 px-6"></td>
@@ -199,7 +231,6 @@ const PreviewTable = ({
             className="bg-[#111933] text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-opacity-90"
           >
             Submit
-            
           </button>
         </div>
       </div>

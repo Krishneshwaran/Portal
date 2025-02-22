@@ -22,10 +22,15 @@ import {
   MenuItem,
   Chip,
   Pagination,
+  IconButton,
 } from "@mui/material";
+
+import { FaCheckCircle } from "react-icons/fa";
+import { IoCloseCircleOutline } from "react-icons/io5";
 import {
   FilterList as FilterListIcon,
   Search as SearchIcon,
+  Close as CloseIcon,
 } from "@mui/icons-material";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSort, faSortUp, faSortDown } from '@fortawesome/free-solid-svg-icons';
@@ -134,15 +139,19 @@ const StudentTable = ({
   const toggleFilter = (filterType, value) => {
     setFilters((prevFilters) => {
       const updatedFilters = { ...prevFilters };
-      if (!Array.isArray(updatedFilters[filterType])) {
-        updatedFilters[filterType] = [];
-      }
-      if (updatedFilters[filterType].includes(value)) {
-        updatedFilters[filterType] = updatedFilters[filterType].filter(
-          (item) => item !== value
-        );
+      if (filterType === "year") {
+        updatedFilters[filterType] = updatedFilters[filterType] === value ? "" : value;
       } else {
-        updatedFilters[filterType].push(value);
+        if (!Array.isArray(updatedFilters[filterType])) {
+          updatedFilters[filterType] = [];
+        }
+        if (updatedFilters[filterType].includes(value)) {
+          updatedFilters[filterType] = updatedFilters[filterType].filter(
+            (item) => item !== value
+          );
+        } else {
+          updatedFilters[filterType].push(value);
+        }
       }
       return updatedFilters;
     });
@@ -321,120 +330,196 @@ const StudentTable = ({
         />
       </div>
       <Dialog
-        open={openFilterDialog}
-        onClose={handleFilterDialogClose}
-        fullWidth
-        maxWidth="sm"
-        BackdropProps={{
-          className: "fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm",
-        }}
-      >
-        <DialogTitle sx={{ fontWeight: "bold", mb: 2, color: "#003366" }}>
-          Filter Options
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold", color: "#003366" }}>
-            DEPARTMENT
-          </Typography>
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
-            {[
-              "AIML",
-              "IT",
-              "CSE",
-              "AIDS",
-              "Mech",
-              "EEE",
-              "ECE",
-              "CSD",
-              "CST",
-              "AREO",
-              "Mechatronics",
-              "CIVIL",
-              "PF1",
-              "Others",
-            ].map((dept) => (
-              <Chip
-                key={dept}
-                label={dept}
-                clickable
-                onClick={() => toggleFilter("dept", dept)}
-                color={filters.dept.includes(dept) ? "primary" : "default"}
-                sx={{
-                  cursor: "pointer",
-                  backgroundColor: filters.dept.includes(dept) ? "rgba(0, 9, 117, 0.5)" : "rgba(0, 9, 117, 0.95)",
-                  color: filters.dept.includes(dept) ? "#000" : "#fff",
-                }}
-              />
-            ))}
-          </Box>
-
-          <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold", color: "#003366" }}>
-            INSTITUTION
-          </Typography>
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
-            {[
-              "SNSCT",
-              "SNSCE",
-              "SNS Spine",
-              "SNS Nursing",
-              "SNS Pharmacy",
-              "SNS Health Science",
-              "SNS Academy",
-              "iHub",
-              "SNS Physiotherapy",
-            ].map((college) => (
-              <Chip
-                key={college}
-                label={college}
-                clickable
-                onClick={() => toggleFilter("collegename", college)}
-                color={filters.collegename.includes(college) ? "primary" : "default"}
-                sx={{
-                  cursor: "pointer",
-                  backgroundColor: filters.collegename.includes(college) ? "rgba(0, 9, 117, 0.5)" : "rgba(0, 9, 117, 0.95)",
-                  color: filters.collegename.includes(college) ? "#000" : "#fff",
-                }}
-              />
-            ))}
-          </Box>
-
-          <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold", color: "#003366" }}>
-            YEAR
-          </Typography>
-          <FormControl fullWidth variant="outlined" size="small" sx={{ mb: 2 }}>
-            <InputLabel sx={{ color: "#003366" }}>Year</InputLabel>
-            <Select
-              value={filters.year}
-              onChange={(e) => setFilters({ ...filters, year: e.target.value })}
-              label="Year"
-              name="year"
-              sx={{ color: "#003366" }}
+          open={openFilterDialog}
+          onClose={handleFilterDialogClose}
+          fullWidth
+          maxWidth="md"
+          PaperProps={{
+            style: {
+              width: '800px', // Increased width
+              height: '530px', // Reduced height
+              borderRadius: 15, // Rounded edges for the filter dialog
+              backgroundColor: '#fff', // White background for the dialog
+            },
+          }}
+          BackdropProps={{
+            className: "fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm",
+          }}
+          TransitionProps={{ unmountOnExit: true }} // Remove sliding effect
+        >
+          <DialogTitle sx={{ fontWeight: "bold", mb: 1, color: "#111933", display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            Filter Options
+            <IconButton onClick={handleFilterDialogClose} sx={{ color: "#111933" }}>
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent sx={{ paddingTop: 0 }}>
+            <Typography
+              variant="h6"
+              sx={{ mb: 1, fontWeight: "bold", color: "#111933" }}
             >
-              <MenuItem value="">All</MenuItem>
-              <MenuItem value="I">I</MenuItem>
-              <MenuItem value="II">II</MenuItem>
-              <MenuItem value="III">III</MenuItem>
-              <MenuItem value="IV">IV</MenuItem>
-            </Select>
-          </FormControl>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={clearFilters}
-            color="primary"
-            sx={{ color: "#003366", borderColor: "#003366" }}
-          >
-            Clear All Filters
-          </Button>
-          <Button
-            onClick={applyFilters}
-            color="primary"
-            sx={{ color: "#003366", borderColor: "#003366" }}
-          >
-            Apply Filters
-          </Button>
-        </DialogActions>
-      </Dialog>
+              Department
+            </Typography>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
+              {["AI&ML", "IT", "CSE", "AI&DS", "Mech", "EEE", "ECE", "CSD", "CST", "AERO", "MCT", "CIVIL", "Others"].map(
+                (dept) => (
+                  <Chip
+                    key={dept}
+                    label={dept}
+                    clickable
+                    onClick={() => toggleFilter("dept", dept)}
+                    sx={{
+                      cursor: "pointer",
+                      backgroundColor: filters.dept.includes(dept)
+                        ? "#111933"
+                        : "rgba(225, 235, 255, 0.8)", // Light blue with low opacity
+                      color: filters.dept.includes(dept) ? "#fff" : "#111933",
+                      width: 'auto', // Allow width to adjust based on content
+                      height: '35px', // Adjusted height
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center', // Center the text
+                      borderRadius: '15px', // Rounded corners
+                      whiteSpace: 'nowrap', // Prevent text wrapping
+                      overflow: 'hidden', // Hide overflow text
+                      textOverflow: 'ellipsis', // Show ellipsis for overflow text
+                      "&:hover": {
+                        backgroundColor: "#111933", // Change to #111933 on hover
+                        color: "#fff", // Change text color to white on hover
+                      },
+                    }}
+                  />
+                )
+              )}
+            </Box>
+
+            <Typography
+              variant="h6"
+              sx={{ mt: 2, mb: 1, fontWeight: "bold", color: "#111933" }}
+            >
+              Institution
+            </Typography>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
+              {["SNSCT", "SNSCE", "SNS Spine", "SNS Nursing", "SNS Pharmacy", "SNS Health Science", "SNS Academy", "SNS Physiotherapy"].map(
+                (college) => (
+                  <Chip
+                    key={college}
+                    label={college}
+                    clickable
+                    onClick={() => toggleFilter("collegename", college)}
+                    sx={{
+                      cursor: "pointer",
+                      backgroundColor: filters.collegename.includes(college)
+                        ? "#111933"
+                        : "rgba(225, 235, 255, 0.8)", // Light blue with low opacity
+                      color: filters.collegename.includes(college) ? "#fff" : "#111933",
+                      width: 'auto', // Allow width to adjust based on content
+                      height: '40px', // Adjusted height
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center', // Center the text
+                      borderRadius: '15px', // Rounded corners
+                      whiteSpace: 'nowrap', // Prevent text wrapping
+                      overflow: 'hidden', // Hide overflow text
+                      textOverflow: 'ellipsis', // Show ellipsis for overflow text
+                      "&:hover": {
+                        backgroundColor: "#111933", // Change to #111933 on hover
+                        color: "#fff", // Change text color to white on hover
+                      },
+                    }}
+                  />
+                )
+              )}
+            </Box>
+
+            <Typography
+              variant="h6"
+              sx={{ mt: 2, mb: 1, fontWeight: "bold", color: "#111933" }}
+            >
+              Year
+            </Typography>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
+              {["I", "II", "III", "IV"].map((year) => (
+                <Chip
+                  key={year}
+                  label={year}
+                  clickable
+                  onClick={() => toggleFilter("year", year)}
+                  sx={{
+                    cursor: "pointer",
+                    backgroundColor: filters.year === year
+                      ? "#111933"
+                      : "rgba(225, 235, 255, 0.8)", // Light blue with low opacity
+                    color: filters.year === year ? "#fff" : "#111933",
+                    width: 'auto', // Allow width to adjust based on content
+                    height: '35px', // Adjusted height
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center', // Center the text
+                    borderRadius: '15px', // Rounded corners
+                    whiteSpace: 'nowrap', // Prevent text wrapping
+                    overflow: 'hidden', // Hide overflow text
+                    textOverflow: 'ellipsis', // Show ellipsis for overflow text
+                    "&:hover": {
+                      backgroundColor: "#111933", // Change to #111933 on hover
+                      color: "#fff", // Change text color to white on hover
+                    },
+                  }}
+                />
+              ))}
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={clearFilters}
+              variant="outlined"
+              sx={{
+                color: "#111933",
+                borderColor: "#111933",
+                borderRadius: '10px', // Slightly curved
+                width: '150px', // Adjusted width
+                height: '40px', // Adjusted height
+                alignItems: 'center',
+                justifyContent: 'center',
+                whiteSpace: "nowrap",
+                gap: '8px',
+                "&:hover": {
+                  backgroundColor: "#fff",
+                  color: "#111933",
+                },
+              }}
+            >
+              <div className="rounded-full border border-[#111933] p-[2px]">
+                <IoCloseCircleOutline className="text-[#111933]" />
+              </div>
+
+              Clear Filter
+            </Button>
+            <Button
+              onClick={applyFilters}
+              variant="contained"
+              sx={{
+                backgroundColor: "#111933",
+                color: "#fff",
+                borderRadius: '10px', // Slightly curved
+                width: '150px', // Adjusted width
+                height: '40px', // Adjusted height
+                alignItems: 'center',
+                justifyContent: 'center',
+                whiteSpace: 'nowrap',
+                gap: '8px',
+                "&:hover": {
+
+                },
+              }}
+            >
+              <div className="rounded-full border border-white ">
+                <FaCheckCircle className="text-white" />
+              </div>
+              Apply Filters
+            </Button>
+          </DialogActions>
+        </Dialog>
     </>
   );
 };

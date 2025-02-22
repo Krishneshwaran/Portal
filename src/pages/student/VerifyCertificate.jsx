@@ -96,7 +96,7 @@ const VerifyCertificate = () => {
                             <strong>Certificate Status: </strong> {"Valid"}
                         </div>
                         <div className="certificate-info">
-                            <strong>Course Name:</strong> {certificateData.contestName}
+                            <strong>Test Name:</strong> {certificateData.contestName}
                         </div>
                         <div className="certificate-info">
                             <strong>Learner Name:</strong> {certificateData.studentName}

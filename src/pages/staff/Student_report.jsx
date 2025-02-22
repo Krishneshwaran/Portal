@@ -71,24 +71,25 @@ const StudentReport = ({ contestId: propContestId, regno: propRegNo, hideDetails
   const studentName = matchedStudent ? matchedStudent.name : "Unknown Student";
 
   function formatTimeDifference(startTime, endTime) {
-    const start = new Date(startTime);
-    const end = new Date(endTime);
+    try {
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+        
+        // If times are the same, return 'N/A' or a message indicating invalid duration
+        if (start.getTime() === end.getTime()) {
+            return 'Invalid Duration'; // or 'N/A' or '--:--:--'
+        }
 
-    if (isNaN(start) || isNaN(end)) {
-      throw new Error("Invalid date format. Please provide valid ISO date strings.");
+        const diffInMilliseconds = Math.max(0, end - start);
+        const hours = Math.floor(diffInMilliseconds / (1000 * 60 * 60));
+        const minutes = Math.floor((diffInMilliseconds % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diffInMilliseconds % (1000 * 60)) / 1000);
+
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    } catch (error) {
+        console.error('Error calculating time difference:', error);
+        return 'Invalid Duration'; // or 'N/A' or '--:--:--'
     }
-
-    const diffInMilliseconds = Math.max(0, end - start);
-    const hours = Math.floor(diffInMilliseconds / (1000 * 60 * 60));
-    const minutes = Math.floor((diffInMilliseconds % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((diffInMilliseconds % (1000 * 60)) / 1000);
-
-    const timeParts = [];
-    if (hours > 0) timeParts.push(`${hours}h`);
-    if (minutes > 0) timeParts.push(`${minutes}m`);
-    if (seconds > 0 || timeParts.length === 0) timeParts.push(`${seconds}s`);
-
-    return timeParts.join(" ");
   }
 
   const {

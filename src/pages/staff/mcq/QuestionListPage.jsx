@@ -28,6 +28,18 @@ const QuestionListPage = () => {
   const [testTagsInput, setTestTagsInput] = useState("");
   const toastShownRef = useRef(false);
 
+  useEffect(() => {
+    const storedEditedTest = sessionStorage.getItem('editedTest');
+    if (storedEditedTest) {
+      setEditedTest(JSON.parse(storedEditedTest));
+      setTestTags(JSON.parse(storedEditedTest).tags || []);
+    }
+  }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem('editedTest', JSON.stringify(editedTest));
+  }, [editedTest]);
+
   const handleTestTagsChange = (e) => {
     const value = e.target.value;
     setTestTagsInput(value);
@@ -212,9 +224,6 @@ const QuestionListPage = () => {
   </div>
 </div>
 
-
-
-
       <McqTestQuestionList
         testId={test.test_id}
         questions={editedTest.questions || []}
@@ -354,8 +363,6 @@ function toCamelCase(str) {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Capitalize the first letter and make the rest lowercase
     .join(' '); // Join the words back together with spaces
 }
-
-
 
 // Helper function to get the color class based on level
 function getLevelColor(level) {

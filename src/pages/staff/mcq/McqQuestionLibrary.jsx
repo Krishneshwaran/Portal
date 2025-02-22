@@ -8,6 +8,8 @@ import Pagination from '@mui/material/Pagination';
 
 import FiltersSidebar from '../../../components/McqLibrary/FiltersSidebar';
 import QuestionsList from '../../../components/McqLibrary/TestQuestionList';
+import TotalQuestions from '../../../components/McqLibrary/TotalQuestions';
+import PreviewModal from '../../../components/staff/mcq/PreviewModal';
 
 const McqLibrary = () => {
   const [questions, setQuestions] = useState([]);
@@ -21,9 +23,10 @@ const McqLibrary = () => {
   const [selectAll, setSelectAll] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [questionsPerPage] = useState(10);
-  const [selectedQuestionsPerPage] = useState(5); // Number of selected questions per page
+  const [selectedQuestionsPerPage] = useState(7); // Number of selected questions per page
   const [selectedCurrentPage, setSelectedCurrentPage] = useState(1); // Current page for selected questions
   const navigate = useNavigate();
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   // Fetch questions from API
@@ -166,26 +169,35 @@ const McqLibrary = () => {
     setSelectedCurrentPage(value);
   };
 
+  // Handler to open the preview modal
+  const handlePreview = () => {
+    setIsPreviewOpen(true);
+  };
+
+  // Handler to close the preview modal
+  const closePreview = () => {
+    setIsPreviewOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-8">
       <div className="h-14 px-14 pb-10 ml-7">
-          <div className="flex items-center gap-2 text-[#111933]">
-            <span className="opacity-60">Home</span>
-            <span>{">"}</span>
-            <span className="opacity-60">Assessment Overview</span>
-            <span>{">"}</span>
-            <span className="opacity-60">Test Configuration</span>
-            <span>{">"}</span>
-            <span onClick={() => window.history.back()} className="cursor-pointer opacity-60 hover:underline">
-              Add Questions
-            </span>
-            <span>{">"}</span>
-            <span >
-              Question Library
-            </span>
-
-          </div>
+        <div className="flex items-center gap-2 text-[#111933]">
+          <span className="cursor-pointer opacity-60 hover:underline" onClick={() => navigate('/staffdashboard')}>Home</span>
+          <span>{">"}</span>
+          <span className="cursor-pointer opacity-60 hover:underline" onClick={() => navigate('/mcq/combinedDashboard')}>Assessment Overview</span>
+          <span>{">"}</span>
+          <span className="cursor-pointer opacity-60 hover:underline" onClick={() => navigate('/mcq/details')}>Test Configuration</span>
+          <span>{">"}</span>
+          <span onClick={() => window.history.back()} className="cursor-pointer opacity-60 hover:underline">
+            Add Questions
+          </span>
+          <span>{">"}</span>
+          <span >
+            Question Library
+          </span>
         </div>
+      </div>
       <ToastContainer
         position="top-center"
         autoClose={3000}
@@ -209,16 +221,16 @@ const McqLibrary = () => {
 
         <div className="grid grid-cols-4 gap-4">
           {/* Left Panel for Filters */}
-          <div >
-             {/* Add TotalQuestions component here */}
-           
+          <div>
+            <TotalQuestions totalQuestions={filteredQuestions.length} />
+            <div className="mb-4"></div>
             <FiltersSidebar
               filters={filters}
               toggleFilter={toggleFilter}
               clearFilters={clearFilters}
               availableTags={availableTags}
             />
-    
+
           </div>
 
           {/* Middle Panel for Questions List */}
@@ -232,7 +244,7 @@ const McqLibrary = () => {
                 {selectAll ? 'Deselect All' : 'Select All'}
               </button>
               <div className='py-1 px-6 ml-2 bg-white border-2 border-[#111933] shadow-blue-100 font-semibold text-[#111933] rounded-xl hover:bg-white h-full flex items-center justify-center gap-2'>
-              Total Questions: {questions.length}
+                Total Questions: {questions.length}
               </div>
               <div className="flex items-center flex-grow ml-4">
                 <input
@@ -282,28 +294,44 @@ const McqLibrary = () => {
                   onChange={handleSelectedPageChange}
                   sx={{
                     '& .MuiPaginationItem-root': {
+
                       color: '#111933', // Text color for pagination items
                     },
                     '& .MuiPaginationItem-root.Mui-selected': {
-                      backgroundColor: '#FDC500', // Background color for selected item
-                      color: '#fff', // Text color for the selected item
+                      backgroundColor: '#FDC500',
+                      color: '#fff',
                     },
                     '& .MuiPaginationItem-root:hover': {
-                      backgroundColor: 'rgba(0, 9, 117, 0.1)', // Hover effect
+                      backgroundColor: 'rgba(0, 9, 117, 0.1)',
                     },
                   }}
                 />
               )}
               <button
                 onClick={handleSubmit}
+
                 className="mt-4 w-full py-2 px-4 rounded-lg text-sm bg-[#FFCC00] text-[#111933]  border border-[#fdc500] text-[#00975] hover:bg-opacity-80"
               >
                 Save Selected Questions
+              </button>
+              <button
+                onClick={handlePreview}
+                className="mt-2 w-full py-2 px-4 rounded-lg text-sm bg-gray-200 text-[#00296B] border border-gray-300 hover:bg-gray-300"
+              >
+                Preview
               </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Preview Modal */}
+      <PreviewModal
+        isOpen={isPreviewOpen}
+        onClose={closePreview}
+        selectedQuestions={selectedQuestions}
+        setSelectedQuestions={setSelectedQuestions} // Ensure this prop is correctly passed
+      />
     </div>
   );
 };

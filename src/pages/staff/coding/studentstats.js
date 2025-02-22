@@ -1,26 +1,39 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
-import { CircularProgress, Box, Typography, Pagination, Button, Modal, Slider } from "@mui/material";
-import { Assessment, CheckCircle, Cancel, WatchLater, Search, Warning } from "@mui/icons-material";
+import {
+  CircularProgress,
+  Box,
+  Typography,
+  Pagination,
+  Button,
+  Modal,
+  Slider
+} from "@mui/material";
+import {
+  Assessment,
+  CheckCircle,
+  Cancel,
+  WatchLater,
+  Search,
+  Warning
+} from "@mui/icons-material";
 import { FaUserCog, FaUniversity, FaRegAddressBook, FaMailBulk } from "react-icons/fa";
 import { FaCircleXmark } from "react-icons/fa6";
-import { useParams } from "react-router-dom";
+import { LuDownload } from "react-icons/lu";
+import { FaEye } from "react-icons/fa";
 import ProfileBg from "../../../assets/profilebg.svg";
 import ProfileImg from "../../../assets/Dashboard icon.png";
 import GoldBadge from "../../../assets/badges/Gold.png";
 import SilverBadge from "../../../assets/badges/Silver.png";
 import BronzeBadge from "../../../assets/badges/Bronze.png";
 import Loader from "../../../layout/Loader";
-import { toast } from "react-toastify";
-import { ToastContainer } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ReactDOM from "react-dom";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import StudentReport from "../Student_report";
-import { LuDownload } from "react-icons/lu";
-import { FaEye } from "react-icons/fa";
 
 const EnhancedStudentDashboard = () => {
   const [openPopup, setOpenPopup] = useState(false);
@@ -127,7 +140,7 @@ const EnhancedStudentDashboard = () => {
   const totalTests = (codingPerformance?.total_tests || 0) + (mcqPerformance?.total_tests || 0);
   const completedTests = (codingPerformance?.completed_tests || 0) + (mcqPerformance?.completed_tests || 0);
 
-  const allAssessments = [...(codingAssessments || []), ...(mcqAssessments || [])];
+  const allAssessments = [...(codingAssessments || []), ...(mcqAssessments || [])].reverse();
 
   const attended = allAssessments.filter((assessment) => assessment.contestStatus === "started").length;
   const unAttended = allAssessments.filter((assessment) => assessment.contestStatus === "Yet to Start").length;
@@ -353,12 +366,12 @@ const EnhancedStudentDashboard = () => {
               onClick={() => setOpenPopup(false)}
               variant="contained"
               sx={{
-                bgcolor: "#FFCC00",
-                color: "#111933",
+                bgcolor: "#111933",
+                color: "#fff",
                 fontWeight: 600,
                 textTransform: "none",
-                px: 5,
-                py: 1.5,
+                px: 3,
+                py: 1,
                 borderRadius: "12px",
                 fontSize: "16px",
                 boxShadow: "0px 6px 12px rgba(0, 0, 0, 0.15)",
@@ -366,7 +379,7 @@ const EnhancedStudentDashboard = () => {
                   bgcolor: "#111933",
                   color: "#fff",
                 },
-                transition: "all 0.3s ease",
+                transition: "all 1s ease",
               }}
             >
               Close
@@ -414,7 +427,6 @@ const EnhancedStudentDashboard = () => {
     </div>
   );
 };
-
 
 function CircularProgressWithLabel({ value }) {
   const [showBadge, setShowBadge] = useState(false);
@@ -478,4 +490,4 @@ function CircularProgressWithLabel({ value }) {
   );
 }
 
-export default EnhancedStudentDashboard
+export default EnhancedStudentDashboard;

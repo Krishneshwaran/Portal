@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faTrash, faArrowLeft, faPlus, faFilter, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { FaArrowRightLong } from "react-icons/fa6";
 import Modal from 'react-modal';
 import AddTest from '../../../components/McqLibrary/AddTest';
 import McqTestQuestionList from '../../../components/McqLibrary/McqTestQuestionList';
@@ -12,6 +13,7 @@ import testicon from "../../../assets/TestLibrary.svg";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Pagination from '@mui/material/Pagination';
+import FiltersSidebar from '../../../components/McqLibrary/FiltersSidebar'; // Import the FiltersSidebar component
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
@@ -43,7 +45,7 @@ const Mcqtest = () => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const [levels, setLevels] = useState([]); // Define levels state
-  const itemsPerPage = 8;
+  const itemsPerPage = 5;
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -305,103 +307,132 @@ const Mcqtest = () => {
   };
 
   return (
-    <div className="h-screen bg-[#f4f6ff] flex flex-col">
+    <div className="min-h-screen bg-[#f4f6ff] py-10 px-20 flex flex-col">
       <ToastContainer />
-      <div className="py-4 px-20 rounded-lg ">
-        <div>
-          <div className="flex justify-between items-center mt-4 mb-6">
-            <h2 className="text-2xl font-bold text-primary">Test Library</h2>
-            <button
-              onClick={() => navigate('/library/mcq/test/addtest')}
-              className="bg-[#111933] text-white p-2 flex items-center border-2 border-[#111933] rounded-lg"
-            >
-              Create Library
-            </button>
-          </div>
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="mt-4 mb-6">
+          <h2 className="text-2xl font-bold text-primary">Test Library</h2>
+          <p className="my-4 text-[#111933">Embark on a journey to sharpen your analytical thinking and problem-solving skills with our "Logical Reasoning Fundamentals & Best Practices" course. Embark on a journey to sharpen your analytical thinking and problem.</p>
         </div>
-
-        {isAddingTest ? (
-          <AddTest fetchAllTests={fetchAllTests} setIsAddingTest={setIsAddingTest} />
-        ) : (
-          <div className="bg-white rounded-lg " style={{ height: '27.5rem' }}>
-            <div className="pt-4 mx-5 flex justify-between items-center">
-              <input
-                type="text"
-                placeholder="Search tests..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-[30rem]"
-              />
-              <button
-                onClick={() => setIsFilterModalOpen(true)}
-                className="bg-white text-[#111933] py-1 px-4 flex items-center border border-[#111933] rounded-lg"
-              >
-                <FontAwesomeIcon icon={faFilter} style={{ color: "#111933" }} className="pr-2" /> Filter
-              </button>
-            </div>
-            <div className="grid grid-cols-4 gap-4 bg-white rounded-2xl p-5 h-60">
-              {paginatedTests.map((test) => (
-                <div
-                  key={test.test_id}
-                  className="w-full h-40 bg-white border border-[#111933] rounded-lg p-4 flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-xl text-primary flex-grow">{test.test_name}</h3>
-                      <p className="text-sm text-[#111933]" style={{ color: getLevelColor(test.level) }}>
-                        {toCamelCase(test.level)}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-4 pt-4 text-sm">
-                    Category:
-                      <p className="text-sm font-semibold pl-2  text-[#111933]"> {test.category}</p>
-                    </div>
-                  </div>
-                  <div className="flex justify-between">
-                    <button
-                      className="text-primary px-2 py-1 rounded bg-white border border-[#111933] hover:scale-y-102"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteClick(test.test_id);
-                      }}
-                    >
-                      Delete
-                    </button>
-                    <button
-                      className="text-white px-2 py-1 rounded bg-[#111933] border-2 border-[#111933] hover:scale-y-102"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleTestClick(test);
-                      }}
-                    >
-                      View
-                    </button>
-                  </div>
+        <div className="flex items-stretch">
+          <FiltersSidebar
+            filters={{ level: filterLevel, tags: filterCategory }}
+            toggleFilter={(filterType, filterValue) => {
+              if (filterType === 'level') {
+                handleLevelSelect(filterValue);
+              } else if (filterType === 'tags') {
+                handleCategorySelect(filterValue);
+              }
+            }}
+            clearFilters={() => {
+              setFilterLevel([]);
+              setFilterCategory([]);
+            }}
+            availableTags={categories}
+          />
+          <div className="flex-1 ml-6 border rounded-xl overflow-x-hidden flex flex-col">
+            {isAddingTest ? (
+              <AddTest fetchAllTests={fetchAllTests} setIsAddingTest={setIsAddingTest} />
+            ) : (
+              <div className="bg-white rounded-lg">
+                <div className="pt-4 mx-5 flex justify-between items-center space-x-4">
+                  <input
+                    type="text"
+                    placeholder="Search tests..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="shadow border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline flex-1"
+                  />
+                  <button
+                    onClick={() => navigate("/library/mcq/test/addtest")}
+                    className="bg-[#111933] text-white p-2 flex items-center border-2 border-[#111933] rounded-lg"
+                  >
+                    Create Library
+                  </button>
                 </div>
-              ))}
-            </div>
-            
-          </div>
-        )}
-        <div className="flex justify-center mt-4">
+
+                <div className="bg-white rounded-xl p-5 flex-1 overflow-y-auto">
+                  {paginatedTests.map((test, localIndex) => {
+                    const globalIndex = (page - 1) * itemsPerPage + localIndex;
+                    return (
+                      <div
+                        key={test.test_id}
+                        className="w-full bg-white border border-gray-400 rounded-lg my-2 py-3 px-4 flex flex-col justify-between"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-5 h-5 bg-[#ffcc00] rounded flex items-center justify-center font-semibold text-sm">
+                              {globalIndex + 1}
+                            </div>
+                            <h3 className="font-bold text-lg text-primary flex-grow">{test.test_name}</h3>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-4 text-sm ml-7">
+                          <div className="flex justify-between w-3/5">
+                            <div className="flex space-x-2 text-lg">
+                              <p className="font-semibold">Level:</p>
+                              <p className="text-[#111933]">{toCamelCase(test.level)}</p>
+                            </div>
+                            <div className="flex space-x-2 text-lg">
+                              <p className="font-semibold">Category:</p>
+                              <p className="text-[#111933]">{test.category}</p>
+                            </div>
+                            <div className="flex space-x-2 text-lg">
+                              <p className="font-semibold">Blooms:</p>
+                              <p className="text-[#111933]">{test.blooms || "L1 Remembering"}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end space-x-2 w-2/5">
+                            <button
+                              className="text-white px-2 py-1 rounded bg-[#111933] border-2 border-[#111933] hover:scale-y-102"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(test.test_id);
+                              }}
+                            >
+                              Delete
+                            </button>
+                            <button
+                              className="text-primary px-2 py-1 rounded bg-white border border-[#111933] hover:scale-y-102 flex items-center"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTestClick(test);
+                              }}
+                            >
+                              View Test <FaArrowRightLong className="ml-2" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-center mt-4">
               <Pagination
                 count={Math.ceil(filteredTests.length / getItemsPerPage())}
                 page={page}
                 onChange={handlePageChange}
                 sx={{
-                  '& .MuiPaginationItem-root': {
-                    color: '#111933',
+                  "& .MuiPaginationItem-root": {
+                    color: "#111933",
                   },
-                  '& .MuiPaginationItem-root.Mui-selected': {
-                    backgroundColor: '#111933',
-                    color: '#fff',
+                  "& .MuiPaginationItem-root.Mui-selected": {
+                    backgroundColor: "#111933",
+                    color: "#fff",
                   },
-                  '& .MuiPaginationItem-root:hover': {
-                    backgroundColor: '#111933',
+                  "& .MuiPaginationItem-root:hover": {
+                    backgroundColor: "#111933",
                   },
                 }}
               />
             </div>
+          </div>
+        </div>
       </div>
 
       {selectedTest && (
@@ -562,7 +593,6 @@ const Mcqtest = () => {
           />
         </div>
       </Modal>
-
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
@@ -584,7 +614,6 @@ const Mcqtest = () => {
           </div>
         </div>
       )}
-
       <Modal
         isOpen={isFilterModalOpen}
         onRequestClose={() => setIsFilterModalOpen(false)}
@@ -597,8 +626,8 @@ const Mcqtest = () => {
           <button onClick={() => setIsFilterModalOpen(false)} className="text-gray-500 hover:text-gray-700">
             &times;
           </button>
-          </div>
-          <div>
+        </div>
+        <div>
           <div className="mb-4">
             <label className="block text-primary text-sm font-bold mb-2">Level:</label>
             <div className="flex flex-wrap gap-2">
@@ -630,16 +659,17 @@ const Mcqtest = () => {
             </div>
           </div>
           <div className="flex justify-end">
-          <button
-            onClick={() => setIsFilterModalOpen(false)}
-            className="bg-[#111933] text-white p-2 rounded-lg"
-          >
-            Apply Filters
-          </button>
+            <button
+              onClick={() => setIsFilterModalOpen(false)}
+              className="bg-[#111933] text-white p-2 rounded-lg"
+            >
+              Apply Filters
+            </button>
           </div>
         </div>
       </Modal>
     </div>
+
   );
 };
 

@@ -90,11 +90,11 @@ const SelectTestQuestion = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-8">
       <div className="h-14 px-14 pb-10">
           <div className="flex items-center gap-2 text-[#111933]">
-            <span className="opacity-60">Home</span>
+            <span className="cursor-pointer opacity-60 hover:underline" onClick={() => navigate('/staffdashboard')}>Home</span>
             <span>{">"}</span>
-            <span className="opacity-60">Assessment Overview</span>
+            <span className="cursor-pointer opacity-60 hover:underline" onClick={() => navigate('/mcq/combinedDashboard')}>Assessment Overview</span>
             <span>{">"}</span>
-            <span className="opacity-60">Test Configuration</span>
+            <span className="cursor-pointer opacity-60 hover:underline" onClick={() => navigate('/mcq/details')}>Test Configuration</span>
             <span>{">"}</span>
             <span onClick={() => window.history.back()} className="cursor-pointer opacity-60 hover:underline">
               Add Questions

@@ -4,6 +4,7 @@ import { FaFilter, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 const FiltersSidebar = ({ filters, toggleFilter, clearFilters, availableTags }) => {
   const [isLevelOpen, setIsLevelOpen] = useState(true);
   const [isTagOpen, setIsTagOpen] = useState(true);
+  const [isBloomOpen, setIsBloomOpen] = useState(true);
 
   const styles = {
     customBlue: {
@@ -31,14 +32,14 @@ const FiltersSidebar = ({ filters, toggleFilter, clearFilters, availableTags }) 
   };
 
   return (
-    <div className="w-64 flex-shrink-0">
+    <div className="w-64  flex-shrink-0">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-8 ">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold flex items-center gap-2" style={styles.textStyle}>
             <FaFilter style={{ color: '#ffcc00' }} />
             Filters
           </h3>
-          {(filters.level.length > 0 || filters.tags.length > 0) && (
+          {(filters.level.length > 0 || filters.tags.length > 0 || filters.blooms?.length > 0) && (
             <button onClick={clearFilters} className="text-sm font-semibold" style={styles.textStyle}>
               Clear All
             </button>
@@ -63,6 +64,7 @@ const FiltersSidebar = ({ filters, toggleFilter, clearFilters, availableTags }) 
               )}
             </div>
           </div>
+
           <div>
             <h4 className="font-medium text-sm mb-3 flex items-center justify-between cursor-pointer" style={styles.textStyle} onClick={() => setIsTagOpen(!isTagOpen)}>
               Tag
@@ -70,11 +72,29 @@ const FiltersSidebar = ({ filters, toggleFilter, clearFilters, availableTags }) 
             </h4>
             <div className={`space-y-2 max-h-56 overflow-y-auto transition-max-height duration-300 ease-in-out overflow-hidden ${isTagOpen ? 'max-h-96' : 'max-h-0'}`}>
               {isTagOpen && (
-                <div className="space-y-2 max-56 overflow-y-auto">
+                <div className="space-y-2 max-56 overflow-y-auto h-40">
                   {availableTags.map(tag => (
                     <label key={tag} className="flex items-center text-sm" style={styles.customBlue}>
                       <input type="checkbox" checked={filters.tags.includes(tag)} onChange={() => toggleFilter('tags', tag)} style={styles.checkboxStyle} />
                       <span className="ml-2 text-sm" style={styles.textStyle}>{toCamelCase(tag)}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+                    <div>
+            <h4 className="font-medium text-sm mb-3 flex items-center justify-between cursor-pointer" style={styles.textStyle} onClick={() => setIsBloomOpen(!isBloomOpen)}>
+              Blooms
+              {isBloomOpen ? <FaChevronUp style={styles.iconStyle} /> : <FaChevronDown style={styles.iconStyle} />}
+            </h4>
+            <div className={`space-y-2 transition-max-height duration-300 ease-in-out overflow-hidden ${isBloomOpen ? 'max-h-96' : 'max-h-0'}`}>
+              {isBloomOpen && (
+                <div className="space-y-2 max-56 overflow-y-auto h-40">
+                  {['L1 - Remember', 'L2 - Understanding', 'L3 - Apply', 'L4 - Analyze', 'L5 - Evaluate ', 'L6 - Create'].map(bloom => (
+                    <label key={bloom} className="flex items-center text-sm" style={styles.customBlue}>
+                      <input type="checkbox" checked={filters.blooms?.includes(bloom)} onChange={() => toggleFilter('blooms', bloom)} style={styles.checkboxStyle} />
+                      <span className="ml-2 text-sm" style={styles.textStyle}>{bloom}</span>
                     </label>
                   ))}
                 </div>

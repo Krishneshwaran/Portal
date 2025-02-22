@@ -20,8 +20,8 @@ const McqTestQuestionList = ({
   view,
   setView,
   selectedQuestion,
-  handleManualAdd, // Add this prop
-  handleBulkUpload, // Add this prop
+  handleManualAdd,
+  handleBulkUpload,
 }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -36,6 +36,7 @@ const McqTestQuestionList = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSingleQuestionModalOpen, setIsSingleQuestionModalOpen] = useState(false);
   const [availableTags, setAvailableTags] = useState([]);
+  const [duplicateQuestions, setDuplicateQuestions] = useState([]);
 
   const fetchQuestions = useCallback(async () => {
     try {
@@ -52,10 +53,8 @@ const McqTestQuestionList = ({
         setError(response.data.error);
         setQuestions([]);
         toast.error("Error fetching questions.");
-        toast.error("Error fetching questions.");
       } else {
-        const fetchedQuestions = response.data.questions;
-        setQuestions(fetchedQuestions);
+        let fetchedQuestions = response.data.questions;
 
         // Extract unique tags from questions
         const tagsSet = new Set();
@@ -63,6 +62,29 @@ const McqTestQuestionList = ({
           question.tags.forEach(tag => tagsSet.add(tag));
         });
         setAvailableTags(Array.from(tagsSet));
+
+        // Remove duplicate questions
+        const questionMap = new Map();
+        const uniqueQuestions = [];
+        const duplicates = [];
+        fetchedQuestions.forEach(question => {
+          if (questionMap.has(question.question)) {
+            duplicates.push(question);
+          } else {
+            questionMap.set(question.question, true);
+            uniqueQuestions.push(question);
+          }
+        });
+
+        setQuestions(uniqueQuestions);
+        setDuplicateQuestions(duplicates);
+
+        // Automatically delete duplicate questions
+        if (duplicates.length > 0) {
+          const duplicateIds = duplicates.map(question => question.question_id);
+          await Promise.all(duplicateIds.map(id => axios.delete(`${API_BASE_URL}/api/delete-question-from-test/${testId}/${id}/`)));
+          toast.success("Duplicate questions deleted successfully!");
+        }
       }
 
       setLoading(false);
@@ -70,7 +92,6 @@ const McqTestQuestionList = ({
       console.error("Error fetching questions:", error);
       setError("Failed to fetch questions. Please try again.");
       setLoading(false);
-      toast.error("Failed to fetch questions. Please try again.");
       toast.error("Failed to fetch questions. Please try again.");
     }
   }, [testId]);
@@ -97,12 +118,9 @@ const McqTestQuestionList = ({
       if (response.status === 200) {
         setQuestions(questions.filter(question => question.question_id !== question_id));
         toast.success("Question deleted successfully!");
-        toast.success("Question deleted successfully!");
       }
     } catch (error) {
       console.error("Error deleting question:", error);
-      setDeleteError("Failed to delete the question. Please try again.");
-      toast.error("Failed to delete the question. Please try again.");
       toast.error("Failed to delete the question. Please try again.");
     } finally {
       setDeleting(false);
@@ -183,7 +201,7 @@ const McqTestQuestionList = ({
   const currentQuestionsSlice = currentQuestions.slice(indexOfFirstQuestion, indexOfLastQuestion);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[1fr_7fr] gap-4 ">
+    <div className="grid grid-cols-1 md:grid-cols-[1fr_7fr] gap-4">
       <FiltersSidebar
         filters={filters}
         toggleFilter={toggleFilter}
@@ -198,8 +216,8 @@ const McqTestQuestionList = ({
             setIsModalOpen={setIsModalOpen}
             setIsSingleQuestionModalOpen={setIsSingleQuestionModalOpen}
             totalQuestions={currentQuestions.length} // Pass the length of currentQuestions
-            handleManualAdd={handleManualAdd}  // ✅ Pass function
-            handleBulkUpload={handleBulkUpload} // ✅ Pass function
+            handleManualAdd={handleManualAdd}  // Pass function
+            handleBulkUpload={handleBulkUpload} // Pass function
           />
           <div className="space-y-2 flex-grow">
             <ToastContainer />
@@ -222,7 +240,7 @@ const McqTestQuestionList = ({
                 {currentQuestionsSlice.map((question, index) => (
                   <div
                     key={index}
-                    className="bg-white rounded-xl border border-gray-400 hover:shadow-md hover:scale-y-102 transition-all cursor-pointer p-4 "
+                    className="bg-white rounded-xl border border-gray-400 hover:shadow-md hover:scale-y-102 transition-all cursor-pointer p-4"
                     onClick={() => {
                       setSelectedQuestion(question);
                       // setView('details');
@@ -238,7 +256,7 @@ const McqTestQuestionList = ({
                           <div className='flex space-x-3 items-center'>
                             <p className='text-sm text-[#111933] font-semibold'> Ans: <span className='font-normal'> {question.correctAnswer} </span> </p>
                             <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(question.question_id); }}>
-                              <Trash2 className="w-5 h-5 text-gray-500" />
+                              <Trash2 className="w-5 h-5 text-red-500" />
                             </button>
                           </div>
                         </div>
@@ -291,7 +309,7 @@ const McqTestQuestionList = ({
               </div>
             )}
             {showConfirmModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center " style={{ zIndex: 10000 }}>
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 10000 }}>
                 <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
                   <p className="text-lg font-medium text-gray-900">Are you sure you want to delete this question?</p>
                   <div className="flex justify-end mt-4">
@@ -311,6 +329,7 @@ const McqTestQuestionList = ({
                 </div>
               </div>
             )}
+            
           </div>
         </div>
       </div>

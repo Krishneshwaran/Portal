@@ -75,7 +75,7 @@ const CenteredModal = ({ isConfirmModalOpen, setIsConfirmModalOpen, targetPath }
           Are you sure you want to terminate the process?
         </Typography>
         <Typography variant="body1" align="center" color="text.secondary" mb={2}>
-          You'll lose course creation progress!!!
+          You'll lose test creation progress!!!
         </Typography>
       <DialogActions sx={{ justifyContent: 'center', gap: '1rem' }}>
         <Button

@@ -1,54 +1,86 @@
 import React from 'react';
 import ImportQuestion from '../../assets/ImportQuestion.svg';
 import AddQuestion from '../../assets/AddQuestion.svg';
-const TotalQuestions = ({ totalQuestions }) => {
+import { FaSearch } from 'react-icons/fa';
 
+// Reusable button component
+const ActionButton = ({ onClick, text, icon, className = "" }) => (
+  <button
+    onClick={onClick}
+    className={`
+      inline-flex items-center px-4 py-2 w-144px font-medium
+      bg-[#111933] text-[#ffffff] hover:bg-[#111933]
+      transform transition-transform hover:scale-102 cursor-pointer
+      rounded-lg ${className}
+    `}
+  >
+    {text}
+    <img src={icon} alt={text} className="w-4 h-4 ml-3" />
+  </button>
+);
 
+// Search input component
+const SearchInput = ({ value, onChange }) => (
+  <div className="relative flex-grow max-w-xl ml-4">
+    <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+    <input
+      type="text"
+      placeholder="Search"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full py-2 pl-10 border-2 border-gray-300 focus:border-blue-500 rounded-lg"
+      style={{ outline: 'none' }}
+      onFocus={(e) => e.target.style.borderColor = '#111933'}
+      onBlur={(e) => e.target.style.borderColor = 'gray'}
+    />
+  </div>
+);
 
+// Total Questions counter component
+const TotalQuestions = ({ count }) => (
+  <div className="flex flex-row justify-left w-64 h-30 rounded-lg pt-1.5">
+    <div className="pl-5 text-normal font-semibold">Total Questions: </div>
+    <div className="pl-2 text-normal font-semibold">{count}</div>
+  </div>
+);
 
-  return (
-    <div style={{flexDirection: 'row', display: 'flex', justifyContent: 'left', width: '16rem', height: '30px', borderRadius: '10px', paddingTop:"5px"}}>
-      <div className='pl-5 text-normal font-semibold' >Total Questions: </div>
-      <div className='pl-2 text-normal font-semibold'>{totalQuestions}</div>
-    </div>
-  );
-};
+const Header = ({ 
+  searchQuery, 
+  setSearchQuery, 
+  setIsModalOpen, 
+  setIsSingleQuestionModalOpen, 
+  totalQuestions 
+}) => {
+  const actions = [
+    {
+      text: "Import Question",
+      icon: ImportQuestion,
+      onClick: () => setIsModalOpen(true)
+    },
+    {
+      text: "Add Question",
+      icon: AddQuestion,
+      onClick: () => setIsSingleQuestionModalOpen(true),
+      className: "mr-6"
+    }
+  ];
 
-const Header = ({ searchQuery, setSearchQuery, setIsModalOpen, setIsSingleQuestionModalOpen, totalQuestions }) => {
   return (
     <div className="flex flex-col md:flex-row justify-between items-center p-3 bg-white rounded-t-lg py-4">
-      <TotalQuestions totalQuestions={totalQuestions}/>
+      <TotalQuestions count={totalQuestions} />
+      
       <div className="flex items-center gap-4 mt-2 md:mt-0 flex-grow">
-        <div className="relative flex-grow max-w-xl ml-4">
-          <input
-            type="text"
-            placeholder="Search questions..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full py-2 pl-3 border border-gray-300 rounded-full focus:ring-blue-500 "
-            style={{ borderColor: 'rgba(0,0,0,0.4)', outline: 'none' }}
-            onFocus={(e) => e.target.style.borderColor = '#111933'}
-            onBlur={(e) => e.target.style.borderColor = 'gray'}
+        <SearchInput 
+          value={searchQuery}
+          onChange={setSearchQuery}
+        />
+        
+        {actions.map((action, index) => (
+          <ActionButton
+            key={index}
+            {...action}
           />
-        </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center px-4 py-2 w-144px font-medium bg-[#111933] text-[#ffffff] hover:bg-[#111933]      hover:scale-102 cursor-pointer"
-          style={{ borderRadius: '0.5rem' }}
-          
-        >
-
-          Import Question
-          <img src={ImportQuestion} alt="Coding" className="w-4 h-4 ml-3" />
-        </button>
-        <button
-          onClick={() => setIsSingleQuestionModalOpen(true)}
-          className="inline-flex items-center px-4 py-2 mr-6 w-144px font-medium bg-[#111933] text-[#ffffff] hover:bg-[#111933]    transform transition-transform  hover:scale-102 cursor-pointer"
-          style={{ borderRadius: '0.5rem' }}
-        >
-          Add Question
-          <img src={AddQuestion} alt="Coding" className="w-4 h-4 ml-3" />
-        </button>
+        ))}
       </div>
     </div>
   );

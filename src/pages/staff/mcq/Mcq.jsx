@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -9,171 +9,198 @@ import QuestionModal from '../../../components/McqLibrary/QuestionModal';
 import ImportModal from '../../../components/McqLibrary/ImportModal';
 import QuestionDetails from '../../../components/McqLibrary/QuestionDetails';
 import ConfirmationModal from '../../../components/McqLibrary/ConfirmationModal';
+import axios from 'axios';
 
 const Mcq = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSingleQuestionModalOpen, setIsSingleQuestionModalOpen] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState("");
-  const [selectedQuestion, setSelectedQuestion] = useState(null);
-  const [questions, setQuestions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filters, setFilters] = useState({ level: [], tags: [], section: [] });
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-  const [availableTags, setAvailableTags] = useState([]);
-  const [availableSections, setAvailableSections] = useState([]);
-  const [singleQuestionData, setSingleQuestionData] = useState({
-    question: "", option1: "", option2: "", option3: "", option4: "",
-    answer: "", level: "easy", tags: ""
+  // Consolidated state management
+  const [modalStates, setModalStates] = useState({
+    isModalOpen: false,
+    isSingleQuestionModalOpen: false,
+    showConfirm: false,
+    isEditing: false
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+
+  const [questionData, setQuestionData] = useState({
+    questions: [],
+    selectedQuestion: null,
+    singleQuestionData: {
+      question: "",
+      option1: "",
+      option2: "",
+      option3: "",
+      option4: "",
+      answer: "",
+      level: "easy",
+      tags: ""
+    }
+  });
+
+  const [uiState, setUiState] = useState({
+    loading: true,
+    isLoading: false,
+    error: null,
+    uploadStatus: "",
+    currentPage: 1,
+    searchQuery: "",
+    filters: { level: [], tags: [], section: [] },
+    availableTags: [],
+    availableSections: []
+  });
+
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
   const navigate = useNavigate();
   const questionsPerPage = 10;
 
-  useEffect(() => {
-    fetchQuestions();
+  // Unified modal state handlers
+  const toggleModal = (modalType, value) => {
+    setModalStates(prev => ({ ...prev, [modalType]: value }));
+  };
+
+  // API Handlers
+  const handleApiRequest = async (url, method, body = null) => {
+    try {
+      const options = {
+        method,
+        headers: method === 'POST' || method === 'PUT'
+          ? { 'Content-Type': 'application/json' }
+          : {},
+        body: body ? JSON.stringify(body) : null
+      };
+
+      const response = await fetch(`${API_BASE_URL}${url}`, options);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to ${method.toLowerCase()} data`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error(`API Error (${method}):`, error);
+      throw error;
+    }
+  };
+
+  const fetchQuestions = useCallback(async () => {
+    try {
+      setUiState(prev => ({ ...prev, loading: true }));
+      const data = await handleApiRequest('/api/fetch-all-questions/', 'GET');
+      let fetchedQuestions = data.questions;
+
+      // Remove duplicate questions
+      const questionMap = new Map();
+      const uniqueQuestions = [];
+      const duplicates = [];
+      fetchedQuestions.forEach(question => {
+        if (questionMap.has(question.question)) {
+          duplicates.push(question);
+        } else {
+          questionMap.set(question.question, true);
+          uniqueQuestions.push(question);
+        }
+      });
+
+      setQuestionData(prev => ({ ...prev, questions: uniqueQuestions }));
+
+      // Automatically delete duplicate questions
+      if (duplicates.length > 0) {
+        const duplicateIds = duplicates.map(question => question.question_id);
+        await Promise.all(duplicateIds.map(id => axios.delete(`${API_BASE_URL}/api/delete_question/${id}/`)));
+        toast.success("Duplicate questions deleted successfully!");
+      }
+
+      setUiState(prev => ({ ...prev, error: null }));
+    } catch (err) {
+      setUiState(prev => ({
+        ...prev,
+        error: 'Failed to load questions. Please try again later.'
+      }));
+    } finally {
+      setUiState(prev => ({ ...prev, loading: false }));
+    }
   }, []);
 
   const handleDelete = async (question_id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/delete_question/${question_id}/`, {
-        method: 'DELETE',
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete question');
-      }
-
+      await handleApiRequest(`/api/delete_question/${question_id}/`, 'DELETE');
       toast.success('Question deleted successfully');
+      fetchQuestions();
     } catch (error) {
-      console.error('Delete error:', error);
+      toast.error('Failed to delete question');
     }
   };
 
   const handleUpdate = async (question_id) => {
     try {
-        setIsLoading(true);
+      setUiState(prev => ({ ...prev, isLoading: true }));
 
-        console.log("Updating question with ID:", question_id);
-        console.log("Request body:", JSON.stringify(selectedQuestion, null, 2));
-
-        const response = await fetch(`${API_BASE_URL}/api/update_question/${question_id}/`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                question: selectedQuestion.question,
-                options: selectedQuestion.options,
-                correctAnswer: selectedQuestion.correctAnswer,
-                level: selectedQuestion.level,
-                tags: selectedQuestion.tags,
-            }),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error("Error response from server:", errorData);
-            throw new Error(errorData.error || 'Failed to update question');
+      await handleApiRequest(
+        `/api/update_question/${question_id}/`,
+        'PUT',
+        {
+          question: questionData.selectedQuestion.question,
+          options: questionData.selectedQuestion.options,
+          correctAnswer: questionData.selectedQuestion.correctAnswer,
+          level: questionData.selectedQuestion.level,
+          tags: questionData.selectedQuestion.tags,
         }
+      );
 
-        setIsEditing(false);
-        toast.success('Question Updated Successfully!');
+      toggleModal('isEditing', false);
+      toast.success('Question Updated Successfully!');
 
-        // Hide the success message after 2 seconds and reload
-        setTimeout(() => {
-            window.location.reload();  // Reload the page to reflect changes
-        }, 1000);
-
+      setTimeout(() => window.location.reload(), 1000);
     } catch (error) {
-        console.error('Error updating question:', error);
-        setError(error.message);
+      toast.error('Failed to update question');
     } finally {
-        setIsLoading(false);
+      setUiState(prev => ({ ...prev, isLoading: false }));
     }
-};
-
-  useEffect(() => {
-    const tags = new Set();
-    const sections = new Set();
-    questions.forEach(question => {
-      if (question.tags) {
-        const questionTags = typeof question.tags === 'string'
-          ? question.tags.split(',').map(tag => tag.trim())
-          : question.tags;
-        questionTags.forEach(tag => tags.add(tag));
-      }
-      if (question.section) {
-        sections.add(question.section);
-      }
-    });
-    setAvailableTags(Array.from(tags));
-    setAvailableSections(Array.from(sections));
-  }, [questions]);
-
-  const fetchQuestions = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/fetch-all-questions/`);
-      if (!response.ok) throw new Error('Failed to fetch questions');
-      const data = await response.json();
-      setQuestions(data.questions);
-      setError(null);
-    } catch (err) {
-      setError('Failed to load questions. Please try again later.');
-      console.error('Error loading questions:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSingleQuestionInputChange = (e) => {
-    const { name, value } = e.target;
-    setSingleQuestionData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSingleQuestionSubmit = async (e) => {
     e.preventDefault();
-    const { question, option1, option2, option3, option4, answer, level } = singleQuestionData;
+    const { question, option1, option2, option3, option4, answer, level } = questionData.singleQuestionData;
 
-    if (!question || !option1 || !option2 ||  !answer || !level) {
-      setUploadStatus("Error: Please fill in all required fields");
+    if (!question || !option1 || !option2 || !answer || !level) {
+      setUiState(prev => ({
+        ...prev,
+        uploadStatus: "Error: Please fill in all required fields"
+      }));
       return;
     }
 
     const options = [option1, option2, option3, option4];
     if (!options.includes(answer)) {
-      setUploadStatus("Error: Answer must be one of the options");
+      setUiState(prev => ({
+        ...prev,
+        uploadStatus: "Error: Answer must be one of the options"
+      }));
       return;
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/upload-single-question/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(singleQuestionData)
-      });
+      await handleApiRequest(
+        '/api/upload-single-question/',
+        'POST',
+        questionData.singleQuestionData
+      );
 
-      if (response.ok) {
-        toast.success('Question uploaded successfully!');
-        setSingleQuestionData({
+      toast.success('Question uploaded successfully!');
+      setQuestionData(prev => ({
+        ...prev,
+        singleQuestionData: {
           question: "", option1: "", option2: "", option3: "", option4: "",
           answer: "", level: "easy", tags: ""
-        });
-        fetchQuestions();
-        setTimeout(() => setIsSingleQuestionModalOpen(false), 1500);
-      } else {
-        const error = await response.json();
-        setUploadStatus("Error: " + (error.error || "Unknown error."));
-      }
+        }
+      }));
+
+      fetchQuestions();
+      setTimeout(() => toggleModal('isSingleQuestionModalOpen', false), 1500);
     } catch (err) {
-      console.error("Error uploading question:", err);
-      setUploadStatus("Error: Unable to upload question.");
+      setUiState(prev => ({
+        ...prev,
+        uploadStatus: "Error: Unable to upload question."
+      }));
     }
   };
 
@@ -182,12 +209,12 @@ const Mcq = () => {
     if (!file) return;
 
     if (!file.name.endsWith(".csv")) {
-      setUploadStatus("Error: Only CSV files are allowed.");
+      setUiState(prev => ({ ...prev, uploadStatus: "Error: Only CSV files are allowed." }));
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setUploadStatus("Error: File size exceeds 5MB.");
+      setUiState(prev => ({ ...prev, uploadStatus: "Error: File size exceeds 5MB." }));
       return;
     }
 
@@ -200,148 +227,199 @@ const Mcq = () => {
         body: formData,
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        const data = await response.json();
         toast.success(data.message);
         fetchQuestions();
-        setTimeout(() => setIsModalOpen(false), 1500);
+        setTimeout(() => toggleModal('isModalOpen', false), 1500);
       } else {
-        const error = await response.json();
-        setUploadStatus("Error: " + (error.error || "Unknown error."));
+        setUiState(prev => ({
+          ...prev,
+          uploadStatus: "Error: " + (data.error || "Unknown error.")
+        }));
       }
     } catch (err) {
-      console.error("Error uploading file:", err);
-      setUploadStatus("Error: Unable to upload file.");
+      setUiState(prev => ({
+        ...prev,
+        uploadStatus: "Error: Unable to upload file."
+      }));
     }
   };
 
-  const filteredQuestions = questions.filter(question => {
-    const matchesSearch = question.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      question.options.some(option => option.toLowerCase().includes(searchQuery.toLowerCase()));
+  // Filter handling
+  const getFilteredQuestions = () => {
+    return questionData.questions.filter(question => {
+      const matchesSearch = question.question.toLowerCase().includes(uiState.searchQuery.toLowerCase()) ||
+        question.options.some(option => option.toLowerCase().includes(uiState.searchQuery.toLowerCase()));
 
-    const matchesLevel = filters.level.length === 0 || filters.level.includes(question.level);
+      const matchesLevel = uiState.filters.level.length === 0 ||
+        uiState.filters.level.includes(question.level);
 
-    const questionTags = typeof question.tags === 'string'
-      ? question.tags.split(',').map(tag => tag.trim())
-      : question.tags || [];
-    const matchesTags = filters.tags.length === 0 ||
-      filters.tags.some(tag => questionTags.includes(tag));
+      const questionTags = typeof question.tags === 'string'
+        ? question.tags.split(',').map(tag => tag.trim())
+        : question.tags || [];
+      const matchesTags = uiState.filters.tags.length === 0 ||
+        uiState.filters.tags.some(tag => questionTags.includes(tag));
 
-    const matchesSection = filters.section.length === 0 || filters.section.includes(question.section);
+      const matchesSection = uiState.filters.section.length === 0 ||
+        uiState.filters.section.includes(question.section);
 
-    return matchesSearch && matchesLevel && matchesTags && matchesSection;
-  });
+      return matchesSearch && matchesLevel && matchesTags && matchesSection;
+    });
+  };
 
-  const indexOfLastQuestion = currentPage * questionsPerPage;
+  // Effects
+  useEffect(() => {
+    fetchQuestions();
+  }, [fetchQuestions]);
+
+  useEffect(() => {
+    const tags = new Set();
+    const sections = new Set();
+
+    questionData.questions.forEach(question => {
+      if (question.tags) {
+        const questionTags = typeof question.tags === 'string'
+          ? question.tags.split(',').map(tag => tag.trim())
+          : question.tags;
+        questionTags.forEach(tag => tags.add(tag));
+      }
+      if (question.section) {
+        sections.add(question.section);
+      }
+    });
+
+    setUiState(prev => ({
+      ...prev,
+      availableTags: Array.from(tags),
+      availableSections: Array.from(sections)
+    }));
+  }, [questionData.questions]);
+
+  // Pagination calculations
+  const filteredQuestions = getFilteredQuestions();
+  const indexOfLastQuestion = uiState.currentPage * questionsPerPage;
   const indexOfFirstQuestion = indexOfLastQuestion - questionsPerPage;
   const currentQuestions = filteredQuestions.slice(indexOfFirstQuestion, indexOfLastQuestion);
   const totalPages = Math.ceil(filteredQuestions.length / questionsPerPage);
 
-  console.log("Current Page:", currentPage);
-  console.log("Index of First Question:", indexOfFirstQuestion);
-  console.log("Index of Last Question:", indexOfLastQuestion);
-  console.log("Current Questions:", currentQuestions);
-
-  const toggleFilter = (type, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [type]: prev[type].includes(value)
-        ? prev[type].filter(item => item !== value)
-        : [...prev[type], value]
-    }));
-    setCurrentPage(1);
-  };
-
-  const clearFilters = () => {
-    setFilters({ level: [], tags: [], section: [] });
-    setSearchQuery("");
-    setCurrentPage(1);
-  };
-
   return (
-    <div className="min-h-screen bg-[#f4f6ff86]">
+    <div className="min-h-screen bg-[#ecf2fe]">
+      
       <ToastContainer />
       <div className="max-w-full mx-auto px-24 py-12">
-      <h3 className="font-semibold text-2xl mb-1.5 text-[#111933]">Question Library</h3>
-      <h4 className="font-light text-lg mb-3 text-[#111933]">Select and preview question from your collection</h4>
-      <div className="flex  items-center mb-6 border-b-2 border-[#11193380]"></div>
-      <div className="">
+        <div className="bg-white p-14 main-container">
+          <h3 className="font-semibold text-2xl mb-1.5 text-[#111933]">Question Library</h3>
+          <h4 className="font-light text-lg mb-3 text-[#111933]">Select and preview questions from your collection</h4>
+          <div className="flex items-center mb-6 border-b-2 border-[#11193380]"></div>
 
-</div>
-        <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex flex-col lg:flex-row gap-6">
+            <FiltersSidebar
+              filters={uiState.filters}
+              toggleFilter={(type, value) => {
+                setUiState(prev => ({
+                  ...prev,
+                  filters: {
+                    ...prev.filters,
+                    [type]: prev.filters[type].includes(value)
+                      ? prev.filters[type].filter(item => item !== value)
+                      : [...prev.filters[type], value]
+                  },
+                  currentPage: 1
+                }));
+              }}
+              clearFilters={() => {
+                setUiState(prev => ({
+                  ...prev,
+                  filters: { level: [], tags: [], section: [] },
+                  searchQuery: "",
+                  currentPage: 1
+                }));
+              }}
+              availableTags={uiState.availableTags}
+              availableSections={uiState.availableSections}
+            />
 
-        <div>
-
-            <div >
-              <FiltersSidebar
-                filters={filters}
-                toggleFilter={toggleFilter}
-                clearFilters={clearFilters}
-                availableTags={availableTags}
-                availableSections={availableSections}
+            <div className="flex-1">
+              <Header
+                totalQuestions={filteredQuestions.length}
+                searchQuery={uiState.searchQuery}
+                setSearchQuery={(query) => setUiState(prev => ({ ...prev, searchQuery: query }))}
+                setIsModalOpen={(value) => toggleModal('isModalOpen', value)}
+                setIsSingleQuestionModalOpen={(value) => toggleModal('isSingleQuestionModalOpen', value)}
               />
+
+              {filteredQuestions.length === 0 ? (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 text-yellow-700 mt-4">
+                  <strong className="font-medium">No Results: </strong>
+                  <span>No questions found.</span>
+                </div>
+              ) : (
+                <QuestionsList
+                  questions={questionData.questions}
+                  loading={uiState.loading}
+                  error={uiState.error}
+                  currentQuestions={currentQuestions}
+                  setSelectedQuestion={(question) => setQuestionData(prev => ({ ...prev, selectedQuestion: question }))}
+                  currentPage={uiState.currentPage}
+                  totalPages={totalPages}
+                  setCurrentPage={(page) => setUiState(prev => ({ ...prev, currentPage: page }))}
+                />
+              )}
             </div>
           </div>
-          <div className="flex-1">
-            <Header
-            totalQuestions={filteredQuestions.length}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              setIsModalOpen={setIsModalOpen}
-              setIsSingleQuestionModalOpen={setIsSingleQuestionModalOpen}
-            />
-            <QuestionsList
-              questions={questions}
-              loading={loading}
-              error={error}
-              currentQuestions={currentQuestions}
-              setSelectedQuestion={setSelectedQuestion}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              setCurrentPage={setCurrentPage}
-            />
-          </div>
         </div>
+
+        {questionData.selectedQuestion && (
+          <QuestionDetails
+            selectedQuestion={questionData.selectedQuestion}
+            setSelectedQuestion={(question) => setQuestionData(prev => ({ ...prev, selectedQuestion: question }))}
+            isEditing={modalStates.isEditing}
+            setIsEditing={(value) => toggleModal('isEditing', value)}
+            handleUpdate={handleUpdate}
+            isLoading={uiState.isLoading}
+            setShowConfirm={(value) => toggleModal('showConfirm', value)}
+          />
+        )}
+
+        {modalStates.isModalOpen && (
+          <ImportModal
+            isModalOpen={modalStates.isModalOpen}
+            setIsModalOpen={(value) => toggleModal('isModalOpen', value)}
+            handleBulkUpload={handleBulkUpload}
+            uploadStatus={uiState.uploadStatus}
+          />
+        )}
+
+        {modalStates.isSingleQuestionModalOpen && (
+          <QuestionModal
+            isSingleQuestionModalOpen={modalStates.isSingleQuestionModalOpen}
+            setIsSingleQuestionModalOpen={(value) => toggleModal('isSingleQuestionModalOpen', value)}
+            singleQuestionData={questionData.singleQuestionData}
+            handleSingleQuestionInputChange={(e) => {
+              const { name, value } = e.target;
+              setQuestionData(prev => ({
+                ...prev,
+                singleQuestionData: { ...prev.singleQuestionData, [name]: value }
+              }));
+            }}
+            handleSingleQuestionSubmit={handleSingleQuestionSubmit}
+            uploadStatus={uiState.uploadStatus}
+          />
+        )}
+
+        {modalStates.showConfirm && (
+          <ConfirmationModal
+            showConfirm={modalStates.showConfirm}
+            setShowConfirm={(value) => toggleModal('showConfirm', value)}
+            handleDelete={handleDelete}
+            selectedQuestion={questionData.selectedQuestion}
+            setSelectedQuestion={(question) => setQuestionData(prev => ({ ...prev, selectedQuestion: question }))}
+            navigate={navigate}
+          />
+        )}
       </div>
-      {selectedQuestion && (
-        <QuestionDetails
-          selectedQuestion={selectedQuestion}
-          setSelectedQuestion={setSelectedQuestion}
-          isEditing={isEditing}
-          setIsEditing={setIsEditing}
-          handleUpdate={handleUpdate}
-          isLoading={isLoading}
-          setShowConfirm={setShowConfirm}
-        />
-      )}
-      {isModalOpen && (
-        <ImportModal
-          isModalOpen={isModalOpen}
-          setIsModalOpen={setIsModalOpen}
-          handleBulkUpload={handleBulkUpload}
-          uploadStatus={uploadStatus}
-        />
-      )}
-      {isSingleQuestionModalOpen && (
-        <QuestionModal
-          isSingleQuestionModalOpen={isSingleQuestionModalOpen}
-          setIsSingleQuestionModalOpen={setIsSingleQuestionModalOpen}
-          singleQuestionData={singleQuestionData}
-          handleSingleQuestionInputChange={handleSingleQuestionInputChange}
-          handleSingleQuestionSubmit={handleSingleQuestionSubmit}
-          uploadStatus={uploadStatus}
-        />
-      )}
-      {showConfirm && (
-        <ConfirmationModal
-          showConfirm={showConfirm}
-          setShowConfirm={setShowConfirm}
-          handleDelete={handleDelete}
-          selectedQuestion={selectedQuestion}
-          setSelectedQuestion={setSelectedQuestion}
-          navigate={navigate}
-        />
-      )}
     </div>
   );
 };

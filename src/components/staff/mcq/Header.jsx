@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Legend from "./Legend";
+import clock from "../../../assets/Clock.svg";
 
 export default function Header({ duration }) {
   const [timeLeft, setTimeLeft] = useState(duration);
@@ -26,23 +26,20 @@ export default function Header({ duration }) {
   };
 
   return (
-    <div className="flex justify-between items-center">
-      <div className="flex items-center gap-2">
-        <h1 className="text-[#111933] text-2xl ml-8 font-bold">MCQ ASSESSMENT</h1>
+    <div className="flex justify-between items-center my-4 px-4 md:px-14">
+  <div className="flex justify-center items-center gap-2">
+    <h1 className="text-[#00296b] text-lg md:text-xl font-normal">MCQ ASSESSMENT</h1>
+  </div>
+  <div className="flex items-center gap-2 mr-14 md:mr-0">
+    <img src={clock} alt="clock" className="w-6 h-6 md:w-10 md:h-10"></img>
+    <div>
+      <div className="text-[#00296b] text-base md:text-lg font-normal">
+        {formatTime(timeLeft)}
       </div>
-      <div className="flex items-center ml-96 -mr-96 mt-4 gap-2">
-        <span className="w-8 h-8 text-bold text-4xl pr-4 flex items-center justify-center">⏰</span>
-        <div>
-          <div className="text-[#111933] text-xl font-bold">
-            {formatTime(timeLeft)}
-          </div>
-          <div className="text-[#111933] text-xl">Time Left</div>
-        </div>
-      </div>
-      <div className="flex mr-28 mt-6">      
-        <Legend />
-      </div>
-
+      <div className="text-[#00296b] text-xs md:text-sm ">Time Left</div>
     </div>
+  </div>
+</div>
+
   );
 }

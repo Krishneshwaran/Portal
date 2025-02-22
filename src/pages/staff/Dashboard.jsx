@@ -51,7 +51,6 @@ const Dashboard = () => {
         api.get('/students/stats', { withCredentials: true }),
         api.get('/mcq', { withCredentials: true }),
       ]);
-
       const codingTests = contestResponse?.data?.contests || [];
       const mcqAssessments = mcqResponse?.data?.assessments || [];
 
@@ -111,6 +110,7 @@ const Dashboard = () => {
   // Replace the existing filteredTests useMemo in your Dashboard component with this:
   const filteredTests = useMemo(() => {
     const allTests = [...tests, ...mcqTests].map(test => {
+      
       const currentUTC = new Date(
         formatInTimeZone(new Date(), 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ss'Z'")
       ).getTime();
@@ -118,15 +118,18 @@ const Dashboard = () => {
       const endUTC = new Date(test.endDate).getTime();
   
       let status;
-      if (currentUTC < startUTC) {
+      if (test.status === "Completed" || test.status === "Closed" || test.overall_status === "closed") {
+        status = "Completed";
+      } else if (currentUTC < startUTC) {
         status = "Upcoming";
       } else if (currentUTC >= startUTC && currentUTC <= endUTC) {
         status = "Live";
       } else {
         status = "Completed";
       }
-  
-      return { ...test, currentStatus: status };
+      
+      let data = { ...test, currentStatus: status };
+      return data;
     });
   
     if (activeFilter === 'All') {
@@ -151,7 +154,10 @@ const Dashboard = () => {
         ).getTime();
         const startUTC = new Date(test.registrationStart).getTime();
         const endUTC = new Date(test.endDate).getTime();
-        return currentUTC >= startUTC && currentUTC <= endUTC;
+        return currentUTC >= startUTC && currentUTC <= endUTC && 
+               test.status !== "Completed" && 
+               test.status !== "Closed" && 
+               test.overall_status !== "closed";
       }).length;
   
       const completedTests = allTests.filter(test => {
@@ -159,7 +165,10 @@ const Dashboard = () => {
           formatInTimeZone(new Date(), 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ss'Z'")
         ).getTime();
         const endUTC = new Date(test.endDate).getTime();
-        return currentUTC > endUTC;
+        return currentUTC > endUTC || 
+               test.status === "Completed" || 
+               test.status === "Closed" || 
+               test.overall_status === "closed";
       }).length;
   
       const upcomingTests = allTests.filter(test => {
@@ -167,7 +176,10 @@ const Dashboard = () => {
           formatInTimeZone(new Date(), 'Asia/Kolkata', "yyyy-MM-dd'T'HH:mm:ss'Z'")
         ).getTime();
         const startUTC = new Date(test.registrationStart).getTime();
-        return currentUTC < startUTC;
+        return currentUTC < startUTC && 
+               test.status !== "Completed" && 
+               test.status !== "Closed" && 
+               test.overall_status !== "closed";
       }).length;
   
       setStats(prevStats => ({
@@ -230,11 +242,11 @@ const Dashboard = () => {
   };
 
   return (
-    <div className={`min-h-screen py-10 px-5 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-[#f4f6ff86]'}`}>
+    <div className={`min-h-screen py-10 px-5 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-[#ecf2fe]'}`}>
       <ToastContainer />
 
       <div className="bg-transparent mx-5 ml-16 mr-14 rounded-b-2xl p-6 ">
-        <h2 className="text-3xl text-[#111933] mb-6 font-medium cursor-text">
+        <h2 className="text-3xl text-[#111933]  pb-5 font-bold border-b-2 cursor-text">
           Overall Stats
         </h2>
 
@@ -281,12 +293,12 @@ const Dashboard = () => {
 
       <div className={`max-w-8xl mx-auto px-4 py-8 ${isDarkMode ? 'text-white' : ''}`}>
         <div className="flex justify-between items-center mb-6">
-          <div className="flex text-sm gap-4 ml-20">
+          <div className="flex text-base gap-4 ml-20">
             {['All', 'Live', 'Completed', 'Upcoming'].map((status) => (
               <button
                 key={status}
-                className={`px-4 rounded-[10000px] py-1 ${
-                  activeFilter === status ? 'bg-[#111933] text-white font-bold' : 'text-gray-600 hover:text-gray-900'
+                className={`mx-4 ${
+                  activeFilter === status ? 'border-b-2 border-yellow-500 text-black font-bold' : 'text-gray-600 hover:text-gray-900'
                 } ${isDarkMode ? 'text-white' : ''}`}
                 onClick={() => filterTests(status)}
               >
@@ -322,6 +334,7 @@ const Dashboard = () => {
                   title={test.name}
                   type={test.type}
                   date={format(new Date(test.endDate), 'MM/dd/yyyy')}
+
                   time={formatInTimeZone(new Date(test.endDate), 'UTC', 'hh:mm a')}
                   stats={{
                     Assigned: test.assignedCount || 0,
@@ -330,6 +343,7 @@ const Dashboard = () => {
                   }}
                   registrationStart={test.registrationStart}
                   endDate={test.endDate}
+                  status={test.status}
                   isDarkMode={isDarkMode}
                 />
 

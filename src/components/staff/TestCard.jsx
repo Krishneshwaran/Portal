@@ -6,10 +6,10 @@ import { Card, CardHeader, CardFooter, CardBody } from "@nextui-org/react";
 import { Skeleton } from "@mui/material";
 import { formatInTimeZone } from 'date-fns-tz';
 
-const TestCard = ({ title, type, date, time, stats, registrationStart, endDate, contestId, isLoading }) => {
+const TestCard = ({ title, type, date, time, stats, registrationStart, endDate, contestId, status , isLoading }) => {
   const navigate = useNavigate();
   const [currentStatus, setCurrentStatus] = useState("");
-
+  //console.log(status);
   const calculateStatus = () => {
     // Get current time in UTC by converting IST to UTC
     const istNow = new Date();
@@ -23,13 +23,17 @@ const TestCard = ({ title, type, date, time, stats, registrationStart, endDate, 
     const currentUTC = new Date(utcTimestamp).getTime();
     const startUTC = new Date(registrationStart).getTime();
     const endUTC = new Date(endDate).getTime();
-  
-    if (currentUTC < startUTC) {
-      return "Upcoming";
-    } else if (currentUTC >= startUTC && currentUTC <= endUTC) {
-      return "Live";
-    } else {
-      return "Completed";
+    if(status == "Completed"){
+      return "Completed"
+    }
+    else{
+      if (currentUTC < startUTC) {
+        return "Upcoming";
+      } else if (currentUTC >= startUTC && currentUTC <= endUTC) {
+        return "Live";
+      } else {
+        return "Completed";
+      }
     }
   };
   

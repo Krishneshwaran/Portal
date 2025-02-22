@@ -43,27 +43,34 @@ const StaffNavbar = () => {
       setTargetPath("/stafflogin");
       return;
     }
-
-    // Clear all cookies, including JWT tokens
-    document.cookie.split(";").forEach(cookie => {
-      document.cookie = cookie
-        .replace(/^ +/, "")
-        .replace(/=.*/, `=;expires=${new Date(0).toUTCString()};path=/;secure;samesite=strict`);
-    });
-
+  
+    // Remove JWT token without specifying path
+    Cookies.remove('jwt');
+    Cookies.remove('refreshToken');
+  
+    // Try removing using different paths (optional)
+    document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  
+    // Clear username cookie
+    Cookies.remove('username');
+  
     // Clear local storage and session storage
     localStorage.clear();
     sessionStorage.clear();
-
-    // Proceed with logout after clearing
+  
+    // Navigate to login page after clearing
     navigate("/stafflogin");
     handleMenuClose();
   };
+  
 
   const handleSettings = async () => {
     if (window.location.pathname.includes('mcq/combinedDashboard')) {
       setIsConfirmModalOpen(true);
       setTargetPath("/staffprofile"); // Set the target path you want to navigate to
+      localStorage.clear()
+      sessionStorage.clear()
       return;
     }
     navigate("/staffprofile");
@@ -98,7 +105,9 @@ const StaffNavbar = () => {
   const handleLinkClick = async (path) => {
     if (window.location.pathname.includes('mcq/combinedDashboard')) {
       setIsConfirmModalOpen(true);
-      setTargetPath(path); // Set the target path you want to navigate to
+      setTargetPath(path); // Set the target path you want to navigate to=
+      localStorage.clear();
+      sessionStorage.clear();
       setActiveLink(path);
       return;
     }
@@ -108,9 +117,12 @@ const StaffNavbar = () => {
 
   return (
     <>
+    {/* <div
+        className={`flex sticky top-0 z-20 bg-[#111933] ${isScrolled ? "rounded-b-2xl" : "rounded-b-2xl"
+          }  justify-between items-center transition-all duration-300`}
+      > */}
       <div
-        className={`flex sticky top-0 z-20 bg-white ${isScrolled ? "rounded-b-2xl" : "rounded-2xl"
-          } p-1 mt-3 mx-3 justify-between items-center transition-all duration-300`}
+        className={`flex sticky top-0 z-20 bg-[#111933] justify-between items-center transition-all duration-300`}
       >
         {isConfirmModalOpen &&
           <CenteredModal
@@ -121,9 +133,9 @@ const StaffNavbar = () => {
         }
         <div className="flex items-center ml-9 gap-8">
           <Tooltip title="SNS Institutions">
-            <span className="cursor-pointer" 
-            onClick={() => handleLinkClick("/staffdashboard")}>
-              <img src={logo} alt="Logo" className="h-14 mb-4" />
+            <span className="cursor-pointer mt-3"
+              onClick={() => handleLinkClick("/staffdashboard")}>
+              <img src={logo} alt="Logo" className="h-14 mb-3" />
             </span>
           </Tooltip>
         </div>
@@ -133,7 +145,7 @@ const StaffNavbar = () => {
             <Tooltip title="Home Dashboard">
               <span // Use <span> instead of <Link> to prevent direct navigation
                 className={`font-medium font-sans transition-all duration-300 relative cursor-pointer
-      ${activeLink === "/staffdashboard" ? "text-yellow-500 font-bold" : "text-[#111933]"}`}
+      ${activeLink === "/staffdashboard" ? "text-yellow-500 font-bold" : "text-[#fff]"}`}
                 onClick={() => handleLinkClick("/staffdashboard")}
               >
                 HOME
@@ -145,7 +157,7 @@ const StaffNavbar = () => {
               <span
                 to="/staffstudentprofile"
                 className={`font-medium font-sans transition-all duration-300 relative cursor-pointer
-                  ${activeLink === "/staffstudentprofile" ? "text-yellow-500 font-bold" : "text-[#111933]"}`}
+                  ${activeLink === "/staffstudentprofile" ? "text-yellow-500 font-bold" : "text-[#fff]"}`}
                 onClick={() => handleLinkClick("/staffstudentprofile")}
               >
                 STUDENT
@@ -158,7 +170,7 @@ const StaffNavbar = () => {
               <span
                 to="/library"
                 className={`font-medium font-sans transition-all duration-300 relative cursor-pointer
-      ${activeLink === "/library" ? "text-yellow-500 font-bold" : "text-[#111933]"}`}
+      ${activeLink === "/library" ? "text-yellow-500 font-bold" : "text-[#fff]"}`}
                 onClick={() => handleLinkClick("/library")}
               >
                 LIBRARY
@@ -169,7 +181,7 @@ const StaffNavbar = () => {
             </Tooltip>
           </nav>
         </div>
-        <div className="flex items-center gap-4 text-[#111933]">
+        <div className="flex items-center gap-4 text-[#fff]">
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -177,11 +189,13 @@ const StaffNavbar = () => {
           >
 
             <button
-              className="py-1 px-7 mb-2 bg-white border-2 border-[#efeeee] shadow-md shadow-blue-100 font-semibold text-[#111933] rounded-full hover:bg-white w-full h-full flex items-center justify-center gap-2"
+              className="py-1 px-7 mb-2 bg-white border-2 border-[#efeeee]  font-semibold text-[#111933] rounded-full hover:bg-white w-full h-full flex items-center justify-center gap-2"
               onClick={() => {
                 if (window.location.pathname.includes('mcq/combinedDashboard')) {
                   setIsConfirmModalOpen(true);
-                  setTargetPath("/mcq/details"); // Set the target path you want to navigate to
+                  setTargetPath("/mcq/details");
+                  localStorage.clear();
+                  sessionStorage.clear();
                   handleModalClose();
                   return;
                 }
@@ -195,7 +209,7 @@ const StaffNavbar = () => {
           </motion.div>
 
           <div className="flex items-center mr-2 gap-1"> {/* Reduced gap */}
-            <span className="mb-2 text-xl text-[#111933]">{username || "User"}</span> {/* Reduced margin */}
+            <span className="mb-2 text-xl text-[#fff]">{username || "User"}</span> {/* Reduced margin */}
             <button onClick={handleMenuOpen} className="p-1"> {/* Reduced padding */}
               <img src={avatarImage} alt="Avatar" className="mb-2 rounded-full h-12 w-12" /> {/* Adjusted size */}
             </button>

@@ -56,6 +56,7 @@ import { TestProvider } from './pages/student/TestContext';
 import AddTest from './components/McqLibrary/AddTest';
 import CertificateVerification from './pages/staff/mcq/CertificateVerification';
 import McqDraft from './pages/staff/mcq/McqDraft';
+import EditTest from './pages/staff/mcq/EditTest';
 
 
 
@@ -147,7 +148,6 @@ function App() {
 
           {/* MCQ - routes */}
           <Route path='mcq/details' element={<Mcq_Assesment />}/>
-          
           <Route path='mcq/combinedDashboard' element={<Mcq_CombinedDashboard/>}/>
           <Route path='mcq/CreateQuestion' element = {<Mcq_createQuestion/>}/>
           <Route path='mcq/bulkUpload' element={<Mcq_bulkUpload />}/>
@@ -156,7 +156,7 @@ function App() {
           <Route path='mcq/McqSectionLibrary' element = {<McqLibrary/>}/>
           <Route path='mcq/TestLibrary' element = {<SelectTestQuestion/>}/>
           <Route path='/mcq/TestLibrary/Questionlist' element={<QuestionListPage />} />
-
+          <Route path="/mcq/edit-test/:contestId" element={<EditTest />} /> 
 
 
         </Route>

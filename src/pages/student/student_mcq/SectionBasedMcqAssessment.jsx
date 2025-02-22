@@ -7,7 +7,7 @@ import SectionBasedSidebar from "../../../components/staff/mcq/SectionBasedSideb
 import useDeviceRestriction from "../../../components/staff/mcq/useDeviceRestriction";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
 import FaceDetectionComponent from "../../../components/staff/mcq/useVideoDetection";
-import Legend from "../../../components/staff/mcq/Legend";
+import { ChevronLeft, ChevronRight, Menu, X } from "lucide-react";
 
 export default function SectionBasedMcqAssessment() {
   const { contestId } = useParams();
@@ -23,6 +23,7 @@ export default function SectionBasedMcqAssessment() {
     const storedReviewStatus = sessionStorage.getItem(`reviewStatus_${contestId}`);
     return storedReviewStatus ? JSON.parse(storedReviewStatus) : Array.from({ length: 0 }, () => ({}));
   });
+  const studentEmail = localStorage.getItem("studentEmail") || "SNSGROUPS.COM";
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -374,6 +375,11 @@ export default function SectionBasedMcqAssessment() {
   };
 
   const handleFinish = useCallback(async () => {
+    if (loading || !sections.length) {
+      console.error("Test is not fully initialized.");
+      return;
+    }
+
     try {
       const formattedAnswers = {};
 
@@ -413,6 +419,9 @@ export default function SectionBasedMcqAssessment() {
       const fullscreenWarning = sessionStorage.getItem(`fullscreenWarnings_${contestId}`);
       const faceWarning = sessionStorage.getItem(`faceDetectionCount_${contestId}`);
 
+      // Get the current timestamp
+      const currentTime = new Date().toISOString();
+
       const payload = {
         contestId,
         studentId: localStorage.getItem("studentId"),
@@ -424,6 +433,7 @@ export default function SectionBasedMcqAssessment() {
         isPublish: isPublish,
         grade: grade,
         passPercentage: passPercentage,
+        finishTime: currentTime, // Add the current time to the payload
       };
 
       const response = await axios.post(
@@ -451,8 +461,10 @@ export default function SectionBasedMcqAssessment() {
       sessionStorage.removeItem(`keydownWarnings_${contestId}`);
       sessionStorage.removeItem(`reloadWarnings_${contestId}`);
       sessionStorage.removeItem(`inspectWarnings_${contestId}`);
+      sessionStorage.removeItem(`totalTimeLeft_${contestId}`);
+      sessionStorage.removeItem(`sectionTimes_${contestId}`);
+      sessionStorage.clear();
 
-      localStorage.setItem(`testFinished_${contestId}`, "true");
     } catch (error) {
       console.error("Error submitting test:", error);
       alert("Failed to submit the test.");
@@ -466,6 +478,7 @@ export default function SectionBasedMcqAssessment() {
     noiseDetectionCount,
     navigate,
     API_BASE_URL,
+    loading
   ]);
 
   useEffect(() => {
@@ -484,29 +497,36 @@ export default function SectionBasedMcqAssessment() {
         });
       }, 1000);
       return () => clearInterval(interval);
-    } else if (isFreezePeriodOver) {
+    } else if (remainingTime === 0 && !isTestFinished) {
       handleFinish();
     }
-  }, [remainingTime, isFreezePeriodOver, handleFinish, currentSectionIndex, contestId]);
+  }, [remainingTime, isTestFinished, handleFinish, currentSectionIndex, contestId]);
 
   useEffect(() => {
     const disableRightClick = (e) => {
-      if (fullScreenMode) {
-        e.preventDefault();
-      }
+      e.preventDefault();
     };
     const disableTextSelection = (e) => {
-      if (fullScreenMode) {
-        e.preventDefault();
-      }
+      e.preventDefault();
     };
+    const disableCopyPaste = (e) => {
+      e.preventDefault();
+    };
+
     document.addEventListener("contextmenu", disableRightClick);
     document.addEventListener("selectstart", disableTextSelection);
+    document.addEventListener("copy", disableCopyPaste);
+    document.addEventListener("cut", disableCopyPaste);
+    document.addEventListener("paste", disableCopyPaste);
+
     return () => {
       document.removeEventListener("contextmenu", disableRightClick);
       document.removeEventListener("selectstart", disableTextSelection);
+      document.removeEventListener("copy", disableCopyPaste);
+      document.removeEventListener("cut", disableCopyPaste);
+      document.removeEventListener("paste", disableCopyPaste);
     };
-  }, [fullScreenMode]);
+  }, []);
 
   useEffect(() => {
     const handleBeforeUnload = (e) => {
@@ -640,54 +660,59 @@ export default function SectionBasedMcqAssessment() {
 
   return (
     <div
-      className="min-h-screen max-w-full bg-gray-50 text-xs sm:text-sm md:text-base"
+      className="h-[calc(100vh-60px)] text-xs sm:text-sm md:text-base flex flex-col lg:flex-row"
       style={{
-        userSelect: fullScreenMode ? "none" : "auto",
-        WebkitUserSelect: fullScreenMode ? "none" : "auto",
-        MozUserSelect: fullScreenMode ? "none" : "auto",
-        msUserSelect: fullScreenMode ? "none" : "auto",
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        MozUserSelect: "none",
+        msUserSelect: "none",
         pointerEvents: !hasFocus ? "none" : "auto",
         filter: !hasFocus ? "blur(5px)" : "none",
       }}
-      onCopy={(e) => fullScreenMode && e.preventDefault()}
-      onCut={(e) => fullScreenMode && e.preventDefault()}
-      onPaste={(e) => fullScreenMode && e.preventDefault()}
-      onKeyDown={(e) => fullScreenMode && e.preventDefault()}
+      onCopy={(e) => e.preventDefault()}
+      onCut={(e) => e.preventDefault()}
+      onPaste={(e) => e.preventDefault()}
+      onKeyDown={(e) => e.preventDefault()}
     >
       <meta
         httpEquiv="Content-Security-Policy"
         content="frame-ancestors 'none'"
       ></meta>
-      <div className="max-w-[1900px] max-h-[1540px] mx-auto ">
-        <div className="bg-white ">
-          <SectionBasedHeader
-            contestId={contestId}
-            totalDuration={totalDuration}
-            sectionRemainingTime={sectionRemainingTimes[currentSectionIndex]}
-          />
-          <div className="absolute top-4 right-4 lg:hidden z-50">
-            <button
-              onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-              className="p-2 text-gray-700 bg-gray-200 rounded-md"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
+      <div className="flex-grow flex flex-col lg:flex-row">
+        <div className="w-full lg:w-3/4 bg-white flex flex-col">
+          <div>
+            <SectionBasedHeader
+              contestId={contestId}
+              totalDuration={totalDuration}
+              sectionRemainingTime={sectionRemainingTimes[currentSectionIndex]}
+            />
+            <div className="lg:hidden absolute top-7 right-6 z-50">
+              <div
+                onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+                className="z-50 cursor-pointer"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </button>
-          </div>
+                {isMobileSidebarOpen ? (
+                  <X
+                    onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+                    className="cursor-pointer"
+                  />
+                ) : (
+                  <Menu className="w-6 h-6" />
+                )}
+              </div>
+            </div>
 
-          <div className="flex flex-col lg:flex-row gap-6 p-4 sm:p-6 min-h-[600px] sm:min-h-[750px] mt-2 sm:mt-7 relative">
-            <div className="flex-grow relative border-r-2">
+            <div className="absolute inset-0 pointer-events-none z-[5] grid grid-cols-5 md:grid-cols-7 gap-2 pt-20 pr-4 opacity-10">
+              {[...Array(window.innerWidth < 768 ? 25 : 35)].map((_, index) => (
+                <div key={index} className="flex items-center justify-center">
+                  <div className="transform -rotate-45 text-black text-xs sm:text-sm md:text-base font-semibold select-none">
+                    {studentEmail}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex-grow relative border-t border-gray-300">
               <SectionBasedQuestion
                 sections={sections}
                 currentSectionIndex={currentSectionIndex}
@@ -701,67 +726,63 @@ export default function SectionBasedMcqAssessment() {
                 reviewStatus={reviewStatus}
               />
             </div>
-
-            <div
-              className={`lg:w-80 bg-white z-40 lg:z-auto
-              fixed lg:static top-0 bottom-0 right-0 transition-transform
-              transform
-              ${
-                screenWidth >= 1024
-                  ? "translate-x-0"
-                  : isMobileSidebarOpen
-                  ? "translate-x-0"
-                  : "translate-x-full"
-              }`}
-            >
-              <div className="sticky top-6 p-4 sm:p-0">
-                <SectionBasedSidebar
-                  sections={sections}
-                  currentSectionIndex={currentSectionIndex}
-                  currentQuestionIndex={currentQuestionIndex}
-                  selectedAnswers={selectedAnswers}
-                  reviewStatus={reviewStatus}
-                  onQuestionClick={(sectionIndex, questionIndex) => {
-                    setCurrentSectionIndex(sectionIndex);
-                    setCurrentQuestionIndex(questionIndex);
-                  }}
-                  contestId={contestId}
-                />
-              </div>
-            </div>
+          </div>
+        </div>
+        <div
+          className={`fixed top-20 right-0 h-full bg-white border-l border-gray-300 transform transition-transform duration-300 ease-in-out ${
+            isMobileSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+          } lg:translate-x-0 lg:static z-40`}
+        >
+          <div className="sticky top-6 p-4 sm:p-0">
+            <SectionBasedSidebar
+              sections={sections}
+              currentSectionIndex={currentSectionIndex}
+              currentQuestionIndex={currentQuestionIndex}
+              selectedAnswers={selectedAnswers}
+              reviewStatus={reviewStatus}
+              onQuestionClick={(sectionIndex, questionIndex) => {
+                setCurrentSectionIndex(sectionIndex);
+                setCurrentQuestionIndex(questionIndex);
+              }}
+              contestId={contestId}
+            />
           </div>
         </div>
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 bg-white p-4 shadow-md flex justify-between items-center z-50">
         <button
-          className="bg-[#fdc500] text-[#111933] px-8 py-2 rounded-full flex items-center gap-2"
+          className="bg-white text-[#111933] border border-[#111933] rounded-lg px-4 py-2 flex items-center gap-2 sm:ml-11"
           onClick={handlePrevious}
           disabled={currentQuestionIndex === 0 && currentSectionIndex === 0}
         >
-          ← Previous
+          <ChevronLeft size={20} />
+          <span className="hidden sm:block">Previous</span>
         </button>
-        <button
-          className="bg-[#fdc500] text-[#111933] px-8 py-2 rounded-full flex items-center gap-2"
-          onClick={handleNext}
-          disabled={currentQuestionIndex === sections[currentSectionIndex].questions.length - 1 && currentSectionIndex === sections.length - 1}
-        >
-          Next →
-        </button>
-        <button
-          className="bg-[#fdc500] text-[#111933] px-8 py-2 rounded-full"
-          onClick={() => setShowPopup(true)}
-          disabled={isSubmitting}
-        >
-          Finish
-        </button>
+        <div className="flex items-center w-full justify-end relative sm:static">
+          <button
+            className="bg-[#111933] text-white px-4 py-2 rounded-lg flex items-center gap-2 sm:ml-0 sm:mr-16 absolute right-0 sm:static"
+            onClick={handleNext}
+            disabled={currentQuestionIndex === sections[currentSectionIndex].questions.length - 1 && currentSectionIndex === sections.length - 1}
+          >
+            <span className="hidden sm:block">Next</span>
+            <ChevronRight size={20} />
+          </button>
+          <button
+            className="bg-[#111933] text-white px-4 py-2 rounded-lg absolute left-1/2 transform translate-x-[-55px] sm:static sm:ml-44 sm:mr-32 sm:translate-x-[-4px]"
+            onClick={() => setShowPopup(true)}
+            disabled={isSubmitting}
+          >
+            Finish
+          </button>
+        </div>
       </div>
 
       {showPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white w-[800px] p-8 rounded-xl shadow-lg max-h-[90vh] overflow-y-auto">
-            <h3 className="text-[#111933] text-lg font-bold mb-4">
-              MCT Mock Test
+          <div className="bg-white w-[600px] p-6 rounded-xl shadow-lg">
+            <h3 className="text-xl text-center font-bold mb-2">
+              Confirm Finish
             </h3>
             <p className="text-center text-sm mb-4">
               You have gone through all the questions. <br />
@@ -801,12 +822,12 @@ export default function SectionBasedMcqAssessment() {
                       {section.questions.map((_, questionIndex) => (
                         <div
                           key={questionIndex}
-                          className={`w-10 h-10 flex items-center justify-center rounded-md text-white ${
+                          className={`py-[6px] flex items-center justify-center rounded-md text-black ${
                             selectedAnswers[sectionIndex]?.[questionIndex]
-                              ? "bg-green-500"
+                              ? "bg-[#c1f0c8]"
                               : reviewStatus[sectionIndex]?.[questionIndex]
-                              ? "bg-yellow-500"
-                              : "bg-red-500"
+                              ? "bg-[#ffe078]"
+                              : "border border-[#ffe078]"
                           }`}
                         >
                           {questionIndex + 1}
@@ -814,19 +835,19 @@ export default function SectionBasedMcqAssessment() {
                       ))}
                     </div>
                     <div className="flex justify-between mb-2">
-                      <p className="text-sm text-gray-700">
+                      <p className="text-sm text-[#009516]">
                         Attempted: {Object.keys(selectedAnswers[sectionIndex] || {}).length}/{section.questions.length}
                       </p>
-                      <p className="text-sm text-gray-700">
+                      <p className="text-sm text-[#E4AD00]">
                         Unattempted: {section.questions.length - Object.keys(selectedAnswers[sectionIndex] || {}).length}
                       </p>
-                      <p className="text-sm text-gray-700">
+                      <p className="text-sm text-[#E31A00]">
                         Marked for Review: {Object.values(reviewStatus[sectionIndex] || {}).filter(Boolean).length}
                       </p>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
+                    <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
                       <div
-                        className="bg-blue-600 h-4 rounded-full"
+                        className="bg-[#111933] h-2 rounded-full"
                         style={{
                           width: `${(Object.keys(selectedAnswers[sectionIndex] || {}).length / section.questions.length) * 100}%`,
                         }}
@@ -841,13 +862,13 @@ export default function SectionBasedMcqAssessment() {
             ))}
             <div className="flex justify-between mt-4">
               <button
-                className="border border-red-500 text-red-500 px-6 py-2 rounded-full"
+                className="border bg-[#bfbfbf] text-white px-6 py-2 rounded-lg"
                 onClick={() => setShowPopup(false)}
               >
                 Close
               </button>
               <button
-                className="bg-[#fdc500] text-[#111933] px-6 py-2 rounded-full"
+                className="bg-red-500 text-white px-6 py-2 rounded-lg"
                 onClick={handleFinish}
               >
                 Finish
@@ -879,13 +900,13 @@ export default function SectionBasedMcqAssessment() {
               Warning
             </h3>
             <p className="text-gray-700 mb-6">
-              You have {fullscreenWarnings + tabSwitchWarnings} warnings. Please return to fullscreen mode and avoid switching tabs to continue the test.
+              You have {fullscreenWarnings + tabSwitchWarnings} warnings. Please return to fullscreen to continue the test.
             </p>
             <button
               onClick={handleFullscreenReEntry}
-              className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition-colors"
+              className="bg-[#111933] text-white px-6 py-2 rounded-lg"
             >
-              Return to Test
+              Return
             </button>
           </div>
         </div>

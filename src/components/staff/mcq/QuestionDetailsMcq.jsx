@@ -1,24 +1,34 @@
 import React from "react";
-import { X, CheckCircleIcon } from "lucide-react";
-import { getLevelBadgeColor, renderTags } from "../../lib/utils";
-import { toast } from "react-toastify"; // Import toast
-import "react-toastify/dist/ReactToastify.css"; // Import toast styles
+import { X } from "lucide-react";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-const QuestionDetails = ({
+const QuestionDetailsMcq = ({
   selectedQuestion,
   setSelectedQuestion,
   isEditing,
   setIsEditing,
-  handleUpdate,
+  setSelectedQuestions, // Pass the function to update the session
   isLoading,
   setShowConfirm,
 }) => {
   const handleChange = (field, value) =>
     setSelectedQuestion({ ...selectedQuestion, [field]: value });
 
-  // Helper function to convert a lowercase string to camel case
   const toCamelCase = (str) => {
     return str.replace(/(^|\s)\S/g, (t) => t.toUpperCase());
+  };
+
+  const handleUpdateQuestion = () => {
+    // Update the local state with the edited question
+    setSelectedQuestions((prevQuestions) =>
+      prevQuestions.map((q) =>
+        q.question_id === selectedQuestion.question_id ? selectedQuestion : q
+      )
+    );
+    setIsEditing(false);
+    setSelectedQuestion(null);
+    toast.success("Question updated locally!");
   };
 
   return (
@@ -58,7 +68,7 @@ const QuestionDetails = ({
                     </span>
                     <input
                       type="text"
-                      value={selectedQuestion.tags}
+                      value={selectedQuestion.tags.join(", ")}
                       onChange={(e) =>
                         handleChange(
                           "tags",
@@ -95,13 +105,10 @@ const QuestionDetails = ({
                   </h2>
                   <div className="flex flex-wrap items-center gap-2 mb-3">
                     <span
-                      className={`px-2 py-1 rounded-full text-sm font-medium border ${getLevelBadgeColor(
-                        selectedQuestion.level
-                      )}`}
+                      className={`px-2 py-1 rounded-full text-sm font-medium border`}
                     >
                       {toCamelCase(selectedQuestion.level) || "Not specified"}
                     </span>
-                    {/* {renderTags(selectedQuestion.tags.map(toCamelCase))} */}
                   </div>
                 </>
               )}
@@ -161,7 +168,6 @@ const QuestionDetails = ({
             </div>
             {!isEditing && (
               <div className="mt-4 p-3 rounded-lg bg-[#32AB24]/50 border border-gray-500 shadow-sm max-w-2xl mx-auto flex items-center">
-                {/* <CheckCircleIcon className="w-5 h-5 text-green-700 mr-2" /> */}
                 <span className="text-lg font-medium text-[#111933]">
                   Correct Answer :
                 </span>
@@ -180,10 +186,7 @@ const QuestionDetails = ({
                     Cancel
                   </button>
                   <button
-                    onClick={() => {
-                      handleUpdate(selectedQuestion.question_id);
-                      setSelectedQuestion(null);
-                    }}
+                    onClick={handleUpdateQuestion}
                     disabled={isLoading}
                     className="flex-1 text-[white] bg-[#111933] px-4 py-2 rounded-lg transition disabled:opacity-50"
                   >
@@ -214,4 +217,4 @@ const QuestionDetails = ({
   );
 };
 
-export default QuestionDetails;
+export default QuestionDetailsMcq;

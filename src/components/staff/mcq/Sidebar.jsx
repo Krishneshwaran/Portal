@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Legend from "./Legend";
 import QuestionNumbers from "./QuestionNumbers";
 
@@ -8,24 +8,48 @@ export default function Sidebar({
   selectedAnswers,
   reviewStatus,
   onQuestionClick,
+  contestId = "default", // Add contestId prop with default value
 }) {
   const length = totalQuestions || 0;
   const questionNumbers = Array.from({ length }, (_, i) => i + 1);
 
-  const questionStatuses = questionNumbers.map((num) => {
-    const index = num - 1;
-    if (reviewStatus[index]) return "review";
-    if (num - 1 === currentIndex) return "current";
-    if (selectedAnswers[index]) return "answered";
-    return "notAnswered";
+  // Initialize visitedQuestions state from sessionStorage or default to all false
+  const [visitedQuestions, setVisitedQuestions] = useState(() => {
+    const storedVisited = sessionStorage.getItem(`visitedQuestions_${contestId}`);
+    return storedVisited 
+      ? JSON.parse(storedVisited) 
+      : Array(length).fill(false);
   });
 
+  // Update question visited status when current question changes
+  useEffect(() => {
+    setVisitedQuestions(prev => {
+      const newVisited = [...prev];
+      if (!newVisited[currentIndex]) {
+        newVisited[currentIndex] = true;
+      }
+      return newVisited;
+    });
+  }, [currentIndex]);
+
+  // Save visitedQuestions to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem(`visitedQuestions_${contestId}`, JSON.stringify(visitedQuestions));
+  }, [visitedQuestions, contestId]);
+
+  const getQuestionStatus = (index) => {
+    if (reviewStatus[index]) return "review";
+    if (index === currentIndex) return "current";
+    if (selectedAnswers[index] !== undefined) return "answered";
+    if (visitedQuestions[index]) return "notAttempted";
+    return "notAnswered";
+  };
+
+  const questionStatuses = questionNumbers.map((_, i) => getQuestionStatus(i));
+
   return (
-    <div className="w-[300px]">
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[#111933] font-medium">Sections Name</h3>
-        </div>
+    <div className="w-full h-full flex flex-col">
+      <div className="flex-1 ml-6">
         <Legend />
         <QuestionNumbers
           questionNumbers={questionNumbers}

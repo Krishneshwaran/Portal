@@ -86,8 +86,8 @@ const QuestionsDisplay = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-      <div className="bg-white shadow-lg rounded-3xl p-8 w-[90%] max-w-5xl">
+    <div className="min-h-[90%] bg-gray-50 flex flex-col items-center justify-center">
+      <div className="bg-white mt-3 pb-5 shadow-lg rounded-3xl p-8 w-[90%] max-w-full">
         <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Generated Questions</h1>
 
         <div className="space-y-6 w-full">

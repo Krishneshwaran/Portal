@@ -61,8 +61,8 @@ if (formData.assessmentOverview.sectionDetails === "Yes" && storedSections.lengt
         sectionName: "Section 1",
         numQuestions: 10,
         durationHours: 0,   // New field
-        durationMinutes: 10, // New field
-        sectionDuration: 10, // Keep this for backward compatibility
+        durationMinutes: 0, // New field
+        sectionDuration: 0, // Keep this for backward compatibility
         markAllotment: 1,
         passPercentage: 50,
         timeRestriction: false,
@@ -109,11 +109,16 @@ if (formData.assessmentOverview.sectionDetails === "Yes" && storedSections.lengt
   }, [selectedStudents]);
 
   const handleAddSection = () => {
+    if (sections.length >= 4) {
+      toast.error("You cannot add more than 4 sections.");
+      return;
+    }
+  
     const newSection = {
       id: Date.now(),
       sectionName: `Section ${sections.length + 1}`,
       numQuestions: 10,
-      sectionDuration: 10,
+      sectionDuration: 0,
       markAllotment: 1,
       passPercentage: 50,
       timeRestriction: false,
@@ -123,7 +128,7 @@ if (formData.assessmentOverview.sectionDetails === "Yes" && storedSections.lengt
     };
     setSections([newSection, ...sections]);
   };
-
+  
   const handleQuestionsGenerated = (questions) => {
     const updatedSections = sections.map((section, index) =>
       index === activeSectionIndex
@@ -198,31 +203,60 @@ if (formData.assessmentOverview.sectionDetails === "Yes" && storedSections.lengt
   const handleSaveQuestions = async (sectionIndex) => {
     const section = sections[sectionIndex];
   
-    // Check if the section is already submitted
     if (section.submitted) {
       toast.error("This section has already been submitted.");
+      return;
+    }
+  
+    // Validate all required fields
+    if (!section.sectionName.trim()) {
+      toast.error("Section name is required.");
+      return;
+    }
+  
+    if (!section.numQuestions || section.numQuestions <= 0) {
+      toast.error("Number of questions must be greater than 0.");
+      return;
+    }
+  
+    if (!section.markAllotment || section.markAllotment <= 0) {
+      toast.error("Marks per question must be greater than 0.");
+      return;
+    }
+  
+    // Validate duration
+    const totalMinutes = (parseInt(section.durationHours || 0) * 60) + parseInt(section.durationMinutes || 0);
+    if (totalMinutes <= 0) {
+      toast.error("Section duration must be specified.");
       return;
     }
   
     const selectedQuestionCount = section.selectedQuestions.length;
   
     if (selectedQuestionCount < section.numQuestions) {
-      toast.error(`You have selected ${selectedQuestionCount} questions, but the limit is ${section.numQuestions}. Please add more questions.`);
+      toast.error(
+        `You have selected ${selectedQuestionCount} questions, but the limit is ${section.numQuestions}. Please add more questions.`
+      );
       return;
     }
   
     if (selectedQuestionCount > section.numQuestions) {
-      toast.error(`You have selected ${selectedQuestionCount} questions, but the limit is ${section.numQuestions}. Please reduce the number of selected questions.`);
+      toast.error(
+        `You have selected ${selectedQuestionCount} questions, but the limit is ${section.numQuestions}. Please reduce the number of selected questions.`
+      );
       return;
     }
-  
+
     try {
+      console.log("Submitting section:", section.sectionName); // Debugging
+      console.log("Questions being submitted:", section.selectedQuestions); // Debugging
+
       const formattedQuestions = section.selectedQuestions.map((q) => ({
         question: q.question,
         options: q.options,
         correctAnswer: q.correctAnswer || q.answer,
       }));
-  
+
       const response = await axios.post(
         `${API_BASE_URL}/api/mcq/save-assessment-questions/`,
         {
@@ -240,97 +274,118 @@ if (formData.assessmentOverview.sectionDetails === "Yes" && storedSections.lengt
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("contestToken")}`,
           },
-        },
+        }
       );
-  
+
+      console.log("Save response:", response.data); // Debugging API Response
+
       if (response.data.success) {
+        // Show toast **before** updating state
         toast.success("Section submitted successfully!");
-        const updatedSections = sections.map((section, index) =>
-          index === sectionIndex ? { ...section, submitted: true } : section
-        );
-        setSections(updatedSections);
-  
-        // Check if all sections are submitted
-        const allSubmitted = updatedSections.every((section) => section.submitted);
-        setAllSectionsSubmitted(allSubmitted);
+
+        setTimeout(() => {
+          setSections((prevSections) => {
+            const updatedSections = prevSections.map((sec, index) =>
+              index === sectionIndex ? { ...sec, submitted: true } : sec
+            );
+
+            // Check if all sections are submitted
+            const allSubmitted = updatedSections.every((sec) => sec.submitted);
+            setAllSectionsSubmitted(allSubmitted);
+
+            return updatedSections;
+          });
+        }, 500); // Small delay to ensure toast is visible first
+      } else {
+        toast.error("Failed to submit section. Please try again.");
       }
     } catch (error) {
+      console.error("Error saving questions:", error);
+
       if (error.response && error.response.status === 401) {
         toast.error("Unauthorized access. Please log in again.");
         navigate("/login");
       } else {
-        console.error("Error saving questions:", error);
-        toast.error(error.response?.data?.error || "Failed to save questions. Please try again.");
+        toast.error(
+          error.response?.data?.error || "Failed to save questions. Please try again."
+        );
       }
     }
-  };
-  
+};
 
-  const handlePublish = async () => {
-    const unsubmittedSections = sections.filter(section => !section.submitted);
-    if (unsubmittedSections.length > 0) {
-      toast.error(`Please submit all sections before publishing. Sections ${unsubmittedSections.map(s => s.sectionName).join(', ')} are not submitted.`);
+const handlePublish = async () => {
+  const submittedSections = sections.filter(section => section.submitted);
+  if (submittedSections.length < 2) {
+    toast.error("You need at least 2 submitted sections to publish.");
+    return;
+  }
+
+  const unsubmittedSections = sections.filter(section => !section.submitted);
+  if (unsubmittedSections.length > 0) {
+    toast.error(`Please submit all sections before publishing. Sections ${unsubmittedSections.map(s => s.sectionName).join(', ')} are not submitted.`);
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem("contestToken");
+    if (!token) {
+      toast.error("Unauthorized access. Please log in again.");
       return;
     }
-    try {
-      const token = localStorage.getItem("contestToken");
-      if (!token) {
-        toast.error("Unauthorized access. Please log in again.");
-        return;
-      }
 
-      const decodedToken = jwtDecode(token);
-      const contestId = decodedToken?.contestId;
-      if (!contestId) {
-        toast.error("Invalid contest token. Please log in again.");
-        return;
-      }
-      if (!selectedStudents.length) {
-        toast.error("Please select at least one student before publishing.");
-        return;
-      }
-  
-      const uniqueQuestions = Array.from(
-        new Set(sections.flatMap((section) => section.selectedQuestions).map(JSON.stringify)),
-      ).map(JSON.parse);
-      const selectedStudentDetails = students.filter((student) => selectedStudents.includes(student.regno));
-      const selectedStudentEmails = selectedStudentDetails.map((student) => student.email);
-      const payload = {
-        contestId,
-        questions: uniqueQuestions,
-        students: selectedStudents,
-        studentEmails: selectedStudentEmails,
-      };
-      const response = await axios.post(`${API_BASE_URL}/api/mcq/publish/`, payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      if (response.status === 200) {
-        setSharingLink(`${process.env.REACT_APP_FRONTEND_LINK}/testinstructions/${contestId}`);
-        setShareModalOpen(true);
-        toast.success("Questions published successfully!");
-
-        // Clear session storage after successful publish
-        sessionStorage.clear();
-      } else {
-        toast.error(`Failed to publish questions: ${response.data.message || "Unknown error."}`);
-      }
-    } catch (error) {
-      console.error("Error publishing questions:", error);
-
-      if (error.response) {
-        toast.error(`Error: ${error.response.data.message || error.response.statusText}`);
-      } else if (error.request) {
-        toast.error("No response from the server. Please try again later.");
-      } else {
-        toast.error("An error occurred while publishing questions. Please try again.");
-      }
-    } finally {
-      setPublishDialogOpen(false);
+    const decodedToken = jwtDecode(token);
+    const contestId = decodedToken?.contestId;
+    if (!contestId) {
+      toast.error("Invalid contest token. Please log in again.");
+      return;
     }
-  };
+    if (!selectedStudents.length) {
+      toast.error("Please select at least one student before publishing.");
+      return;
+    }
+
+    const uniqueQuestions = Array.from(
+      new Set(sections.flatMap((section) => section.selectedQuestions).map(JSON.stringify)),
+    ).map(JSON.parse);
+    const selectedStudentDetails = students.filter((student) => selectedStudents.includes(student.regno));
+    const selectedStudentEmails = selectedStudentDetails.map((student) => student.email);
+    const payload = {
+      contestId,
+      questions: uniqueQuestions,
+      students: selectedStudents,
+      studentEmails: selectedStudentEmails,
+    };
+    const response = await axios.post(`${API_BASE_URL}/api/mcq/publish/`, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    if (response.status === 200) {
+      setSharingLink(`${process.env.REACT_APP_FRONTEND_LINK}/testinstructions/${contestId}`);
+      setShareModalOpen(true);
+      toast.success("Questions published successfully!");
+
+      // Clear session storage after successful publish
+      sessionStorage.clear();
+    } else {
+      toast.error(`Failed to publish questions: ${response.data.message || "Unknown error."}`);
+    }
+  } catch (error) {
+    console.error("Error publishing questions:", error);
+
+    if (error.response) {
+      toast.error(`Error: ${error.response.data.message || error.response.statusText}`);
+    } else if (error.request) {
+      toast.error("No response from the server. Please try again later.");
+    } else {
+      toast.error("An error occurred while publishing questions. Please try again.");
+    }
+  } finally {
+    setPublishDialogOpen(false); // Close the dialog after attempting to publish
+  }
+};
+
 
   const toggleQuestionsVisibility = (sectionIndex) => {
     setVisibleSections((prev) =>
@@ -492,17 +547,17 @@ if (formData.assessmentOverview.sectionDetails === "Yes" && storedSections.lengt
   };
 
   return (
-    <div className="min-h-[calc(100vh-95px)] bg-[#ECF2FE] p-6">
-      <div className="max-w-[1500px] mx-auto">
+    <div className="min-h-[calc(100vh-95px)] bg-[#9eaffc27] p-6 px-24">
+      <div className="max-w-[1500px mx-auto">
         <div className="space-y-6">
           {formData.assessmentOverview.sectionDetails === "Yes" ? (
             <div>
               {/* Breadcrumb */}
               <div className="h-14 py-4">
                 <div className="flex items-center gap-2 text-[#111933]">
-                  <span className="opacity-60">Home</span>
+                <span className="cursor-pointer opacity-60 hover:underline" onClick={() => navigate('/staffdashboard')}>Home</span>
                   <span>{">"}</span>
-                  <span className="opacity-60">Assessment Overview</span>
+                  <span  onClick={() => window.history.back()} className="cursor-pointer opacity-60 hover:underline">Assessment Overview</span>
                   <span>{">"}</span>
                   <span  onClick={() => window.history.back()} className="cursor-pointer opacity-60 hover:underline">Test Configuration</span>
                   <span>{">"}</span>
@@ -519,8 +574,8 @@ if (formData.assessmentOverview.sectionDetails === "Yes" && storedSections.lengt
               </div>
 
               {sections.map((section, sectionIndex) => (
-                <div key={section.id} className="bg-white rounded-lg shadow-sm p-6 mb-8">
-                  <div className="flex justify-between items-start mb-4">
+                <div key={section.id} className="bg-white rounded-lg shadow-lg p-6 mb-8 ">
+                  <div className="flex justify-between items-start mb-2 mt-5">
                     <h2 className="text-lg font-semibold text-[#111933]">
                       Section {sections.length - sectionIndex}
                     </h2>
@@ -533,92 +588,112 @@ if (formData.assessmentOverview.sectionDetails === "Yes" && storedSections.lengt
                       </button>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500 mb-6">
-                    This section allows you to configure the structure and conditions of the test
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Section Name*</label>
-                        <input
-                          type="text"
-                          name="sectionName"
-                          value={section.sectionName}
-                          onChange={(e) => handleInputChange(e, sectionIndex)}
-                          placeholder="Enter the section name"
-                          className="w-full px-3 py-2 border rounded-md"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Number of Questions*</label>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          name="numQuestions"
-                          value={section.numQuestions}
-                          onChange={(e) => handleInputChange(e, sectionIndex)}
-                          placeholder="Enter the total number of questions"
-                          className="w-full px-3 py-2 border rounded-md"
-                        />
-                      </div>
-                      {/* <div>
-                        <label className="block text-sm font-medium mb-1">Pass Percentage</label>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          name="passPercentage"
-                          value={section.passPercentage}
-                          onChange={(e) => handleInputChange(e, sectionIndex)}
-                          placeholder="Enter Pass Percentage"
-                          className="w-full px-3 py-2 border rounded-md"
-                        />
-                      </div> */}
-                    </div>
-                    <div className="space-y-4">
-                    <div>
-  <label className="block text-sm font-medium mb-1">Section Duration</label>
-  <div className="flex gap-4">
-    <div className="flex-1">
+                  <p className="text-sm text-gray-500 mb-4 ">
+  This section allows you to configure the structure and conditions of the test
+</p>
+<hr className="border-t border-gray-300 my-4 mb-5 " />
+<div className="grid grid-cols-2 md:grid-cols-2 gap-6">
+  <div className="space-y-4">
+    <div className="flex items-center">
+      <label className="block text-sm font-medium w-40 ml-8">Section Name*</label>
       <input
-        type="number"
-        name="durationHours"
-        min="0"
-        max="23"
-        value={section.durationHours || ''}
+        type="text"
+        name="sectionName"
+        value={section.sectionName}
         onChange={(e) => handleInputChange(e, sectionIndex)}
-        placeholder="Hours"
-        className="w-full px-3 py-2 border rounded-md"
+        placeholder="Enter the section name"
+        className="flex-grow ml-20 mr-24 px-3 py-2 border rounded-md border-[#11193366]"
       />
     </div>
-    <div className="flex-1">
+    <div className="flex items-center">
+      <label className="block text-sm font-medium w-40 mt-7 ml-8">Number of Questions*</label>
       <input
-        type="number"
-        name="durationMinutes"
-        min="0"
-        max="59"
-        value={section.durationMinutes || ''}
-        onChange={(e) => handleInputChange(e, sectionIndex)}
-        placeholder="Minutes"
-        className="w-full px-3 py-2 border rounded-md"
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        name="numQuestions"
+        value={section.numQuestions}
+        onChange={(e) => {
+          const onlyNums = e.target.value.replace(/[^0-9]/g, "");
+          handleInputChange({ target: { name: "numQuestions", value: onlyNums } }, sectionIndex);
+        }}
+        placeholder="Enter the total number of questions"
+        className="flex-grow ml-20 mr-24 px-3 py-2 mt-7 border rounded-md border-[#11193366]"
       />
     </div>
+    {/* <div className="flex items-center">
+      <label className="block text-sm font-medium w-40">Pass Percentage</label>
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        name="passPercentage"
+        value={section.passPercentage}
+        onChange={(e) => handleInputChange(e, sectionIndex)}
+        placeholder="Enter Pass Percentage"
+        className="flex-1 px-3 py-2 border rounded-md"
+      />
+    </div> */}
   </div>
-</div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Marks/Question*</label>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          name="markAllotment"
-                          value={section.markAllotment}
-                          onChange={(e) => handleInputChange(e, sectionIndex)}
-                          placeholder="Enter Marks"
-                          className="w-full px-3 py-2 border rounded-md"
-                        />
-                      </div>
+
+  <div className="space-y-4 ml-9">
+    <div className="flex items-center">
+      <label className="block text-sm font-medium w-40  ml-28">Section Duration*</label>
+      <div className="flex gap-1 flex-auto ml-4">
+        <div className="flex">
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            name="durationHours"
+            min="0"
+            max="23"
+            value={section.durationHours || ''}
+            onChange={(e) => {
+              const onlyNums = e.target.value.replace(/[^0-9]/g, "");
+              handleInputChange({ target: { name: "durationHours", value: onlyNums } }, sectionIndex);
+            }}
+            placeholder="Hours"
+            className="w-32 ml-7 px-3 py-2 border rounded-md  border-[#11193366] "
+          />
+        </div>
+        <div className="flex-1">
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            name="durationMinutes"
+            min="0"
+            max="59"
+            value={section.durationMinutes || ''}
+            onChange={(e) => {
+              const onlyNums = e.target.value.replace(/[^0-9]/g, "");
+              handleInputChange({ target: { name: "durationMinutes", value: onlyNums } }, sectionIndex);
+            }}
+            placeholder="Minutes"
+            className="w-32 ml-6 px-3 py-2 border rounded-md  border-[#11193366]"
+          />
+        </div>
+      </div>
+    </div>
+    <div className="flex items-center">
+      <label className="block text-sm font-medium w-40 mt-7 mr-11 ml-28">Marks/Question*</label>
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        name="markAllotment"
+        value={section.markAllotment}
+        onChange={(e) => {
+          const onlyNums = e.target.value.replace(/[^0-9]/g, "");
+          handleInputChange({ target: { name: "markAllotment", value: onlyNums } }, sectionIndex);
+        }}
+        placeholder="Enter Marks"
+        className="flex-1 mr-8 px-3 py-2 border rounded-md mt-7  border-[#11193366]"
+      />
+    </div>
+
+
                     </div>
                   </div>
                   {visibleSections.includes(sectionIndex) && (
@@ -649,7 +724,7 @@ if (formData.assessmentOverview.sectionDetails === "Yes" && storedSections.lengt
                       </table>
                     </div>
                   )}
-                  <div className="flex mt-6">
+                  <div className="flex mt-14 ml-8 mr-8 mb-8 ">
                     {sectionIndex !== sections.length - 1 && (
                       <button
                         onClick={() => handleDeleteSection(sectionIndex)}
@@ -680,21 +755,28 @@ if (formData.assessmentOverview.sectionDetails === "Yes" && storedSections.lengt
                 </div>
               ))}
 
-              {sections.length > 0 && (
-                <div className="flex justify-end mt-6">
-                  <button
-                    onClick={() => setPublishDialogOpen(true)}
-                    className={`px-4 py-2 ${
-                      allSectionsSubmitted
-                        ? 'bg-[#111933] hover:bg-[#2a3958]'
-                        : 'bg-gray-400 cursor-not-allowed'
-                    } text-white rounded-md`}
-                    disabled={!allSectionsSubmitted}
-                  >
-                    Publish
-                  </button>
-                </div>
-              )}
+{sections.length > 0 && (
+  <div className="flex justify-end mt-6 mr-14 relative">
+    <button
+      onClick={setPublishDialogOpen}
+      className={`px-4 py-2 ${
+        sections.length >= 2 && sections.every(section => section.submitted)
+          ? 'bg-[#111933] hover:bg-[#2a3958]'
+          : 'bg-gray-400 cursor-not-allowed'
+      } text-white rounded-md relative group`}
+      disabled={sections.length < 2 || !sections.every(section => section.submitted)}
+    >
+      Publish
+      {(sections.length < 2 || !sections.every(section => section.submitted)) && (
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+          {sections.length < 2 
+            ? "Add at least 2 sections to publish" 
+            : `Submit all sections to publish `}
+        </div>
+      )}
+    </button>
+  </div>
+)}
             </div>
           ) : (
             <div>
@@ -702,8 +784,7 @@ if (formData.assessmentOverview.sectionDetails === "Yes" && storedSections.lengt
               <div className="h-14 py-4">
                 <div className="flex items-center gap-2 text-[#111933]">
                   <span className="opacity-60">Home</span>
-                  <span>{">"}</span>
-                  <span className="opacity-60">Assessment Overview</span>
+                  <span  onClick={() => window.history.back()} className="cursor-pointer opacity-60 hover:underline">Assessment Overview</span>
                   <span>{">"}</span>
                   <span  onClick={() => window.history.back()} className="cursor-pointer opacity-60 hover:underline">Test Configuration</span>
                   <span>{">"}</span>
@@ -877,4 +958,4 @@ if (formData.assessmentOverview.sectionDetails === "Yes" && storedSections.lengt
   );
 };
 
-export default Mcq_CombinedDashboard;
+export default Mcq_CombinedDashboard;   

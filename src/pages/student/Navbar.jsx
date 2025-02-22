@@ -51,14 +51,14 @@ const Navbar = () => {
   };
 
   return (
-    <div className={`flex bg-white ${window.location.pathname === '/student/dashboard' ? 'rounded-t-2xl' : 'rounded-2xl'} p-2 mt-2 mx-3 justify-between items-center`}>
+    <div className={`flex sticky top-0 z-20 bg-[#111933] p-2 justify-between items-center transition-all duration-300`}>
       {/* Left section - Logo */}
       <div className="flex items-center gap-8">
         <img src={logo} alt="Logo" className="h-16 cursor-pointer" onClick={() => navigate('/studentdashboard')} />
       </div>
-      <div className="flex items-center gap-4 text-[#111933]">
+      <div className="flex items-center gap-4 text-[#fff]">
         <div className="flex items-center gap-2">
-          <span className="font-semibold">{username || "Student"}</span>
+          <span className="font-semibold text-white">{username || "Student"}</span>
           <button onClick={handleMenuOpen} className="">
             <img src={avatarImage} alt="Avatar" className="rounded-full h-16 w-16" />
           </button>

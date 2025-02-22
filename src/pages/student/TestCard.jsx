@@ -89,7 +89,7 @@ const TestCard = ({
     <motion.div whileHover={{ y: -2 }} className="w-full mb-4 max-w-lg max-h-96 mt-2">
       {/* Outer Card with Proper Border */}
       <div
-        className={`py-2 px-4 border border-[#111933] rounded-xl hover:shadow-xl transition-all duration-300 cursor-pointer ${
+        className={`py-2 px-4 border border-[#111933] rounded-xl hover:shadow-xl bg-gradient-to-br from-blue-50 to-white transition-all duration-300 cursor-pointer ${
           isCompleted ? "cursor-not-allowed" : ""
         }`}
         onClick={

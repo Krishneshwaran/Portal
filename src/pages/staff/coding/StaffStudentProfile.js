@@ -34,12 +34,30 @@ const StaffStudentProfile = () => {
   const [studentsPerPage] = useState(10);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState([]);
-  const [collegeFilter, setCollegeFilter] = useState([]);
-  const [yearFilter, setYearFilter] = useState([]);
+  const [departmentFilter, setDepartmentFilter] = useState(
+    JSON.parse(localStorage.getItem('departmentFilter')) || []
+  );
+  const [collegeFilter, setCollegeFilter] = useState(
+    JSON.parse(localStorage.getItem('collegeFilter')) || []
+  );
+  const [yearFilter, setYearFilter] = useState(
+    JSON.parse(localStorage.getItem('yearFilter')) || []
+  );
   const [openFilterDialog, setOpenFilterDialog] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "ascending" });
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+
+  useEffect(() => {
+    localStorage.setItem('departmentFilter', JSON.stringify(departmentFilter));
+  }, [departmentFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('collegeFilter', JSON.stringify(collegeFilter));
+  }, [collegeFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('yearFilter', JSON.stringify(yearFilter));
+  }, [yearFilter]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -70,9 +88,11 @@ const StaffStudentProfile = () => {
     .sort((a, b) => {
       if (!sortConfig.key) return 0;
       const isAsc = sortConfig.direction === "ascending" ? 1 : -1;
+      if (typeof a[sortConfig.key] === 'string' && typeof b[sortConfig.key] === 'string') {
+        return isAsc * a[sortConfig.key].toLowerCase().localeCompare(b[sortConfig.key].toLowerCase());
+      }
       return isAsc * (a[sortConfig.key] < b[sortConfig.key] ? -1 : 1);
     });
-
 
   const indexOfLastStudent = currentPage * studentsPerPage;
   const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
@@ -104,23 +124,26 @@ const StaffStudentProfile = () => {
 
   const toggleFilter = (filterType, value) => {
     if (filterType === "dept") {
-      setDepartmentFilter((prevFilters) =>
-        prevFilters.includes(value)
+      setDepartmentFilter((prevFilters) => {
+        const newFilters = prevFilters.includes(value)
           ? prevFilters.filter((filter) => filter !== value)
-          : [...prevFilters, value]
-      );
+          : [...prevFilters, value];
+        return newFilters;
+      });
     } else if (filterType === "collegename") {
-      setCollegeFilter((prevFilters) =>
-        prevFilters.includes(value)
+      setCollegeFilter((prevFilters) => {
+        const newFilters = prevFilters.includes(value)
           ? prevFilters.filter((filter) => filter !== value)
-          : [...prevFilters, value]
-      );
+          : [...prevFilters, value];
+        return newFilters;
+      });
     } else if (filterType === "year") {
-      setYearFilter((prevFilters) =>
-        prevFilters.includes(value)
+      setYearFilter((prevFilters) => {
+        const newFilters = prevFilters.includes(value)
           ? prevFilters.filter((filter) => filter !== value)
-          : [...prevFilters, value]
-      );
+          : [...prevFilters, value];
+        return newFilters;
+      });
     }
   };
 
@@ -166,8 +189,6 @@ const StaffStudentProfile = () => {
             </div>
           ))}
         </div>
-
-
 
         <div className="bg-white p-6 rounded-xl shadow-lg ">
           {/* Search and Filter Section */}
@@ -232,7 +253,17 @@ const StaffStudentProfile = () => {
                 )}
                 {sortConfig.key !== "name" && <FontAwesomeIcon icon={faSort} className="ml-3" />}
               </p>
-              <p className="flex justify-center">Department</p>
+              <p onClick={() => requestSort("dept")} className="flex items-center justify-center cursor-pointer">
+                Department
+                {sortConfig.key === "dept" && (
+                  sortConfig.direction === "ascending" ? (
+                    <FontAwesomeIcon icon={faSortUp} className="ml-3" />
+                  ) : (
+                    <FontAwesomeIcon icon={faSortDown} className="ml-3" />
+                  )
+                )}
+                {sortConfig.key !== "dept" && <FontAwesomeIcon icon={faSort} className="ml-3" />}
+              </p>
               <p onClick={() => requestSort("collegename")} className="flex items-center justify-center cursor-pointer">
                 College
                 {sortConfig.key === "collegename" && (
@@ -244,7 +275,17 @@ const StaffStudentProfile = () => {
                 )}
                 {sortConfig.key !== "collegename" && <FontAwesomeIcon icon={faSort} className="ml-3" />}
               </p>
-              <p className="flex justify-center">Year</p>
+              <p onClick={() => requestSort("year")} className="flex items-center justify-center cursor-pointer">
+                Year
+                {sortConfig.key === "year" && (
+                  sortConfig.direction === "ascending" ? (
+                    <FontAwesomeIcon icon={faSortUp} className="ml-3" />
+                  ) : (
+                    <FontAwesomeIcon icon={faSortDown} className="ml-3" />
+                  )
+                )}
+                {sortConfig.key !== "year" && <FontAwesomeIcon icon={faSort} className="ml-3" />}
+              </p>
               <p className="flex justify-center">Report</p>
             </div>
             {filteredStudents
@@ -268,6 +309,26 @@ const StaffStudentProfile = () => {
                   </p>
                 </div>
               ))}
+          </div>
+
+          {/* Add Pagination */}
+          <div className="flex justify-center mt-6">
+            <Pagination
+              count={totalPages}
+              page={currentPage}
+              onChange={(event, page) => setCurrentPage(page)}
+              shape="rounded"
+              color="primary"
+              sx={{
+                '& .MuiPaginationItem-root': {
+                  color: '#111933',
+                  '&.Mui-selected': {
+                    backgroundColor: '#111933',
+                    color: '#fff',
+                  },
+                },
+              }}
+            />
           </div>
         </div>
 

@@ -6,6 +6,9 @@ import Papa from 'papaparse'; // For CSV parsing
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import { AiFillCheckCircle } from "react-icons/ai";
+import { FiDownload } from "react-icons/fi";
+import { MdCancel, MdDownloading } from "react-icons/md";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Pagination from '@mui/material/Pagination';
@@ -285,7 +288,7 @@ const AddTest = () => {
   const handleQuestionSelection = (index, isChecked) => {
     const question = parsedQuestions[bulkIndexOfFirstQuestion + index];
     const isAlreadySelected = selectedQuestions.some(q => q.question === question.question);
-  
+
     if (isChecked && !isAlreadySelected) {
       setSelectedQuestions([...selectedQuestions, question]);
     } else if (!isChecked && isAlreadySelected) {
@@ -424,7 +427,7 @@ const AddTest = () => {
   };
 
   return (
-    <div className="px-8 py-2 w-screen h-screen rounded shadow-md bg-[#ECF2FE]">
+    <div className="px-20 py-2 w-full min-h-screen rounded shadow-md bg-[#ECF2FE]">
       <ToastContainer
         position="top-right"
         autoClose={5000}
@@ -438,160 +441,165 @@ const AddTest = () => {
       />
       {showPopup && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-800 p-9 bg-opacity-50 popup z-[1000]">
-<div className="bg-white p-6 rounded shadow-md relative w-full max-w-[70%] mt-10 popup">
-  <div className="flex justify-between items-center mb-4">
-    <h2 className="text-2xl font-semibold text-gray-800 text-left" style={{ color: '#111933' }}>
-      Enter the Test Name
-    </h2>
-    <button
-      onClick={() => navigate(-1)}
-      className="text-gray-400 hover:text-gray-500"
-    >
-      <FontAwesomeIcon className='p-4' icon={faTimes} />
-    </button>
-  </div>
-  <form className='flex flex-col space-y-4 mt-8 popup-content'
-    onSubmit={(e) => {
-      e.preventDefault();
-      const buttonType = e.nativeEvent.submitter.getAttribute("data-type");
+          <div className="bg-white p-6 rounded shadow-md relative w-full max-w-2xl mt-10 popup">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-semibold text-[#111933] text-left" style={{ color: '#111933' }}>
+                Enter the Test Name
+              </h2>
+              <button
+                onClick={() => navigate(-1)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <FontAwesomeIcon className='p-4' icon={faTimes} />
+              </button>
+            </div>
+            <form className='flex flex-col space-y-4 mt-4 popup-content'
+              onSubmit={(e) => {
+                e.preventDefault();
+                const buttonType = e.nativeEvent.submitter.getAttribute("data-type");
 
-      if (buttonType === "manual") {
-        setShowPopup(false);
-        setShowManualForm(true);
-      } else if (buttonType === "bulkUpload") {
-        handleBulkUpload();
-      } else {
-        console.log("Unknown button type");
-      }
-    }}>
-    <div className="">
-      <label className="block text-gray-700 text-sm font-semibold mb-1" style={{ color: '#111933' }}>Test Name:</label>
-      <input
-        required
-        type="text"
-        value={testName}
-        onChange={(e) => setTestName(e.target.value)}
-        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-        style={{ width: '100%', color: '#111933' }} // Increase width to 100%
-      />
-    </div>
-    <div className="">
-      <label className="block text-gray-700 text-sm font-semibold mb-1" style={{ color: '#111933' }}>Test Level:</label>
-      <select
-        required
-        value={testLevel}
-        onChange={handleTestLevelChange}
-        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-        style={{ width: '100%', color: '#111933' }} // Increase width to 100%
-      >
-        <option value="">Select Level</option>
-        {levels.map((level, idx) => (
-          <option key={idx} value={level} style={{ color: '#111933' }}>{level}</option>
-        ))}
-      </select>
-    </div>
-    <div className="">
-      <label className="block text-gray-700 text-sm font-semibold mb-2" style={{ color: '#111933' }}>Test Tags:</label>
-      <div className="flex flex-wrap gap-2 mb-2">
-        {testTags.map((tag, tagIndex) => (
-          <span
-            key={tagIndex}
-            className="bg-blue-100 text-[#111933] px-2 py-1 rounded-full text-sm flex items-center"
-            style={{ color: '#111933' }}
-          >
-            {tag}
-            <button
-              onClick={() => removeTestTag(tagIndex)}
-              className="ml-2 text-[#111933] hover:text-blue-900"
-              style={{ color: '#111933' }}
-            >
-              ×
-            </button>
-          </span>
-        ))}
-      </div>
-      <input
-        type="text"
-        value={testTagsInput}
-        onChange={handleTestTagsChange}
-        onKeyPress={handleTestTagsKeyPress}
-        placeholder="Type and press Enter or comma to add tags"
-        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-        style={{ width: '100%', color: '#111933' }} // Increase width to 100%
-      />
-    </div>
-    <div className="">
-      <label className="block text-gray-700 text-sm font-semibold mb-2" style={{ color: '#111933' }}>Select Category:</label>
-      <select
-        required
-        value={selectedCategory}
-        onChange={(e) => setSelectedCategory(e.target.value)}
-        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-        style={{ width: '100%', color: '#111933' }} // Increase width to 100%
-      >
-        <option value="">Select Category</option>
-        {predefinedCategories.map((category, idx) => (
-          <option key={idx} value={category} style={{ color: '#111933' }}>{category}</option>
-        ))}
-        <option value="Others" style={{ color: '#111933' }}>Others</option>
-      </select>
-      {selectedCategory === "Others" && (
-        <input
-          type="text"
-          value={manualCategory}
-          onChange={(e) => setManualCategory(e.target.value)}
-          placeholder="Enter category manually"
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mt-2"
-          style={{ width: '100%', color: '#111933' }} // Increase width to 100%
-        />
-      )}
-    </div>
+                if (buttonType === "manual") {
+                  setShowPopup(false);
+                  setShowManualForm(true);
+                } else if (buttonType === "bulkUpload") {
+                  handleBulkUpload();
+                } else {
+                  console.log("Unknown button type");
+                }
+              }}>
+              <div className="space-y-2">
+                <label className="block text-[#111933] text-lg font-semibold mb-1" style={{ color: '#111933' }}>Test Name:</label>
+                <p className='text-sm text-[#111933]'>Enter a unique and descriptive name for the test..</p>
+                <input
+                  required
+                  type="text"
+                  value={testName}
+                  onChange={(e) => setTestName(e.target.value)}
+                  className="text-sm shadow appearance-none border rounded w-full py-2 px-3 text-[#111933] leading-tight focus:outline-none focus:shadow-outline"
+                  style={{ width: '100%', color: '#111933' }} // Increase width to 100%
+                  placeholder='Enter the test name...'
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-[#111933] text-lg font-semibold mb-1" style={{ color: '#111933' }}>Test Level:</label>
+                <p className='text-sm text-[#111933]'>Specify the difficulty level of the test, such as Beginner, Intermediate, or Advanced</p>
+                <select
+                  required
+                  value={testLevel}
+                  onChange={handleTestLevelChange}
+                  className="text-sm shadow appearance-none border rounded w-full py-2 px-3 text-[#111933] leading-tight focus:outline-none focus:shadow-outline"
+                  style={{ width: '100%', color: '#111933' }} // Increase width to 100%
+                >
+                  <option value="">Select Level</option>
+                  {levels.map((level, idx) => (
+                    <option key={idx} value={level} style={{ color: '#111933' }}>{level}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-[#111933] text-lg font-semibold mb-2" style={{ color: '#111933' }}>Test Tags:</label>
+                <p className='text-sm text-[#111933]'>Add relevant tags to the test to improve searchability and organization.</p>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {testTags.map((tag, tagIndex) => (
+                    <span
+                      key={tagIndex}
+                      className="bg-blue-100 text-[#111933] px-2 py-1 rounded-full text-sm flex items-center"
+                      style={{ color: '#111933' }}
+                    >
+                      {tag}
+                      <button
+                        onClick={() => removeTestTag(tagIndex)}
+                        className="ml-2 text-[#111933] hover:text-blue-900"
+                        style={{ color: '#111933' }}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  value={testTagsInput}
+                  onChange={handleTestTagsChange}
+                  onKeyPress={handleTestTagsKeyPress}
+                  placeholder="Type and press Enter or comma to add tags"
+                  className="text-sm shadow appearance-none border rounded w-full py-2 px-3 text-[#111933] leading-tight focus:outline-none focus:shadow-outline"
+                  style={{ width: '100%', color: '#111933' }} // Increase width to 100%
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-[#111933] text-lg font-semibold mb-2" style={{ color: '#111933' }}>Select Category:</label>
+                <p className='text-sm text-[#111933]'>Define the category under which the test falls, such as Mathematics, Science, Co</p>
+                <select
+                  required
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="text-sm shadow appearance-none border rounded w-full py-2 px-3 text-[#111933] leading-tight focus:outline-none focus:shadow-outline"
+                  style={{ width: '100%', color: '#111933' }} // Increase width to 100%
+                >
+                  <option value="">Select Category</option>
+                  {predefinedCategories.map((category, idx) => (
+                    <option key={idx} value={category} style={{ color: '#111933' }}>{category}</option>
+                  ))}
+                  <option value="Others" style={{ color: '#111933' }}>Others</option>
+                </select>
+                {selectedCategory === "Others" && (
+                  <input
+                    type="text"
+                    value={manualCategory}
+                    onChange={(e) => setManualCategory(e.target.value)}
+                    placeholder="Enter category manually"
+                    className="text-sm shadow appearance-none border rounded w-full py-2 px-3 text-[#111933] leading-tight focus:outline-none focus:shadow-outline mt-2"
+                    style={{ width: '100%', color: '#111933' }} // Increase width to 100%
+                  />
+                )}
+              </div>
 
-    <div className="flex justify-between">
-      <button
-        type="submit"
-        data-type="manual"
-        className="bg-yellow-500 text-white py-2 px-16 flex items-center hover-button"
-        style={{ backgroundColor: '#111933', borderWidth: '2px', borderRadius: '9px', color: 'white' }}
-      >
-        Manual
-      </button>
+              <div className="flex justify-between">
+                <button
+                  type="submit"
+                  data-type="manual"
+                  className="bg-yellow-500 text-white py-2 px-16 flex items-center hover-button"
+                  style={{ backgroundColor: '#111933', borderWidth: '2px', borderRadius: '9px', color: 'white' }}
+                >
+                  Manual
+                </button>
 
-      <button
-        type="submit"
-        data-type="bulkUpload"
-        className="bg-yellow-500 text-primary py-2 px-6 hover-button"
-        style={{ backgroundColor: '#111933', borderWidth: '2px', borderRadius: '9px', color: 'white',}}
-      >
-        Bulk Upload
-      </button>
-    </div>
-  </form>
-</div>
+                <button
+                  type="submit"
+                  data-type="bulkUpload"
+                  className="bg-yellow-500 text-primary py-2 px-6 hover-button"
+                  style={{ backgroundColor: '#111933', borderWidth: '2px', borderRadius: '9px', color: 'white', }}
+                >
+                  Bulk Upload
+                </button>
+              </div>
+            </form>
+          </div>
 
 
         </div>
       )}
       {showManualForm && (
         <div className="manual-upload-container p-6 bg-white shadow-xl rounded-lg">
-          <h2 className="text-2xl font-semibold text-gray-800" style={{ color: '#111933' }}>Manual Upload Test</h2>
+          <h2 className="text-2xl font-semibold text-[#111933]" style={{ color: '#111933' }}>Manual Upload Test</h2>
           <div className='flex flex-1 space-x-4 items-end mb-6'>
             <div className="flex-1">
-              <label className=" text-gray-700 text-sm font-semibold mb-2" style={{ color: '#111933' }}>Test Name:</label>
+              <label className=" text-[#111933] text-sm font-semibold mb-2" style={{ color: '#111933' }}>Test Name:</label>
               <input
                 type="text"
                 value={testName}
                 onChange={(e) => setTestName(e.target.value)}
-                className="shadow appearance-none border rounded w-2 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                className="shadow appearance-none border rounded w-2 py-2 px-3 text-[#111933] leading-tight focus:outline-none focus:shadow-outline"
                 style={{ width: '100%', color: '#111933' }} // Increase width to 100%
               />
             </div>
             <div className="flex-1">
-              <label className=" text-gray-700 text-sm font-semibold mb-2" style={{ color: '#111933' }}>Test Level:</label>
+              <label className=" text-[#111933] text-sm font-semibold mb-2" style={{ color: '#111933' }}>Test Level:</label>
               <select
                 value={testLevel}
                 onChange={handleTestLevelChange}
-                className="shadow appearance-none border rounded w-2 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                className="shadow appearance-none border rounded w-2 py-2 px-3 text-[#111933] leading-tight focus:outline-none focus:shadow-outline"
                 style={{ width: '100%', color: '#111933' }} // Increase width to 100%
               >
                 <option value="">Select Level</option>
@@ -601,11 +609,11 @@ const AddTest = () => {
               </select>
             </div>
             <div className="flex-1">
-              <label className="text-gray-700 text-sm font-semibold mb-2" style={{ color: '#111933' }}>Select Category:</label>
+              <label className="text-[#111933] text-sm font-semibold mb-2" style={{ color: '#111933' }}>Select Category:</label>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-[#111933] leading-tight focus:outline-none focus:shadow-outline"
                 style={{ width: '100%', color: '#111933' }} // Increase width to 100%
               >
                 <option value="">Select Category</option>
@@ -620,13 +628,13 @@ const AddTest = () => {
                   value={manualCategory}
                   onChange={(e) => setManualCategory(e.target.value)}
                   placeholder="Enter category manually"
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mt-2"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-[#111933] leading-tight focus:outline-none focus:shadow-outline mt-2"
                   style={{ width: '100%', color: '#111933' }} // Increase width to 100%
                 />
               )}
             </div>
             <div className=" flex-1">
-              <label className=" text-gray-700 text-sm font-semibold" style={{ color: '#111933' }}>Test Tags:</label>
+              <label className=" text-[#111933] text-sm font-semibold" style={{ color: '#111933' }}>Test Tags:</label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {testTags.map((tag, tagIndex) => (
                   <span
@@ -651,7 +659,7 @@ const AddTest = () => {
                 onChange={handleTestTagsChange}
                 onKeyPress={handleTestTagsKeyPress}
                 placeholder="Type and press Enter or comma to add tags"
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-[#111933] leading-tight focus:outline-none focus:shadow-outline"
                 style={{ width: '100%', color: '#111933' }} // Increase width to 100%
               />
             </div>
@@ -881,17 +889,17 @@ const AddTest = () => {
 
                       {/* Create Test Button (Only for the Last Question) */}
 
-                        <div className="flex justify-end">
-                          <button
-                            onClick={() => {
-                              handleSaveQuestion(index);
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => {
+                            handleSaveQuestion(index);
 
-                            }}
-                            className="py-2 px-4  rounded-lg bg-[#111933] text-white hover:bg-[#1f2b41]"
-                          >
-                            Save
-                          </button>
-                        </div>
+                          }}
+                          className="py-2 px-4  rounded-lg bg-[#111933] text-white hover:bg-[#1f2b41]"
+                        >
+                          Save
+                        </button>
+                      </div>
 
                     </div>
                   )
@@ -903,209 +911,245 @@ const AddTest = () => {
         </div>
       )}
       {showBulkUpload && (
-        <div className="p-6 my-4 bg-white shadow-xl rounded-lg">
+        <div className="my-4">
           <ToastContainer />
-          <div className='flex justify-between items-center mb-4'>
-            <h2 className="text-2xl font-semibold text-gray-800" style={{ color: '#111933' }}>Bulk Upload Test</h2>
-            <button
-              onClick={handleDownloadSample}
-              className="p-2 rounded-lg bg-[#111933] border-[#111933] border text-white px-5"
-            >
-              Download Sample
-            </button>
+          <div className='mb-4'>
+            <h2 className="text-2xl font-bold text-[#111933] mb-4" style={{ color: '#111933' }}>Bulk Upload Test</h2>
+            <p className='text-[#111933]'>Choose how you’d like to add questions to your assessment. Select the method that works best for you to quickly build your test.</p>
           </div>
-          <div className="flex flex-wrap -mx-4 mb-4">
-            <div className="w-full md:w-1/4 px-4 mb-4 md:mb-0">
-              <label className="block text-gray-700 text-sm font-semibold mb-2" style={{ color: '#111933' }}>Test Name:</label>
-              <input
-                type="text"
-                value={testName}
-                onChange={(e) => setTestName(e.target.value)}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                style={{ color: '#111933' }}
-              />
-            </div>
-            <div className="w-full md:w-1/4 px-4 mb-4 md:mb-0">
-              <label className="block text-gray-700 text-sm font-semibold mb-2" style={{ color: '#111933' }}>Test Level:</label>
-              <select
-                value={testLevel}
-                onChange={handleTestLevelChange}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                style={{ color: '#111933' }}
-              >
-                <option value="">Select Level</option>
-                {levels.map((level, idx) => (
-                  <option key={idx} value={level} style={{ color: '#111933' }}>{level}</option>
-                ))}
-              </select>
-            </div>
-            <div className="w-full md:w-1/4 px-4 mb-4 md:mb-0">
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-gray-700 text-sm font-semibold" style={{ color: '#111933' }}>Test Tags:</label>
-                <div className="flex flex-wrap gap-2">
-                  {testTags.map((tag, tagIndex) => (
-                    <span
-                      key={tagIndex}
-                      className="bg-blue-100 text-[#111933] px-2 py-1 rounded-full text-sm flex items-center"
-                      style={{ color: '#111933' }}
-                    >
-                      {tag}
-                      <button
-                        onClick={() => removeTestTag(tagIndex)}
-                        className="ml-2 text-[#111933] hover:text-blue-900"
-                        style={{ color: '#111933' }}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <input
-                type="text"
-                value={testTagsInput}
-                onChange={handleTestTagsChange}
-                onKeyPress={handleTestTagsKeyPress}
-                placeholder="Type and press Enter or comma to add tags"
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                style={{ color: '#111933' }}
-              />
-            </div>
-            <div className="w-full md:w-1/4 px-4 mb-4 md:mb-0">
-              <label className="block text-gray-700 text-sm font-semibold mb-2" style={{ color: '#111933' }}>Select Category:</label>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                style={{ color: '#111933' }}
-              >
-                <option value="">Select Category</option>
-                {predefinedCategories.map((category, idx) => (
-                  <option key={idx} value={category} style={{ color: '#111933' }}>{category}</option>
-                ))}
-                <option value="Others" style={{ color: '#111933' }}>Others</option>
-              </select>
-              {selectedCategory === "Others" && (
+          <hr className='border border-gray-400 my-4' />
+          <div className='bg-white p-10 rounded-lg'>
+            <div className="flex flex-wrap -mx-4 mb-4">
+              <div className="w-full md:w-1/2 px-4 mb-4">
+                <label className="block text-[#111933] text-lg font-semibold mb-2" style={{ color: '#111933' }}>Test Name:</label>
                 <input
                   type="text"
-                  value={manualCategory}
-                  onChange={(e) => setManualCategory(e.target.value)}
-                  placeholder="Enter category manually"
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mt-2"
+                  value={testName}
+                  onChange={(e) => setTestName(e.target.value)}
+                  className="text-sm shadow appearance-none border rounded w-full py-3 px-5 text-[#111933] leading-tight focus:outline-none focus:shadow-outline"
                   style={{ color: '#111933' }}
                 />
-              )}
+              </div>
+              <div className="w-full md:w-1/2 px-4 mb-4">
+                <label className="block text-[#111933] text-lg font-semibold mb-2" style={{ color: '#111933' }}>Test Level:</label>
+                <select
+                  value={testLevel}
+                  onChange={handleTestLevelChange}
+                  className="text-sm shadow appearance-none border rounded w-full py-3 px-5 text-[#111933] leading-tight focus:outline-none focus:shadow-outline"
+                  style={{ color: '#111933' }}
+                >
+                  <option value="">Select Level</option>
+                  {levels.map((level, idx) => (
+                    <option key={idx} value={level} style={{ color: '#111933' }}>{level}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="w-full md:w-1/2 px-4 mb-4">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[#111933] text-lg font-semibold" style={{ color: '#111933' }}>Test Tags:</label>
+                  <div className="flex flex-wrap gap-2">
+                    {testTags.map((tag, tagIndex) => (
+                      <span
+                        key={tagIndex}
+                        className="bg-blue-100 text-[#111933] px-2 py-1 rounded-full text-lg flex items-center"
+                        style={{ color: '#111933' }}
+                      >
+                        {tag}
+                        <button
+                          onClick={() => removeTestTag(tagIndex)}
+                          className="ml-2 text-[#111933] hover:text-blue-900"
+                          style={{ color: '#111933' }}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  value={testTagsInput}
+                  onChange={handleTestTagsChange}
+                  onKeyPress={handleTestTagsKeyPress}
+                  placeholder="Type and press Enter or comma to add tags"
+                  className="text-sm shadow appearance-none border rounded w-full py-3 px-5 text-[#111933] leading-tight focus:outline-none focus:shadow-outline"
+                  style={{ color: '#111933' }}
+                />
+              </div>
+              <div className="w-full md:w-1/2 px-4 mb-4">
+                <label className="block text-[#111933] text-lg font-semibold mb-2" style={{ color: '#111933' }}>Select Category:</label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="text-sm shadow appearance-none border rounded w-full py-3 px-5 text-[#111933] leading-tight focus:outline-none focus:shadow-outline"
+                  style={{ color: '#111933' }}
+                >
+                  <option value="">Select Category</option>
+                  {predefinedCategories.map((category, idx) => (
+                    <option key={idx} value={category} style={{ color: '#111933' }}>{category}</option>
+                  ))}
+                  <option value="Others" style={{ color: '#111933' }}>Others</option>
+                </select>
+                {selectedCategory === "Others" && (
+                  <input
+                    type="text"
+                    value={manualCategory}
+                    onChange={(e) => setManualCategory(e.target.value)}
+                    placeholder="Enter category manually"
+                    className="text-sm shadow appearance-none border rounded w-full py-3 px-5 text-[#111933] leading-tight focus:outline-none focus:shadow-outline mt-2"
+                    style={{ color: '#111933' }}
+                  />
+                )}
+              </div>
             </div>
-          </div>
-          {!file && (
-            <div
-              {...getRootProps()}
-              className="border-dashed border border-gray-300 px-20 py-10 text-center mx-14 flex flex-col items-center"
-            >
-              <input {...getInputProps()} />
-              {isDragActive ? (
-                <>
-                  <img src="/bulk.png" alt="Bulk" className="mb-4 w-56 h-56" />
-                  <p style={{ color: '#111933' }}>Drop the files here ...</p>
-                </>
-              ) : (
-                <>
-                  <img src="/bulk.png" alt="Bulk" className="mb-4 w-56 h-56" />
-                  <p style={{ color: '#111933' }}>Drag 'n' drop some files here, or click to select files</p>
-                </>
-              )}
-            </div>
-          )}
 
-          {file && (
-            <div className="mb-4">
-              <p style={{ color: '#111933' }}>Selected file: {file.name}</p>
-            </div>
-          )}
-{parsedQuestions.length > 0 && (
-  <div className="mb-4">
-    <div className="flex justify-between items-center mb-4">
-      <h3 className="text-xl font-semibold text-gray-800" style={{ color: '#111933' }}>Preview Questions</h3>
-      <button
-        onClick={() => {
-          const allSelected = selectedQuestions.length === parsedQuestions.length;
-          handleSelectAll(!allSelected);
-        }}
-        className="bg-white text-[#111933] py-1 px-3 rounded-xl hover:bg-[#111933] hover:text-white border-2 border-gray-300"
-      >
-        {selectedQuestions.length === parsedQuestions.length ? 'Deselect All' : 'Select All'}
-      </button>
-    </div>
-    {currentParsedQuestions.map((q, index) => (
-      <div
-        key={index}
-        className="p-4 bg-white hover:shadow-md border-b-2 rounded-sm flex items-start justify-between cursor-pointer"
-        onClick={() => handleQuestionSelection(index, !selectedQuestions.some(sq => sq.question === q.question))}
-      >
-        <input
-          type="checkbox"
-          checked={selectedQuestions.some(sq => sq.question === q.question)}
-          onChange={(e) => handleQuestionSelection(index, e.target.checked)}
-          className="mr-4 mt-1"
-        />
-        <div className="flex-1 flex flex-col items-start justify-between">
-          <p className="text-left"><strong style={{ color: '#111933' }}>{q.question}</strong></p>
-          <button
-            onClick={(e) => {
-              e.stopPropagation(); // Prevent the click event from propagating to the parent div
-              testtoggleExpand(index);
-            }}
-            className="text-gray-700 hover:text-gray-900 mt-2"
-          >
-            {expandedQuestions.includes(bulkIndexOfFirstQuestion + index) && (
-              <div className="mt-2 w-full">
-                <p><strong style={{ color: '#111933' }}>Options:</strong> {q.options.join(', ')}</p>
-                <p><strong style={{ color: '#111933' }}>Level:</strong> {q.level}</p>
-                <p><strong style={{ color: '#111933' }}>Tags:</strong> {q.tags.join(', ')}</p>
+
+            {!file && (
+              <div
+                {...getRootProps()}
+                className="border-dashed border border-gray-300 px-20 py-10 text-center mx-14 flex flex-col items-center"
+              >
+                <input {...getInputProps()} />
+                {isDragActive ? (
+                  <>
+                    <p style={{ color: '#111933' }}>Drop the files here ...</p>
+                  </>
+                ) : (
+                  <>
+                    <p className='text-2xl mb-4 font-semibold'>Upload files as csv, xlsx etc,</p>
+                    <button
+                      onClick={() => document.getElementById('file-input').click()}
+                      className="bg-[#111933] text-white px-6 py-2 rounded-lg hover:bg-[#111933]/50 transition-colors"
+                    >
+                      Upload Files
+                    </button>
+                    <p style={{ color: '#111933' }} className="mt-2">
+                      Or drag and drop files here
+                    </p>
+                  </>
+                )}
               </div>
             )}
-          </button>
-        </div>
-        <div className="flex-shrink-0 text-left w-1/4">
-          <p><strong style={{ color: '#111933' }}>Answer:</strong> {q.correctAnswer}</p>
-        </div>
-      </div>
-    ))}
-    <div className="flex justify-center">
-      <Pagination
-        count={bulkTotalPages} // Total number of pages
-        page={bulkCurrentPage} // Current active page
-        onChange={(event, value) => handleBulkPageChange(value)}
-        siblingCount={1} // Number of page numbers before and after current page
-        boundaryCount={0} // Number of boundary pages shown at start and end
-        className='mt-3'
-        sx={{
-          '& .MuiPaginationItem-root': {
-            color: '#111933', // Text color for pagination items
-          },
-          '& .MuiPaginationItem-root.Mui-selected': {
-            backgroundColor: '#111933', // Background color for selected item
-            color: '#fff', // Text color for selected item
-          },
-          '& .MuiPaginationItem-root:hover': {
-            backgroundColor: 'rgba(0, 9, 117, 0.1)',
-            color: '#111933', // Hover effect
-          },
-        }}
-      />
-    </div>
-  </div>
-)}
 
 
-          <div className="flex justify-end space-x-4 mt-4">
+            {file && (
+              <div className="mb-4">
+                <p style={{ color: '#111933' }}>Selected file: {file.name}</p>
+              </div>
+            )}
 
-            <button
-              onClick={handleSubmit}
-              className="p-2 rounded-lg bg-[#111933] border-[#111933] border text-white px-5 "
-            >
-              Submit
-            </button>
+            <div className="my-6">
+              <h2 className='text-2xl text-[#111933] font-bold mb-2'>Instructions</h2>
+              <p className='text-gray-500'>Easily add questions by uploading your prepared files as csv , xlsx etc.,</p>
+              <hr className='my-4' />
+              <ul className='space-y-2'>
+                <li><AiFillCheckCircle className='text-green-500 text-2xl inline-flex mr-2' />Ensure your file is in XLSX format.</li>
+                <li><AiFillCheckCircle className='text-green-500 text-2xl inline-flex mr-2' />Options should be labeled as option1, option2, option3, option4, option5 and option 6.</li>
+                <li><AiFillCheckCircle className='text-green-500 text-2xl inline-flex mr-2' />The correct answer should be specified in the correct answer column.</li>
+                <li><AiFillCheckCircle className='text-green-500 text-2xl inline-flex mr-2' />Maximum file size allowed: 5MB</li>
+                <li><AiFillCheckCircle className='text-green-500 text-2xl inline-flex mr-2' />Ensure all fields are properly filled.</li>
+              </ul>
+            </div>
+
+            {parsedQuestions.length > 0 && (
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-semibold text-[#111933]" style={{ color: '#111933' }}>Preview Questions</h3>
+                  <button
+                    onClick={() => {
+                      const allSelected = selectedQuestions.length === parsedQuestions.length;
+                      handleSelectAll(!allSelected);
+                    }}
+                    className="bg-white text-[#111933] py-1 px-3 rounded-xl hover:bg-[#111933] hover:text-white border-2 border-gray-300"
+                  >
+                    {selectedQuestions.length === parsedQuestions.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+                {currentParsedQuestions.map((q, index) => (
+                  <div
+                    key={index}
+                    className="p-4 bg-white hover:shadow-md border-b-2 rounded-sm flex items-start justify-between cursor-pointer"
+                    onClick={() => handleQuestionSelection(index, !selectedQuestions.some(sq => sq.question === q.question))}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedQuestions.some(sq => sq.question === q.question)}
+                      onChange={(e) => handleQuestionSelection(index, e.target.checked)}
+                      className="mr-4 mt-1"
+                    />
+                    <div className="flex-1 flex flex-col items-start justify-between">
+                      <p className="text-left"><strong style={{ color: '#111933' }}>{q.question}</strong></p>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent the click event from propagating to the parent div
+                          testtoggleExpand(index);
+                        }}
+                        className="text-[#111933] hover:text-gray-900 mt-2"
+                      >
+                        {expandedQuestions.includes(bulkIndexOfFirstQuestion + index) && (
+                          <div className="mt-2 w-full">
+                            <p><strong style={{ color: '#111933' }}>Options:</strong> {q.options.join(', ')}</p>
+                            <p><strong style={{ color: '#111933' }}>Level:</strong> {q.level}</p>
+                            <p><strong style={{ color: '#111933' }}>Tags:</strong> {q.tags.join(', ')}</p>
+                          </div>
+                        )}
+                      </button>
+                    </div>
+                    <div className="flex-shrink-0 text-left w-1/4">
+                      <p><strong style={{ color: '#111933' }}>Answer:</strong> {q.correctAnswer}</p>
+                    </div>
+                  </div>
+                ))}
+                <div className="flex justify-center">
+                  <Pagination
+                    count={bulkTotalPages} // Total number of pages
+                    page={bulkCurrentPage} // Current active page
+                    onChange={(event, value) => handleBulkPageChange(value)}
+                    siblingCount={1} // Number of page numbers before and after current page
+                    boundaryCount={0} // Number of boundary pages shown at start and end
+                    className='mt-3'
+                    sx={{
+                      '& .MuiPaginationItem-root': {
+                        color: '#111933', // Text color for pagination items
+                      },
+                      '& .MuiPaginationItem-root.Mui-selected': {
+                        backgroundColor: '#111933', // Background color for selected item
+                        color: '#fff', // Text color for selected item
+                      },
+                      '& .MuiPaginationItem-root:hover': {
+                        backgroundColor: 'rgba(0, 9, 117, 0.1)',
+                        color: '#111933', // Hover effect
+                      },
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+
+            <div className="flex justify-between space-x-4 mt-4">
+              <button
+                onClick={handleDownloadSample}
+                className="p-2 rounded-lg bg-white border-[#111933] border text-[#111933] font-semibold px-5"
+              >
+                Sample Document <FiDownload className='inline-flex text-xl ml-2' />
+              </button>
+
+              <div className='flex items-center space-x-2'>
+                <button
+                  onClick={() => window.history.back()}
+                  className="p-2 rounded-lg bg-white border-[#111933] border text-[#111933] font-semibold px-5 "
+                >
+                  Cancel <MdCancel className='inline-flex text-xl ml-2' />
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  className="p-2 rounded-lg bg-[#111933] border-[#111933] border text-white px-5 "
+                >
+                  Submit <MdDownloading className='inline-flex text-xl ml-2' />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

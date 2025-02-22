@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import SectionBasedQuestionNumbers from "./SectionBasedQuestionNumbers";
-
+import QuestionNumbers from "./QuestionNumbers";
+import Legend from "./Legend";
 
 export default function SectionBasedSidebar({
   sections,
@@ -16,7 +16,15 @@ export default function SectionBasedSidebar({
     return storedTimes ? JSON.parse(storedTimes) : sections.map((section) => ({
       remainingTime: section.duration.hours * 3600 + section.duration.minutes * 60,
       isActive: false,
+      isFinished: false,
     }));
+  });
+
+  const [visitedQuestions, setVisitedQuestions] = useState(() => {
+    const storedVisited = sessionStorage.getItem(`visitedQuestions_${contestId}`);
+    return storedVisited
+      ? JSON.parse(storedVisited)
+      : sections.map(section => Array(section.questions.length).fill(false));
   });
 
   const [openSections, setOpenSections] = useState(new Set([currentSectionIndex]));
@@ -32,7 +40,12 @@ export default function SectionBasedSidebar({
       setSectionTimes((prevTimes) =>
         prevTimes.map((time, index) => {
           if (index === currentSectionIndex && time.isActive && time.remainingTime > 0) {
-            return { ...time, remainingTime: time.remainingTime - 1 };
+            const newRemainingTime = time.remainingTime - 1;
+            return { 
+              ...time, 
+              remainingTime: newRemainingTime,
+              isFinished: newRemainingTime === 0 
+            };
           }
           return time;
         })
@@ -42,7 +55,7 @@ export default function SectionBasedSidebar({
     intervalId = setInterval(updateTimer, 1000);
 
     return () => clearInterval(intervalId);
-  }, [currentSectionIndex, contestId]);
+  }, [currentSectionIndex]);
 
   useEffect(() => {
     setSectionTimes((prevTimes) =>
@@ -53,13 +66,29 @@ export default function SectionBasedSidebar({
     );
   }, [currentSectionIndex]);
 
+  const findNextSectionWithTime = () => {
+    for (let i = currentSectionIndex + 1; i < sections.length; i++) {
+      if (sectionTimes[i].remainingTime > 0) {
+        return i;
+      }
+    }
+    // If no sections ahead have time, check previous sections
+    for (let i = 0; i < currentSectionIndex; i++) {
+      if (sectionTimes[i].remainingTime > 0) {
+        return i;
+      }
+    }
+    return null;
+  };
+
   useEffect(() => {
-    setOpenSections((prevOpenSections) => {
-      const newOpenSections = new Set(prevOpenSections);
-      newOpenSections.add(currentSectionIndex);
-      return newOpenSections;
-    });
-  }, [currentSectionIndex]);
+    if (sectionTimes[currentSectionIndex]?.remainingTime === 0) {
+      const nextSectionIndex = findNextSectionWithTime();
+      if (nextSectionIndex !== null) {
+        onQuestionClick(nextSectionIndex, 0);
+      }
+    }
+  }, [sectionTimes, currentSectionIndex]);
 
   const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
@@ -69,12 +98,14 @@ export default function SectionBasedSidebar({
   };
 
   const toggleSection = (sectionIndex) => {
+    // Don't allow toggling if section is finished
+    if (sectionTimes[sectionIndex].isFinished) return;
+    
     setOpenSections((prevOpenSections) => {
       const newOpenSections = new Set(prevOpenSections);
       if (newOpenSections.has(sectionIndex)) {
         newOpenSections.delete(sectionIndex);
       } else {
-        newOpenSections.forEach((index) => newOpenSections.delete(index));
         newOpenSections.add(sectionIndex);
       }
       return newOpenSections;
@@ -82,29 +113,58 @@ export default function SectionBasedSidebar({
   };
 
   const handleSectionClick = (sectionIndex) => {
-    onQuestionClick(sectionIndex, 0); // Navigate to the first question of the section
-    toggleSection(sectionIndex);
+    // Don't allow navigation to finished sections
+    if (sectionTimes[sectionIndex].isFinished) return;
+
+    if (sectionIndex === currentSectionIndex) {
+      toggleSection(sectionIndex);
+    } else {
+      onQuestionClick(sectionIndex, 0);
+      setOpenSections(new Set([sectionIndex]));
+    }
   };
 
+  useEffect(() => {
+    sessionStorage.setItem(`visitedQuestions_${contestId}`, JSON.stringify(visitedQuestions));
+  }, [visitedQuestions, contestId]);
+
+  useEffect(() => {
+    setVisitedQuestions(prev => {
+      const newVisited = [...prev];
+      if (newVisited[currentSectionIndex] && !newVisited[currentSectionIndex][currentQuestionIndex]) {
+        newVisited[currentSectionIndex] = [...newVisited[currentSectionIndex]];
+        newVisited[currentSectionIndex][currentQuestionIndex] = true;
+      }
+      return newVisited;
+    });
+  }, [currentSectionIndex, currentQuestionIndex]);
+
   const getQuestionStatus = (sectionIndex, questionIndex) => {
+    if (sectionTimes[sectionIndex].isFinished) return "finished";
     if (reviewStatus[sectionIndex]?.[questionIndex]) return "review";
     if (sectionIndex === currentSectionIndex && questionIndex === currentQuestionIndex) return "current";
     if (selectedAnswers[sectionIndex]?.[questionIndex] !== undefined) return "answered";
+    if (visitedQuestions[sectionIndex]?.[questionIndex]) return "notAttempted";
     return "notAnswered";
   };
 
   return (
     <div className="w-full p-4 space-y-6">
+      <Legend />
       {sections.map((section, sectionIndex) => {
         const remainingTime = sectionTimes[sectionIndex].remainingTime;
         const formattedTime = formatTime(remainingTime);
+        const isFinished = sectionTimes[sectionIndex].isFinished;
 
         return (
-          <div key={sectionIndex} className="border-b border-gray-200 pb-4">
+          <div key={sectionIndex} className={`border-b border-gray-200 pb-4 ${isFinished ? 'opacity-50' : ''}`}>
             <div className="flex items-center justify-between mb-2">
               <button
-                className="flex items-center text-[#111933] font-medium hover:underline"
+                className={`flex items-center text-[#111933] font-medium ${
+                  isFinished ? 'cursor-not-allowed' : 'hover:underline'
+                }`}
                 onClick={() => handleSectionClick(sectionIndex)}
+                disabled={isFinished}
               >
                 <span>{section.sectionName}</span>
                 <svg
@@ -122,13 +182,16 @@ export default function SectionBasedSidebar({
                   ></path>
                 </svg>
               </button>
-              <span className="text-gray-600">{formattedTime}</span>
+              <span className={`text-gray-600 ${remainingTime === 0 ? 'text-red-500' : ''}`}>
+                {formattedTime}
+              </span>
             </div>
             {openSections.has(sectionIndex) && (
-              <SectionBasedQuestionNumbers
+              <QuestionNumbers
                 questionNumbers={section.questions.map((_, i) => i + 1)}
                 questionStatuses={section.questions.map((_, i) => getQuestionStatus(sectionIndex, i))}
-                onQuestionClick={(index) => onQuestionClick(sectionIndex, index)}
+                onQuestionClick={(index) => !isFinished && onQuestionClick(sectionIndex, index)}
+                isDisabled={isFinished}
               />
             )}
           </div>

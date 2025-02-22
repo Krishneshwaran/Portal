@@ -1,3 +1,4 @@
+// QuestionDetails.jsx
 import React, { useState } from 'react';
 import { X, CheckCircleIcon } from 'lucide-react';
 import { getLevelBadgeColor, renderTags } from '../../lib/utils';
@@ -10,17 +11,15 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:800
 const QuestionDetails = ({
   selectedQuestion,
   setSelectedQuestion,
-  isEditing,
-  setIsEditing,
   testId,
   isLoading,
   setIsLoading,
   setView,
 }) => {
+  const [isEditing, setIsEditing] = useState(false); // Local state for editing mode
+
   const handleChange = (field, value) =>
     setSelectedQuestion({ ...selectedQuestion, [field]: value });
-
-  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleQuestionUpdate = async (questionId) => {
     setIsLoading(true);
@@ -215,8 +214,6 @@ const QuestionDetails = ({
                   <button
                     onClick={() => {
                       handleQuestionUpdate(selectedQuestion.question_id);
-                      setSelectedQuestion(null);
-                      toast.success('Question updated successfully!');
                     }}
                     disabled={isLoading}
                     className="flex-1 text-[white] bg-[#111933] px-4 py-2 rounded-lg transition disabled:opacity-50"
@@ -227,17 +224,14 @@ const QuestionDetails = ({
               ) : (
                 <>
                   <button
-  onClick={(event) => {
-    event.stopPropagation(); // Stop the event from bubbling up
-    setIsEditing(true);
-    console.log('Edit button clicked'); // Add logging for debugging
-  }}
-  className="flex-1 text-[#111933] bg-[white] border border-[#111933] px-4 py-2 rounded-lg"
->
-  Edit
-</button>
-
-
+                    onClick={(event) => {
+                      event.stopPropagation(); // Stop the event from bubbling up
+                      setIsEditing(true);
+                    }}
+                    className="flex-1 text-[#111933] bg-[white] border border-[#111933] px-4 py-2 rounded-lg"
+                  >
+                    Edit
+                  </button>
                 </>
               )}
             </div>

@@ -12,7 +12,7 @@ import { styled } from "@mui/material";
 import { FaSearch } from "react-icons/fa";
 import TestCard from "./TestCard";
 import axios from "axios";
-import NoExams from "../../assets/testno.png";
+import NoExams from "../../assets/happy.png";
 import Award from "../../assets/AwardNew.png";
 import backgroundImage from "../../assets/pattern.png";
 import { useTestContext } from "./TestContext";
@@ -368,7 +368,6 @@ const StudentDashboard = () => {
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
-    setPage(1); // Reset to first page when searching
   };
 
   const filteredOpenTests = openTests.filter(test =>
@@ -382,9 +381,6 @@ const StudentDashboard = () => {
   const filteredCompletedTests = completedTests.filter(test =>
     test.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  // Combine filtered open tests and mcq tests for the active tab
-  const combinedActiveTests = [...filteredOpenTests, ...filteredMcqTests];
 
   return (
     <div className="min-h-screen  px-20 bg-[#f4f6ff86]">
@@ -436,7 +432,7 @@ const StudentDashboard = () => {
                   Active Assessments
                 </Typography>
                 <Grid container spacing={2}>
-                  {getPaginatedItems(combinedActiveTests).map(
+                  {getPaginatedItems([...openTests, ...mcqTests]).map(
                     (test) => (
                       <Grid
                         item
@@ -454,27 +450,27 @@ const StudentDashboard = () => {
                       </Grid>
                     )
                   )}
-                  {combinedActiveTests.length === 0 && (
-                    <Grid item xs={12}>
-                      <Box className="text-center py-12 flex flex-col items-center justify-center">
-                        <img
-                          src={NoExams}
-                          alt="No Exams"
-                          className="mb-6 w-48 h-48"
-                        />
-                        <Typography
-                          variant="h6"
-                          className="font-medium text-gray-900"
-                        >
-                          {searchQuery ? "No matching assessments found" : "Enjoy your free time!"}
-                        </Typography>
-                      </Box>
-                    </Grid>
+                  {openTests.length === 0 && mcqTests.length === 0 && (
+                    <Box className="col-span-3 text-center py-12">
+                      <img
+                        src={NoExams}
+                        alt="No Exams"
+                        className="mx-auto mb-6 w-48 h-48"
+                      />
+                      <Typography
+                        variant="h6"
+                        className="font-medium text-gray-900"
+                      >
+                        Enjoy your free time!
+                      </Typography>
+                    </Box>
                   )}
                 </Grid>
                 <Box display="flex" justifyContent="center" mt={4}>
                   <Pagination
-                    count={Math.ceil(combinedActiveTests.length / itemsPerPage)}
+                    count={Math.ceil(
+                      (openTests.length + mcqTests.length) / itemsPerPage
+                    )}
                     page={page}
                     onChange={handlePageChange}
                     sx={{
@@ -503,7 +499,7 @@ const StudentDashboard = () => {
                   Completed Assessments
                 </Typography>
                 <Grid container spacing={2}>
-                  {getPaginatedItems(filteredCompletedTests).map((test) => (
+                  {getPaginatedItems(completedTests).map((test) => (
                     <Grid
                       item
                       xs={12}
@@ -520,22 +516,20 @@ const StudentDashboard = () => {
                       />
                     </Grid>
                   ))}
-                  {filteredCompletedTests.length === 0 && (
-                    <Grid item xs={12}>
-                      <Box className="text-center py-12 flex flex-col items-center justify-center">
-                        <img
-                          src={NoExams}
-                          alt="No Exams"
-                          className="mb-6 w-48 h-48"
-                        />
-                        <Typography
-                          variant="h6"
-                          className="font-medium text-gray-900"
-                        >
-                          {searchQuery ? "No matching completed assessments found" : "No completed assessments yet"}
-                        </Typography>
-                      </Box>
-                    </Grid>
+                  {completedTests.length === 0 && (
+                    <Box className="col-span-3 text-center py-12">
+                      <img
+                        src={NoExams}
+                        alt="No Exams"
+                        className="mx-auto mb-6 w-48 h-48"
+                      />
+                      <Typography
+                        variant="h6"
+                        className="font-medium text-gray-900"
+                      >
+                        No completed assessments yet
+                      </Typography>
+                    </Box>
                   )}
                 </Grid>
                 <Box display="flex" justifyContent="center" mt={4}>

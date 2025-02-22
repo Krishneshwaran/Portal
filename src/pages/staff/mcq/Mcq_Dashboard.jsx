@@ -214,8 +214,6 @@ const Mcq_Dashboard = () => {
         );
         setShareModalOpen(true);
         toast.success("Questions published successfully!");
-  
-        // Clear session storage
         sessionStorage.clear();
       } else {
         toast.error(
@@ -238,6 +236,8 @@ const Mcq_Dashboard = () => {
       }
     } finally {
       setPublishDialogOpen(false);
+      localStorage.clear();
+      sessionStorage.clear();
     }
   };
   
@@ -355,8 +355,7 @@ const Mcq_Dashboard = () => {
   };
 
   return (
-    <div className="p-6 py-10 px-10 bg-[#f4f6ff86] min-h-screen flex justify-center">
-
+    <div className="p-6 py-10 px-4 md:px-10 bg-[#f4f6ff86] min-h-screen flex justify-center">
       <ToastContainer
         position="top-center"
         autoClose={3000}
@@ -387,7 +386,9 @@ const Mcq_Dashboard = () => {
 
           </div>
         </div>
-        <div className="mx-52 max-w-[1200px] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-x-20 mb-8 mt-8 items-stretch justify-stretch">
+
+        <div className="mx-auto max-w-screen-xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-x-10 mb-8 mt-8 items-stretch justify-stretch">
+
           {[
             {
               label: "Total Questions",
@@ -430,7 +431,7 @@ const Mcq_Dashboard = () => {
         </div>
 
         {!isLoading && questions.length >= 0 && (
-          <div className="mt-8 ml-16 px-5 pt-4 pb-6 bg-white shadow-md text-[#111933] rounded-xl w-full max-w-[1525px]  ">
+          <div className="mt-8 mx-auto px-5 pt-4 pb-6 bg-white shadow-md text-[#111933] rounded-xl w-full max-w-screen-xl">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-semibold mt-3">Questions</h2>
               <Button
@@ -531,7 +532,7 @@ const Mcq_Dashboard = () => {
 
 
         {!isLoading && questions.length > 0 && (
-          <div className="flex justify-end mr-20 mt-6">
+          <div className="flex justify-end mx-auto max-w-screen-xl mt-6">
             <Button
               onClick={() => {
                 const [selected, total] = dashboardStats.totalQuestions

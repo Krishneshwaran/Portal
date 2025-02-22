@@ -154,10 +154,6 @@ const StudentResult = () => {
         pdf.setFontSize(14);
         pdf.text(`${correctAnswers}`, 158, 153, { align: "center" });
 
-        // Place Unique ID
-        pdf.setFontSize(10);
-        pdf.text(`${uniqueId}`, 40, 193);
-
         // Place Clickable Verify Link
         const formattedDate = testDate.replace(/,/g, "").split(" ").join("-"); 
 
@@ -166,10 +162,8 @@ const StudentResult = () => {
         const verifyLink = `${frontendBaseUrl}/verify-certificate/${uniqueId}/${formattedDate}/${correctAnswers}`;
         
         pdf.setTextColor(0, 0, 255);
-        pdf.textWithLink("Verify Certificate", 268, 193, {
-            url: verifyLink, 
-            align: "center"
-        });
+        pdf.setFontSize(12)
+        pdf.text(`${verifyLink}`, 10, 193)
 
         // Save PDF
         pdf.save(`${studentName}_Certificate.pdf`);

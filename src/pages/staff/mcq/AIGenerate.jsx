@@ -131,7 +131,7 @@ const AIGenerate = () => {
       console.error("Error generating questions:", error);
       setErrorMessage(
         error.response.data.error ||
-          "Failed to generate questions. Please try again later."
+        "Failed to generate questions. Please try again later."
       );
       setSuccessMessage(null);
     } finally {
@@ -152,16 +152,13 @@ const AIGenerate = () => {
     <div className="min-h-screen bg-[#f4f6ff86] p-12">
       <div className="h-14 px-12 pb-10">
         <div className="flex items-center gap-2 text-[#111933]">
-          <span className="opacity-60">Home</span>
+          <span className="cursor-pointer opacity-60 hover:underline" onClick={() => navigate('/staffdashboard')}>Home</span>
           <span>{">"}</span>
-          <span className="opacity-60">Assessment Overview</span>
+          <span className="cursor-pointer opacity-60 hover:underline" onClick={() => navigate('/mcq/combinedDashboard')}>Assessment Overview</span>
           <span>{">"}</span>
-          <span className="opacity-60">Test Configuration</span>
+          <span className="cursor-pointer opacity-60 hover:underline" onClick={() => navigate('/mcq/details')}>Test Configuration</span>
           <span>{">"}</span>
-          <span
-            onClick={() => window.history.back()}
-            className="cursor-pointer opacity-60 hover:underline"
-          >
+          <span onClick={() => window.history.back()} className="cursor-pointer opacity-60 hover:underline">
             Add Questions
           </span>
           <span>{">"}</span>

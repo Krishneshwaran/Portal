@@ -16,9 +16,9 @@ const McqAssessment = () => {
   )
     .toString()
     .padStart(2, "0")}-${currentDateTime.getDate().toString().padStart(2, "0")}T${currentDateTime
-    .getHours()
-    .toString()
-    .padStart(2, "0")}:${currentDateTime.getMinutes().toString().padStart(2, "0")}`;
+      .getHours()
+      .toString()
+      .padStart(2, "0")}:${currentDateTime.getMinutes().toString().padStart(2, "0")}`;
 
   const [currentStep, setCurrentStep] = useState(1);
   const [contestId, setContestId] = useState(null);
@@ -52,19 +52,27 @@ const McqAssessment = () => {
   });
 
   const [errors, setErrors] = useState({});
+  const [initialFormData, setInitialFormData] = useState(null);
 
   useEffect(() => {
     // Load form data from session storage on component mount
     const savedFormData = sessionStorage.getItem("mcqAssessmentFormData");
     if (savedFormData) {
-      setFormData(JSON.parse(savedFormData));
+      const parsedData = JSON.parse(savedFormData);
+      setFormData(parsedData);
+      setInitialFormData(parsedData); // Store initial data for comparison
     }
   }, []);
+
+  const hasFormChanged = () => {
+    if (!initialFormData) return true; // If no initial data, consider it changed
+    return JSON.stringify(formData) !== JSON.stringify(initialFormData);
+  };
 
   const validateStep = () => {
     const newErrors = {};
     if (currentStep === 1) {
-      const { name, description, registrationEnd, guidelines, sectionDetails } =
+      const { name, description, registrationStart, registrationEnd, guidelines, sectionDetails } =
         formData.assessmentOverview;
       if (!name) newErrors.name = true;
       if (!description) newErrors.description = true;
@@ -74,16 +82,19 @@ const McqAssessment = () => {
       setErrors(newErrors);
       return Object.keys(newErrors).length === 0;
     }
-
+  
+  
     if (currentStep === 2) {
       const { totalMarks, questions, duration, passPercentage, resultVisibility } = formData.testConfiguration;
       const { registrationStart, registrationEnd } = formData.assessmentOverview;
-
+  
+  
       const totalDuration = calculateTotalDuration(duration.hours, duration.minutes);
       const startDate = new Date(registrationStart);
       const endDate = new Date(registrationEnd);
       const timeDifference = (endDate - startDate) / (1000 * 60);
-
+  
+  
       if (formData.assessmentOverview.sectionDetails === "Yes") {
         if (!passPercentage) newErrors.passPercentage = true;
         if (!resultVisibility) newErrors.resultVisibility = true;
@@ -96,13 +107,27 @@ const McqAssessment = () => {
         if (!resultVisibility) newErrors.resultVisibility = true;
         if (totalDuration > timeDifference) newErrors.duration = true;
       }
+  
+      // Validate full screen restrictions
+      if (formData.testConfiguration.fullScreenMode && !formData.testConfiguration.fullScreenModeCount) {
+        newErrors.fullScreenModeCount = true;
+      }
+      if (formData.testConfiguration.faceDetection && !formData.testConfiguration.faceDetectionCount) {
+        newErrors.faceDetectionCount = true;
+      }
+      if (formData.testConfiguration.noiseDetection && !formData.testConfiguration.noiseDetectionCount) {
+        newErrors.noiseDetectionCount = true;
+      }
+  
       setErrors(newErrors);
       return Object.keys(newErrors).length === 0;
     }
-
+  
+  
     return true;
   };
-
+  
+  
   const calculateTotalDuration = (hours, minutes) => {
     return Number.parseInt(hours) * 60 + Number.parseInt(minutes);
   };
@@ -114,12 +139,23 @@ const McqAssessment = () => {
       [step]: {
         ...prevData[step],
         [name]: type === "checkbox" ? checked : e.target.value,
+        // Initialize count when toggling on
+        ...(name === "fullScreenMode" && checked ? { fullScreenModeCount: "1" } : {}),
+        // Clear count when toggling off
+        ...(name === "fullScreenMode" && !checked ? { fullScreenModeCount: "" } : {})
       },
     }));
 
-    if (name.endsWith("Count")) {
-      localStorage.setItem(name, e.target.value);
-    }
+    // Save form data to session storage
+    sessionStorage.setItem("mcqAssessmentFormData", JSON.stringify({
+      ...formData,
+      [step]: {
+        ...formData[step],
+        [name]: type === "checkbox" ? checked : e.target.value,
+        ...(name === "fullScreenMode" && checked ? { fullScreenModeCount: "1" } : {}),
+        ...(name === "fullScreenMode" && !checked ? { fullScreenModeCount: "" } : {})
+      }
+    }));
   };
 
   const csrfToken = document.cookie
@@ -200,10 +236,13 @@ const McqAssessment = () => {
         const generatedContestId = Math.random().toString(36).substr(2, 9);
         setContestId(generatedContestId);
         try {
-          if (formData.testConfiguration.sectionDetails === "Yes") {
-            await saveSectionDataToMongoDB(generatedContestId);
-          } else {
-            await saveDataToMongoDB(generatedContestId);
+          // Only save if there are actual changes
+          if (hasFormChanged()) {
+            if (formData.testConfiguration.sectionDetails === "Yes") {
+              await saveSectionDataToMongoDB(generatedContestId);
+            } else {
+              await saveDataToMongoDB(generatedContestId);
+            }
           }
 
           const response = await axios.post(
@@ -230,7 +269,7 @@ const McqAssessment = () => {
             // Clear session storage after successful navigation
             sessionStorage.removeItem("mcqAssessmentFormData");
           });
-          
+
           toast.success("Contest started successfully!");
         } catch (error) {
           console.error("Error starting contest:", {
@@ -325,13 +364,13 @@ const McqAssessment = () => {
   const steps = ["Assessment Overview", "Test Configuration", "Structure Setup"];
 
   return (
-    <div className="h-[calc(100vh-95px)] overflow-hidden bg-[#f4f6ff86] ">
+    <div className="h-[calc(100vh-82px)] overflow-hidden bg-[#ecf2fe] ">
       <div className="w-full px-24 h-full">
         <div className="h-14 py-4">
           <div className="flex items-center gap-2 text-[#111933]">
-            <span className={`${currentStep >= 1 ? "opacity-60" : ""}`}>Home</span>
+            <span className={`${currentStep >= 1 ? "opacity-60" : ""} cursor-pointer`} onClick={() => navigate('/staffdashboard')}>Home</span>
             <span>{">"}</span>
-            <span className={`${currentStep === 2 ? "opacity-60" : ""}`}>Assessment Overview</span>
+            <span className={`${currentStep === 2 ? "opacity-60" : ""} cursor-pointer`} onClick={() => setCurrentStep(1)}>Assessment Overview</span>
             {currentStep === 2 && (
               <>
                 <span>{">"}</span>
@@ -353,7 +392,7 @@ const McqAssessment = () => {
                 <div className="grid grid-cols-2 gap-28">
                   <div className="space-y-6">
                     <div>
-                      <label className="text-md font-medium text-[#111933] mb-2 flex items-center">
+                      <label className="text-md font-semibold text-[#111933] mb-2 flex items-center">
                         Assessment Name *
                       </label>
                       <div className="relative">
@@ -363,9 +402,8 @@ const McqAssessment = () => {
                           maxLength="30"
                           value={formData.assessmentOverview.name}
                           onChange={(e) => handleChange(e, "assessmentOverview")}
-                          className={`block w-full h-12 py-2 px-4 bg-white border rounded-[10px] ${
-                            errors.name ? "border-red-500" : ""
-                          }`}
+                          className={`block w-full h-12 py-2 px-4 bg-white border rounded-[10px] ${errors.name ? "border-red-500" : ""
+                            }`}
                           placeholder="Enter the assessment name"
                         />
                         <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
@@ -375,7 +413,7 @@ const McqAssessment = () => {
                     </div>
 
                     <div>
-                      <label className="text-md font-medium text-[#111933] mb-2 flex items-center">
+                      <label className="text-md font-semibold text-[#111933] mb-2 flex items-center">
                         Assessment Start*
                       </label>
                       <div className="relative">
@@ -392,15 +430,14 @@ const McqAssessment = () => {
                               );
                             }
                           }}
-                          className={`block w-full h-12 py-2 px-4 bg-white border rounded-[10px] ${
-                            errors.registrationStart ? "border-red-500" : ""
-                          }`}
+                          className={`block w-full h-12 py-2 px-4 bg-white border rounded-[10px] ${errors.registrationStart ? "border-red-500" : ""
+                            }`}
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="text-md font-medium text-[#111933] mb-2 flex items-center">
+                      <label className="text-md font-semibold text-[#111933] mb-2 flex items-center">
                         Assessment End*
                       </label>
                       <div className="relative">
@@ -411,7 +448,7 @@ const McqAssessment = () => {
                           onChange={(e) => {
                             const endDateTime = new Date(e.target.value);
                             const startDateTime = new Date(formData.assessmentOverview.registrationStart || currentDateTimeFormatted);
-                            
+
                             if (endDateTime >= startDateTime) {
                               handleChange(
                                 { target: { name: "registrationEnd", value: e.target.value } },
@@ -421,16 +458,15 @@ const McqAssessment = () => {
                               toast.warning("End date cannot be before the start date");
                             }
                           }}
-                          className={`block w-full h-12 py-2 px-4 bg-white border rounded-[10px] ${
-                            errors.registrationEnd ? "border-red-500" : ""
-                          }`}
+                          className={`block w-full h-12 py-2 px-4 bg-white border rounded-[10px] ${errors.registrationEnd ? "border-red-500" : ""
+                            }`}
                         />
                       </div>
                     </div>
 
                     <div>
                       <div className="flex mb-2 items-center">
-                        <label className="text-md font-medium text-[#111933] mr-8 flex ">Section Based</label>
+                        <label className="text-md font-semibold text-[#111933] mr-8 flex ">Section Based</label>
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
@@ -460,7 +496,7 @@ const McqAssessment = () => {
 
                   <div className="space-y-10">
                     <div>
-                      <label className="text-md font-medium text-[#111933] mb-2 flex items-center">Description *</label>
+                      <label className="text-md font-semibold text-[#111933] mb-2 flex items-center">Description *</label>
                       <div className="relative">
                         <textarea
                           name="description"
@@ -475,9 +511,8 @@ const McqAssessment = () => {
                             handleChange({ target: { name: "description", value: inputText } }, "assessmentOverview");
                           }}
                           rows={4}
-                          className={`block w-full p-4  rounded-[10px] border ${
-                            errors.description ? "border-red-500" : ""
-                          }`}
+                          className={`block w-full p-4  rounded-[10px] border ${errors.description ? "border-red-500" : ""
+                            }`}
                           placeholder="Provide a brief overview of the assessment (max 30 words)"
                         />
                         <span className="absolute right-2 bottom-2 text-gray-500 text-sm">
@@ -487,7 +522,7 @@ const McqAssessment = () => {
                     </div>
 
                     <div>
-                      <label className="text-md font-medium text-[#111933] mb-2 flex items-center">
+                      <label className="text-md font-semibold text-[#111933] mb-2 flex items-center">
                         Guidelines and Rules *
                       </label>
                       <textarea
@@ -500,9 +535,8 @@ const McqAssessment = () => {
                           }
                         }}
                         rows={4}
-                        className={`block w-full p-4 rounded-[10px] border ${
-                          errors.guidelines ? "border-red-500" : ""
-                        }`}
+                        className={`block w-full p-4 rounded-[10px] border ${errors.guidelines ? "border-red-500" : ""
+                          }`}
                       />
                     </div>
                     <div className="flex items-center justify-between mt-6">
@@ -532,7 +566,7 @@ const McqAssessment = () => {
                   {formData.assessmentOverview.sectionDetails === "No" && (
                     <div className="grid grid-cols-2 gap-52">
                       <div className="flex items-center">
-                        <label className="text-md font-medium text-[#111933] flex-1">Number of Questions *</label>
+                        <label className="text-md font-semibold text-[#111933] flex-1">Number of Questions *</label>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -543,15 +577,14 @@ const McqAssessment = () => {
                             const onlyNums = e.target.value.replace(/[^0-9]/g, "");
                             handleChange({ target: { name: "questions", value: onlyNums } }, "testConfiguration");
                           }}
-                          className={`w-1/2 p-2 border rounded-[10px] text-sm ${
-                            errors.questions ? "border-red-500" : ""
-                          }`}
+                          className={`w-1/2 p-2 border rounded-[10px] text-sm ${errors.questions ? "border-red-500" : ""
+                            }`}
                           placeholder="Enter number"
                           required
                         />
                       </div>
                       <div className="flex items-center">
-                        <label className="text-md font-medium text-[#111933] flex-1">Total Marks *</label>
+                        <label className="text-md font-semibold text-[#111933] flex-1">Total Marks *</label>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -562,9 +595,8 @@ const McqAssessment = () => {
                             const onlyNums = e.target.value.replace(/[^0-9]/g, "");
                             handleChange({ target: { name: "totalMarks", value: onlyNums } }, "testConfiguration");
                           }}
-                          className={`w-1/2 p-2 border rounded-[10px] text-sm ${
-                            errors.totalMarks ? "border-red-500" : ""
-                          }`}
+                          className={`w-1/2 p-2 border rounded-[10px] text-sm ${errors.totalMarks ? "border-red-500" : ""
+                            }`}
                           placeholder="Enter marks"
                           required
                         />
@@ -575,7 +607,7 @@ const McqAssessment = () => {
                   {formData.assessmentOverview.sectionDetails === "No" && (
                     <div className="grid grid-cols-2 gap-52">
                       <div className="flex items-center">
-                        <label className="text-md font-medium text-[#111933] flex-1">Duration *</label>
+                        <label className="text-md font-semibold text-[#111933] flex-1">Duration *</label>      
                         <div className="w-1/2 flex items-center space-x-2">
                           <input
                             type="text"
@@ -626,7 +658,7 @@ const McqAssessment = () => {
                         </div>
                       </div>
                       <div className="flex items-center">
-                        <label className="text-md font-medium text-[#111933] flex-1">Pass Percentage *</label>
+                        <label className="text-md font-semibold text-[#111933] flex-1">Pass Percentage *</label>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -648,7 +680,7 @@ const McqAssessment = () => {
                   {formData.assessmentOverview.sectionDetails === "Yes" && (
                     <div className="grid grid-cols-2 gap-52">
                       <div className="flex items-center">
-                        <label className="text-md font-medium text-[#111933] flex-1">Pass Percentage *</label>
+                        <label className="text-md font-semibold text-[#111933] flex-1">Pass Percentage *</label>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -669,14 +701,13 @@ const McqAssessment = () => {
 
                   <div className="grid grid-cols-2 gap-52">
                     <div className="flex items-center">
-                      <label className="text-md font-medium text-[111933] flex-1">Result Visibility *</label>
+                      <label className="text-md font-semibold text-[111933] flex-1">Result Visibility *</label>
                       <select
                         name="resultVisibility"
                         value={formData.testConfiguration.resultVisibility}
                         onChange={(e) => handleChange(e, "testConfiguration")}
-                        className={`w-1/2 p-2 border rounded-[10px] text-sm ${
-                          errors.resultVisibility ? "border-red-500" : ""
-                        }`}
+                        className={`w-1/2 p-2 border rounded-[10px] text-sm ${errors.resultVisibility ? "border-red-500" : ""
+                          }`}
                         required
                       >
                         <option value="">Select</option>
@@ -685,10 +716,10 @@ const McqAssessment = () => {
                       </select>
                     </div>
                     <div className="flex items-center">
-                      <label className="text-md font-medium text-[#111933] flex-1">Enable Shuffling</label>
+                      <label className="text-md font-semibold text-[#111933] flex-1">Enable Shuffling</label>
                       <select
                         name="shuffleType"
-                        value={formData.testConfiguration.shuffleType}
+                        value={formData.testConfiguration.shuffleType || ""}
                         onChange={(e) => handleChange(e, "testConfiguration")}
                         className="w-1/2 p-2 border rounded-[10px] text-sm"
                       >
@@ -701,38 +732,78 @@ const McqAssessment = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold text-[#111933] mb-4">Proctoring Enablement</h3>
-                    <div className="grid grid-cols-4 gap-4">
-                      {[
-                        { label: "Full Screen Mode", name: "fullScreenMode" },
-                        { label: "Face Detection", name: "faceDetection" },
-                        { label: "Noise Detection", name: "noiseDetection" },
-                        { label: "Device Restriction", name: "deviceRestriction" },
-                      ].map((item) => (
-                        <div key={item.name} className="flex flex-col space-y-5">
-                          <div className="flex items-center justify-between p-2 border rounded-[10px]">
-                            <span className="text-sm font-medium text-[#111933]">{item.label}</span>
-                            <label
-                              className="relative inline-flex items-center cursor-pointer"
-                              style={{
-                                cursor: item.name === "faceDetection" || item.name === "noiseDetection" ? "not-allowed" : "pointer",
-                              }}
-                            >
-                              <input
-                                type="checkbox"
-                                name={item.name}
-                                checked={formData.testConfiguration[item.name]}
-                                onChange={(e) => handleInputChange(e, "testConfiguration")}
-                                className="sr-only peer"
-                                disabled={item.name === "faceDetection" || item.name === "noiseDetection"}
-                              />
-                              <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#111933]"></div>
-                            </label>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+  <h3 className="text-lg font-semibold text-[#111933] mb-4">Proctoring Enablement</h3>
+  <div className="grid grid-cols-4 gap-4">
+    {[
+      { label: "Full Screen Mode", name: "fullScreenMode" },
+      { label: "Face Detection", name: "faceDetection" },
+      { label: "Noise Detection", name: "noiseDetection" },
+      { label: "Device Restriction", name: "deviceRestriction" },
+    ].map((item) => (
+      <div key={item.name} className="flex flex-col space-y-5">
+        <div className="flex items-center justify-between p-2 border rounded-[10px]">
+          <span className="text-sm font-medium text-[#111933]">{item.label}</span>
+          <label
+            className="relative inline-flex items-center cursor-pointer"
+            style={{
+              cursor: item.name === "faceDetection" || item.name === "noiseDetection" ? "not-allowed" : "pointer",
+            }}
+          >
+            <input
+              type="checkbox"
+              name={item.name}
+              checked={formData.testConfiguration[item.name] || false}
+              onChange={(e) => handleInputChange(e, "testConfiguration")}
+              className="sr-only peer"
+              disabled={item.name === "faceDetection" || item.name === "noiseDetection"}
+            />
+            <div className={`w-9 h-5 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${
+            formData.testConfiguration[item.name] ? 'bg-[#111933]' : 'bg-gray-200'
+          }`}></div>
+          </label>
+        </div>
+        <div className="h-10">
+          {formData.testConfiguration[item.name] && item.name !== "deviceRestriction" ? (
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              name={`${item.name}Count`}
+              value={formData.testConfiguration[`${item.name}Count`] || ""}
+              onChange={(e) => {
+                let value = e.target.value.replace(/[^0-9]/g, "");
+                if (value !== "") {
+                  const numValue = parseInt(value, 10);
+                  if (numValue < 1) value = "1";
+                  if (numValue > 200) value = "200";
+                }
+                setFormData(prev => ({
+                  ...prev,
+                  testConfiguration: {
+                    ...prev.testConfiguration,
+                    [`${item.name}Count`]: value
+                  }
+                }));
+                sessionStorage.setItem("mcqAssessmentFormData", JSON.stringify({
+                  ...formData,
+                  testConfiguration: {
+                    ...formData.testConfiguration,
+                    [`${item.name}Count`]: value
+                  }
+                }));
+              }}
+              className={`w-full p-2 border rounded-[10px] text-sm ${errors[`${item.name}Count`] ? "border-red-500" : ""}`}
+              placeholder={`Number of restrictions *`}
+              required
+            />
+          ) : (
+            <div className="w-full p-2 border rounded-[10px] text-sm opacity-0">Placeholder</div>
+          )}
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
 
                   <div className="flex justify-between">
                     {currentStep > 1 && (

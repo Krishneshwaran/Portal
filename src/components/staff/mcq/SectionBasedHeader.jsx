@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Legend from "../../../components/staff/mcq/Legend";
+import clock from "../../../assets/Clock.svg";
 
 export default function SectionBasedHeader({ contestId, totalDuration, sectionRemainingTime }) {
   const [totalTimeLeft, setTotalTimeLeft] = useState(() => {
@@ -49,24 +49,20 @@ export default function SectionBasedHeader({ contestId, totalDuration, sectionRe
   };
 
   return (
-    <div className="flex justify-between items-center mb-7 bg-white border-b border-gray-200 p-4 ">
-      <div className="flex items-center gap-2">
-        <h1 className="text-[#111933] text-2xl ml-8 font-bold">MCQ ASSESSMENT</h1>
-      </div>
-      <div className="flex items-center -mr-96 ml-52 mt-4 gap-2 ">
-        <span className="w-8 h-8 text-bold text-4xl pr-4  flex items-center justify-center">⏰</span>
-        <div>
-          <div className="text-[#111933] text-xl font-bold">
-            {formatTime(totalTimeLeft)}
-          </div>
-          <div className="text-[#111933] text-xl">Total Time Left</div>
+    <div className="flex justify-between items-center my-4 px-4 md:px-14">
+    <div className="flex justify-center items-center gap-2">
+      <h1 className="text-[#00296b] text-lg md:text-xl font-normal">MCQ ASSESSMENT</h1>
+    </div>
+    <div className="flex items-center mr-14 md:mr-0 gap-2">
+      <img src={clock} alt="clock" className="w-8 h-8 md:w-10 md:h-10"></img>
+      <div>
+        <div className="text-[#00296b] text-base md:text-lg font-normal">
+          {formatTime(totalTimeLeft)}
         </div>
-      </div>
-      <div className="items-end">
-        <div className="mt-4 mr-16">
-            <Legend/>
-        </div>
+        <div className="text-[#00296b] text-xs md:text-sm">Time Left</div>
       </div>
     </div>
+  </div>
+  
   );
 }

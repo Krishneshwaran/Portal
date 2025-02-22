@@ -144,46 +144,51 @@ const SelectTestQuestion = ({ onClose, onQuestionsSelected }) => {
   const indexOfFirstQuestion = indexOfLastQuestion - questionsPerPage;
   const currentQuestions = selectedTest
     ? selectedTest.questions
-        .filter(question =>
-          question.question.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-        .slice(indexOfFirstQuestion, indexOfLastQuestion)
+      .filter(question =>
+        question.question.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .slice(indexOfFirstQuestion, indexOfLastQuestion)
     : [];
   const totalPages = selectedTest
     ? Math.ceil(selectedTest.questions.filter(question =>
-        question.question.toLowerCase().includes(searchQuery.toLowerCase())
-      ).length / questionsPerPage)
+      question.question.toLowerCase().includes(searchQuery.toLowerCase())
+    ).length / questionsPerPage)
     : 0;
 
   const filteredTests = questionCountFilter
     ? tests.filter(test => test.questions.length === parseInt(questionCountFilter))
     : tests;
 
-  const handleSubmit = async () => {
-    if (!selectedTest) {
-      toast.error("Please select a test first");
-      return;
-    }
-
-    const token = localStorage.getItem("contestToken");
-
-    try {
-      // Instead of navigating, call the onQuestionsSelected prop to update the section
-      onQuestionsSelected(selectedTest.questions);
+    const handleSubmit = async (event) => {
+      event.preventDefault(); // Prevent accidental triggers
+    
+      if (!selectedTest) {
+        toast.error("Please select a test first");
+        return;
+      }
+    
+      // Show toast message FIRST before any state updates
       toast.success("Questions added successfully!");
-      setTests([]);
-      setSelectedTest(null);
-      onClose();
-    } catch (error) {
-      console.error("Error submitting questions:", error);
-      toast.error("Failed to submit questions. Please try again.");
-    }
-  };
+    
+      // Small delay before calling onQuestionsSelected to ensure toast is visible
+      setTimeout(() => {
+        onQuestionsSelected(selectedTest.questions);
+        
+        // Clear state after slight delay
+        setTests([]);
+        setSelectedTest(null);
+        onClose();
+      }, 1500); // Just a short delay to prevent re-render before toast
+    };
+    
+
+
+
 
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white border-b px-8 py-4">
-          <ChevronRight className="w-4 h-4" onClick={() => window.history.back()}/>
+        <ChevronRight className="w-4 h-4" onClick={() => window.history.back()} />
       </nav>
 
       <ToastContainer />
@@ -223,7 +228,7 @@ const SelectTestQuestion = ({ onClose, onQuestionsSelected }) => {
                       selectedTest?.test_id === test.test_id
                         ? 'bg-[#FDC500] bg-opacity-10 text-[#111933]'
                         : 'hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     <h3 className="font-medium">{test.test_name}</h3>
                   </div>

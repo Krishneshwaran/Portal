@@ -9,8 +9,9 @@ import useFullScreenMode from "../../../components/staff/mcq/useFullScreenMode";
 import useDeviceRestriction from "../../../components/staff/mcq/useDeviceRestriction";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
 import { useTheme, useMediaQuery } from "@mui/material";
-import FaceDetectionComponent from "../../../components/staff/mcq/useVideoDetection"; // Import the FaceDetectionComponent
+import FaceDetectionComponent from "../../../components/staff/mcq/useVideoDetection";
 import { useTestContext } from "../TestContext";
+import { Menu ,X, ChevronLeft,ChevronRight } from 'lucide-react';
 
 export default function Mcq_Assessment() {
   const { contestId } = useParams();
@@ -39,11 +40,9 @@ export default function Mcq_Assessment() {
     return storedCount ? parseInt(storedCount) : 0;
   });
   const [fullScreenMode, setFullScreenMode] = useState(() => {
-    // Get the currentTest object from localStorage
     const currentTest = JSON.parse(localStorage.getItem("currentTest"));
-    // Return the fullScreenMode value, default to false if not found
     return currentTest?.fullScreenMode === true;
-});
+  });
   const [fullscreenWarnings, setFullscreenWarnings] = useState(() => {
     return Number(sessionStorage.getItem(`fullscreenWarnings_${contestId}`)) || 0;
   });
@@ -53,6 +52,7 @@ export default function Mcq_Assessment() {
   const [isTestFinished, setIsTestFinished] = useState(false);
   const [showWarningModal, setShowWarningModal] = useState(false);
   const mediaStreamRef = useRef(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [remainingTime, setRemainingTime] = useState(0);
   const [noiseDetectionCount, setNoiseDetectionCount] = useState(0);
   const [showNoiseWarningModal, setShowNoiseWarningModal] = useState(false);
@@ -67,15 +67,18 @@ export default function Mcq_Assessment() {
   const [reloadWarnings, setReloadWarnings] = useState(0);
   const [inspectWarnings, setInspectWarnings] = useState(0);
 
-  // ADDED: State to track mobile sidebar open/close and current screen width
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false); // ADDED
-  const [screenWidth, setScreenWidth] = useState(window.innerWidth);     // ADDED
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+  const [showPopup, setShowPopup] = useState(false);
+  const totalQuestions = questions.length;
+  const studentEmail = localStorage.getItem("studentEmail") || "SNSGROUPS.COM";
 
-  // ADDED: A flag to ALLOW auto-fullscreen (set to false previously). Now TRUE => auto FS
-  const disableAutoFullscreen = false; // CHANGED to false so it goes fullscreen on load
+  const handleFinishClick = () => {
+    setShowPopup(true);
+  };
 
-  // ADDED: Keep track of screen resizing so we can display the sidebar if width ≥ 1024
-  // Define warning limits
+  const disableAutoFullscreen = false;
+
   const warningLimits = {
     fullscreen: 3,
     tabSwitch: 1,
@@ -105,14 +108,13 @@ export default function Mcq_Assessment() {
 
         const response = await axios.get(apiUrl);
 
-        // Check if session-based or non-session-based response
         let parsedQuestions = [];
         if (isSectionTrue) {
           response.data.forEach((section) => {
             section.questions.forEach((question) => {
               parsedQuestions.push({
                 ...question,
-                sectionName: section.sectionName, // Add section metadata
+                sectionName: section.sectionName,
               });
             });
           });
@@ -120,11 +122,9 @@ export default function Mcq_Assessment() {
           parsedQuestions = response.data.questions || [];
         }
 
-        // Fetch current test details from local storage
         const storedCurrentTest = JSON.parse(localStorage.getItem("currentTest"));
         setCurrentTest(storedCurrentTest);
 
-        // Shuffle questions only if currentTest.shuffleQuestions is true
         if (storedCurrentTest && storedCurrentTest.shuffleQuestions) {
           const shuffledQuestions = sessionStorage.getItem(`shuffledQuestions_${contestId}`);
           if (!shuffledQuestions) {
@@ -176,7 +176,6 @@ export default function Mcq_Assessment() {
     if (!isDetected) {
       setFaceDetectionWarning("Face not detected. Please ensure you are visible to the camera.");
 
-      // Increment and store the count
       const currentCount = parseInt(sessionStorage.getItem(`faceDetectionCount_${contestId}`)) || 0;
       const newCount = currentCount + 1;
 
@@ -215,11 +214,9 @@ export default function Mcq_Assessment() {
     setShowWarningModal(true);
   };
 
-  // Original "enforceFullScreen" code
   const enforceFullScreen = async () => {
     try {
       if (!disableAutoFullscreen === false) {
-        // Not needed. We'll just check "if (!disableAutoFullscreen)" below
       }
       if (!disableAutoFullscreen) {
         return;
@@ -229,9 +226,7 @@ export default function Mcq_Assessment() {
     }
   };
 
-  // ADJUSTED: This version DOES force FS, because disableAutoFullscreen = false
   const actuallyEnforceFullScreen = async () => {
-    // This is a new helper method to actually request fullscreen.
     try {
       const element = document.documentElement;
       if (
@@ -256,37 +251,34 @@ export default function Mcq_Assessment() {
   };
 
   useEffect(() => {
-    // Only proceed with fullscreen if currentTest.fullScreenMode is true
     const currentTest = JSON.parse(localStorage.getItem("currentTest"));
     const isFullScreenEnabled = currentTest?.fullScreenMode === true;
 
     if (!isTestFinished && isFullScreenEnabled) {
-        // Initialize fullscreen
-        (async () => {
-            try {
-                await actuallyEnforceFullScreen();
-            } catch (error) {
-                console.error("Error initializing fullscreen:", error);
-            }
-        })();
+      (async () => {
+        try {
+          await actuallyEnforceFullScreen();
+        } catch (error) {
+          console.error("Error initializing fullscreen:", error);
+        }
+      })();
     }
 
     const onFullscreenChange = async () => {
-        const isFullscreen = document.fullscreenElement || 
-                           document.webkitFullscreenElement || 
-                           document.mozFullScreenElement || 
+      const isFullscreen = document.fullscreenElement ||
+                           document.webkitFullscreenElement ||
+                           document.mozFullScreenElement ||
                            document.msFullscreenElement;
 
-        // Only re-enter fullscreen if feature is enabled in currentTest
-        if (!isFullscreen && !isTestFinished && isFullScreenEnabled) {
-            addWarning("fullscreen");
-            await actuallyEnforceFullScreen();
-        }
-        setFullScreenMode(isFullscreen);
-        localStorage.setItem(
-            `fullScreenMode_${contestId}`,
-            isFullscreen ? true : false
-        );
+      if (!isFullscreen && !isTestFinished && isFullScreenEnabled) {
+        addWarning("fullscreen");
+        await actuallyEnforceFullScreen();
+      }
+      setFullScreenMode(isFullscreen);
+      localStorage.setItem(
+        `fullScreenMode_${contestId}`,
+        isFullscreen ? true : false
+      );
     };
 
     const preventReload = (e) => {
@@ -299,57 +291,48 @@ export default function Mcq_Assessment() {
 
     const handleKeyDown = async (e) => {
       if (!isTestFinished && fullScreenMode) {
-        // Prevent ESC
         if (e.key === "Escape") {
           e.preventDefault();
           e.stopPropagation();
           addWarning("fullscreen");
           return false;
         }
-        // Prevent F5 & Ctrl+R
         if (e.key === "F5" || (e.ctrlKey && e.key === "r")) {
           e.preventDefault();
           e.stopPropagation();
           addWarning("tabSwitch");
           return false;
         }
-        // Prevent Alt+Tab
         if (e.altKey && e.key === "Tab") {
           e.preventDefault();
           addWarning("tabSwitch");
           return false;
         }
-        // Prevent Ctrl+W / Cmd+W
         if ((e.ctrlKey || e.metaKey) && e.key === "w") {
           e.preventDefault();
           addWarning("tabSwitch");
           return false;
         }
-        // Prevent Ctrl+Shift+W, Cmd+Shift+W
         if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "W") {
           e.preventDefault();
           addWarning("tabSwitch");
           return false;
         }
-        // Prevent Alt+F4
         if (e.altKey && e.key === "F4") {
           e.preventDefault();
           addWarning("tabSwitch");
           return false;
         }
-        // Prevent Ctrl+Alt+Delete
         if (e.ctrlKey && e.altKey && e.key === "Delete") {
           e.preventDefault();
           addWarning("tabSwitch");
           return false;
         }
-        // Prevent Windows key
         if (e.key === "Meta" || e.key === "OS") {
           e.preventDefault();
           addWarning("tabSwitch");
           return false;
         }
-        // Prevent Ctrl+Shift+I
         if (e.ctrlKey && e.shiftKey && e.key === "I") {
           e.preventDefault();
           addWarning("tabSwitch");
@@ -366,15 +349,14 @@ export default function Mcq_Assessment() {
     document.addEventListener("MSFullscreenChange", onFullscreenChange);
 
     return () => {
-        document.removeEventListener("fullscreenchange", onFullscreenChange);
-        document.removeEventListener("webkitfullscreenchange", onFullscreenChange);
-        document.removeEventListener("mozfullscreenchange", onFullscreenChange);
-        document.removeEventListener("MSFullscreenChange", onFullscreenChange);
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", onFullscreenChange);
+      document.removeEventListener("mozfullscreenchange", onFullscreenChange);
+      document.removeEventListener("MSFullscreenChange", onFullscreenChange);
     };
-}, [isTestFinished, contestId]);
+  }, [isTestFinished, contestId]);
 
   useEffect(() => {
-    // If not finished, try to do fullscreen on load
     if (!disableAutoFullscreen && !isTestFinished && fullScreenMode) {
       (async () => {
         try {
@@ -384,7 +366,7 @@ export default function Mcq_Assessment() {
         }
       })();
     }
-  }, [fullScreenMode]); // Added fullScreenMode as a dependency
+  }, [fullScreenMode]);
 
   const { openDeviceRestrictionModal, handleDeviceRestrictionModalClose } = useDeviceRestriction(contestId);
 
@@ -425,20 +407,22 @@ export default function Mcq_Assessment() {
   }, [testDetails]);
 
   const handleFinish = useCallback(async () => {
+    if (loading || !questions.length) {
+      console.error("Test is not fully initialized.");
+      return;
+    }
+  
     try {
       const formattedAnswers = {};
   
-      // Format answers for section-based or non-section-based payloads
       questions.forEach((question, index) => {
         if (question.sectionName) {
-          // Section-based logic
           if (!formattedAnswers[question.sectionName]) {
             formattedAnswers[question.sectionName] = {};
           }
           formattedAnswers[question.sectionName][question.text] =
             selectedAnswers[index] || "notattended";
         } else {
-          // Non-section-based logic
           formattedAnswers[question.text] = selectedAnswers[index] || "notattended";
         }
       });
@@ -448,7 +432,6 @@ export default function Mcq_Assessment() {
   
       const storedFaceDetectionCount = parseInt(sessionStorage.getItem(`faceDetectionCount_${contestId}`)) || 0;
   
-      // Calculate the number of correct answers
       let correctAnswers = 0;
       questions.forEach((question, index) => {
         if (selectedAnswers[index] === question.correctAnswer) {
@@ -456,38 +439,20 @@ export default function Mcq_Assessment() {
         }
       });
   
-      // Fetch the pass percentage from session storage
       const currentTest = JSON.parse(localStorage.getItem("currentTest"));
       const passPercentage = JSON.parse(localStorage.getItem("currentTest"))?.passPercentage || 50;
   
-      // Calculate the grade
       const totalQuestions = questions.length;
       const percentage = (correctAnswers / totalQuestions) * 100;
       const grade = percentage >= passPercentage ? "Pass" : "Fail";
   
-      console.log("Correct Answers:", correctAnswers);
-      console.log("Total Questions:", totalQuestions);
-      console.log("Percentage:", percentage);
-      console.log("Pass Percentage:", passPercentage);
-      console.log("Grade:", grade);
-  
-      // Fetch warnings from session storage
       const fullscreenWarning = sessionStorage.getItem(`fullscreenWarnings_${contestId}`);
       const noiseDetectionCount = sessionStorage.getItem(`noiseDetectionCount_${contestId}`) || 0;
       const faceWarning = sessionStorage.getItem(`faceDetectionCount_${contestId}`);
   
-      // Calculate the number of answered questions
-      const answeredQuestionsCount = Object.values(selectedAnswers).filter(answer => answer !== undefined).length;
-      const minimumRequiredAnswers = Math.ceil(totalQuestions / 2);
-  
-      if (answeredQuestionsCount < minimumRequiredAnswers) {
-        alert(`You must answer at least ${minimumRequiredAnswers} questions to finish the test.`);
-        return;
-      }
-  
       const payload = {
         contestId,
-        studentId: localStorage.getItem("studentId"), // Fetch the studentId from local storage
+        studentId: localStorage.getItem("studentId"),
         answers: formattedAnswers,
         FullscreenWarning: fullscreenWarnings,
         NoiseWarning: noiseDetectionCount,
@@ -497,11 +462,9 @@ export default function Mcq_Assessment() {
         ReloadWarning: reloadWarnings,
         InspectWarning: inspectWarnings,
         ispublish: ispublish,
-        grade: grade, // Include the calculated grade in the payload
-        passPercentage: parseFloat(passPercentage) || 50, // Include the pass percentage in the payload
+        grade: grade,
+        passPercentage: parseFloat(passPercentage) || 50,
       };
-  
-      console.log("Submitting payload with face detection count:", storedFaceDetectionCount);
   
       const response = await axios.post(
         `${API_BASE_URL}/api/mcq/submit_assessment/`,
@@ -515,19 +478,26 @@ export default function Mcq_Assessment() {
       );
   
       if (response.status === 200) {
-        // Exit fullscreen before navigating
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen();
-        } else if (document.mozCancelFullScreen) {
-          document.mozCancelFullScreen();
-        } else if (document.msExitFullscreen) {
-          document.msExitFullscreen();
+        // Safely exit fullscreen
+        try {
+          if (document.fullscreenElement) {
+            if (document.exitFullscreen) {
+              await document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+              await document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+              await document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+              await document.msExitFullscreen();
+            }
+          }
+        } catch (fsError) {
+          console.warn("Error exiting fullscreen:", fsError);
         }
+  
+        // Continue with navigation and cleanup
         navigate("/studentdashboard");
         sessionStorage.removeItem(`faceDetectionCount_${contestId}`);
-        navigate("/studentdashboard");
       }
   
       console.log("Test submitted successfully:", response.data);
@@ -535,14 +505,13 @@ export default function Mcq_Assessment() {
   
       setIsTestFinished(true);
   
-      // Clear session storage for warnings
+      // Clear all session and local storage items
       sessionStorage.removeItem(`fullscreenWarnings_${contestId}`);
       sessionStorage.removeItem(`tabSwitchWarnings_${contestId}`);
       sessionStorage.removeItem(`keydownWarnings_${contestId}`);
       sessionStorage.removeItem(`reloadWarnings_${contestId}`);
       sessionStorage.removeItem(`inspectWarnings_${contestId}`);
   
-      // Clear local storage for test-specific data
       localStorage.removeItem(`faceDetection_${contestId}`);
       localStorage.removeItem(`fullScreenMode_${contestId}`);
       sessionStorage.removeItem(`selectedAnswers_${contestId}`);
@@ -551,9 +520,6 @@ export default function Mcq_Assessment() {
       sessionStorage.removeItem(`startTime_${contestId}`);
       sessionStorage.removeItem(`noiseDetectionCount_${contestId}`);
       sessionStorage.removeItem(`FaceDetectionCount_${contestId}`);
-  
-      // Store a flag indicating the test is finished
-
       sessionStorage.removeItem(`faceDetectionCount_${contestId}`);
     } catch (error) {
       console.error("Error submitting test:", error);
@@ -571,39 +537,40 @@ export default function Mcq_Assessment() {
     faceDetectionCount,
     noiseDetectionCount,
     navigate,
+    loading
   ]);
+
   
   useEffect(() => {
-    if (remainingTime > 0) {
+    if (remainingTime > 0 && !loading) {
       const interval = setInterval(() => {
         setRemainingTime((prevTime) => Math.max(prevTime - 1, 0));
       }, 1000);
       return () => clearInterval(interval);
-    } else if (isFreezePeriodOver) {
-      // Only trigger the Finish button if the freeze period is over
+    } else if (remainingTime === 0 && !isTestFinished) {
       handleFinish();
     }
-  }, [remainingTime, isFreezePeriodOver, handleFinish]);
+  }, [remainingTime, isTestFinished, handleFinish, loading]);
 
   useEffect(() => {
     const disableRightClick = (e) => {
       e.preventDefault();
     };
-  
+
     const disableTextSelection = (e) => {
       e.preventDefault();
     };
-  
+
     const disableCopyPaste = (e) => {
       e.preventDefault();
     };
-  
+
     document.addEventListener("contextmenu", disableRightClick);
     document.addEventListener("selectstart", disableTextSelection);
     document.addEventListener("copy", disableCopyPaste);
     document.addEventListener("cut", disableCopyPaste);
     document.addEventListener("paste", disableCopyPaste);
-  
+
     return () => {
       document.removeEventListener("contextmenu", disableRightClick);
       document.removeEventListener("selectstart", disableTextSelection);
@@ -612,9 +579,6 @@ export default function Mcq_Assessment() {
       document.removeEventListener("paste", disableCopyPaste);
     };
   }, []);
-  
-  // Remove the existing useEffect that conditionally disables these actions based on fullScreenMode
-  
 
   useEffect(() => {
     const handleBeforeUnload = (e) => {
@@ -667,7 +631,6 @@ export default function Mcq_Assessment() {
   }, [isTestFinished, fullScreenMode]);
 
   useEffect(() => {
-    // Check if all warning counts exceed their limits
     const allLimitsExceeded =
       fullscreenWarnings >= warningLimits.fullscreen &&
       tabSwitchWarnings >= warningLimits.tabSwitch &&
@@ -697,29 +660,28 @@ export default function Mcq_Assessment() {
     const currentTest = JSON.parse(localStorage.getItem("currentTest"));
     const isFullScreenEnabled = currentTest?.fullScreenMode === true;
 
-    // Only proceed if fullscreen is enabled in currentTest
     if (!isFullScreenEnabled) {
-        setShowWarningModal(false);
-        return;
+      setShowWarningModal(false);
+      return;
     }
 
     setShowWarningModal(false);
     const element = document.documentElement;
     try {
-        if (element.requestFullscreen) {
-            await element.requestFullscreen();
-        } else if (element.webkitRequestFullscreen) {
-            await element.webkitRequestFullscreen();
-        } else if (element.mozRequestFullScreen) {
-            await element.mozRequestFullScreen();
-        } else if (element.msRequestFullscreen) {
-            await element.msRequestFullscreen();
-        }
+      if (element.requestFullscreen) {
+        await element.requestFullscreen();
+      } else if (element.webkitRequestFullscreen) {
+        await element.webkitRequestFullscreen();
+      } else if (element.mozRequestFullScreen) {
+        await element.mozRequestFullScreen();
+      } else if (element.msRequestFullscreen) {
+        await element.msRequestFullscreen();
+      }
     } catch (error) {
-        console.error("Error entering fullscreen mode:", error);
-        setTimeout(handleFullscreenReEntry, 500);
+      console.error("Error entering fullscreen mode:", error);
+      setTimeout(handleFullscreenReEntry, 500);
     }
-};
+  };
 
   useEffect(() => {
     const faceDetectionWarningTimeout = setTimeout(() => {
@@ -731,11 +693,10 @@ export default function Mcq_Assessment() {
           return newCount;
         });
       }
-    }, 30000); // 30 seconds
+    }, 30000);
 
     return () => clearTimeout(faceDetectionWarningTimeout);
   }, [faceDetectionWarning, contestId]);
-
 
   if (loading) {
     return (
@@ -764,10 +725,10 @@ export default function Mcq_Assessment() {
     );
   }
 
-  // TEXT NOW EVEN SMALLER ON MOBILE => text-xs on phones, sm => text-sm, md => text-base
   return (
+
     <div
-      className="min-h-screen bg-white text-xs sm:text-sm md:text-base"
+      className="h-[calc(100vh-60px)]   text-xs sm:text-sm md:text-base flex flex-col lg:flex-row"
       style={{
         userSelect: "none",
         WebkitUserSelect: "none",
@@ -785,214 +746,318 @@ export default function Mcq_Assessment() {
         httpEquiv="Content-Security-Policy"
         content="frame-ancestors 'none'"
       ></meta>
-      <div className="max-w-[1800px] max-h-screen mx-auto p-3 sm:p-6">
-        <div className="bg-white rounded-2xl  mt-4 sm:mt-12">
-          <div className="border-b border-gray-200 bg-white">
+        <div className="lg:hidden absolute top-7 right-6 z-10">
+      {isSidebarOpen ? (
+        <X
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="cursor-pointer"
+        />
+      ) : (
+        <Menu
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="cursor-pointer"
+        />)}
+        </div>
+        <div className="flex-grow flex flex-col lg:flex-row w-full transition-all duration-300 ease-in-out">
+        <div className="w-full lg:w-3/4 bg-white ">
+          <div className="border-b border-gray-300 ">
             <Header duration={remainingTime} />
           </div>
-  
-          {/* Hamburger button for mobile */}
-          <div className="absolute top-4 right-4 lg:hidden z-50">
-            <button
-              onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-              className="p-2 text-gray-700 bg-gray-200 rounded-md"
-            >
+          <div className="absolute inset-0 pointer-events-none z-[5] grid grid-cols-5 md:grid-cols-7 gap-2 pt-20 pr-4 opacity-10">
+          {[...Array(window.innerWidth < 768 ? 25 : 35)].map((_, index) => (
+          <div key={index} className="flex items-center justify-center">
+            <div className="transform -rotate-45 text-black text-xs sm:text-sm md:text-base font-semibold select-none">
+              {studentEmail}
+            </div>
+          </div>
+        ))}
+              </div>
+          <div className="flex-grow relative">
+            <Question
+              question={questions[currentIndex]}
+              currentIndex={currentIndex}
+              totalQuestions={questions.length}
+
+              onNext={handleNext}
+              onPrevious={handlePrevious}
+              onAnswerSelect={handleAnswerSelect}
+              selectedAnswers={selectedAnswers}
+              onReviewMark={handleReviewMark}
+              reviewStatus={reviewStatus}
+              shuffleOptions={currentTest?.shuffleOptions}
+            />
+          </div>
+        </div>
+        <div
+        className={`fixed top-20 right-0 h-full bg-white border-l border-gray-300 transform transition-transform duration-300 ease-in-out  ${
+          isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+        } lg:translate-x-0 lg:static lg:w-1/4 z-40`}
+      >
+        <div className="sticky top-6 p-4 sm:p-0">
+         <Sidebar
+            totalQuestions={questions.length}
+            currentIndex={currentIndex}
+            selectedAnswers={selectedAnswers}
+            reviewStatus={reviewStatus}
+            onFinish={handleFinish}
+             onFinishClick={handleFinishClick}
+            onQuestionClick={(index) => setCurrentIndex(index)}
+            sections={questions.reduce((acc, question) => {
+              const section = acc.find((s) => s.sectionName === question.sectionName);
+              if (section) {
+                section.questions.push(question);
+              } else {
+                acc.push({ sectionName: question.sectionName, questions: [question] });
+              }
+              return acc;
+            }, [])}
+          />
+
+          </div>
+        </div>
+      </div>
+
+       {showWarningModal && currentTest?.fullScreenMode === true && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="text-red-500 mb-4">
               <svg
-                className="w-6 h-6"
+                className="w-12 h-12 mx-auto"
                 fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
                 viewBox="0 0 24 24"
+                stroke="currentColor"
               >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M4 6h16M4 12h16M4 18h16"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                 />
               </svg>
+            </div>
+            <h3 className="text-xl text-[#111933] font-semibold text-center mb-4">
+              Warning #{fullscreenWarnings + tabSwitchWarnings}
+            </h3>
+            <p className="text-[#111933] text-center mb-6">
+              {tabSwitchWarnings > 0
+                ? "You have switched tabs. Please return to the test tab to continue."
+                : "You have exited fullscreen mode. Please return to fullscreen to continue the test."}
+            </p>
+            <button
+              onClick={handleFullscreenReEntry}
+              className="w-full py-3 bg-[#111933] text-white rounded-lg "
+            >
+              Return
             </button>
           </div>
+        </div>
+      )}
 
-          <div className="flex flex-col relative lg:flex-row gap-6 p-4 sm:p-6 min-h-[600px] sm:min-h-[750px] sm:mt-7">
-            <div className="flex-grow relative ">
-              <Question
-                question={questions[currentIndex]}
-                currentIndex={currentIndex}
-                totalQuestions={questions.length}
-                onNext={handleNext}
-                onPrevious={handlePrevious}
-                onFinish={() => setShowConfirmModal(true)}
-                onAnswerSelect={handleAnswerSelect}
-                selectedAnswers={selectedAnswers}
-                onReviewMark={handleReviewMark}
-                reviewStatus={reviewStatus}
-                shuffleOptions={currentTest?.shuffleOptions}
-              />
-            </div>
-  
+<div className="fixed bottom-0 left-0 right-0 bg-white p-4 shadow-md flex justify-between items-center z-50">
+      <button
+        className="bg-white text-[#111933] border border-[#111933] rounded-lg px-4 py-2 flex items-center gap-2 sm:ml-11"
+        onClick={handlePrevious}
+        disabled={currentIndex === 0}
+      >
+        <ChevronLeft size={20} />
+        <span className="hidden sm:inline">Previous</span>
+      </button>
+
+      <div className="flex items-center w-full justify-end relative sm:static">
+        <button
+          className="bg-[#111933] text-white px-4 py-2 rounded-lg flex items-center gap-2 sm:ml-0 sm:mr-16 absolute right-0 sm:static"
+          onClick={handleNext}
+          disabled={currentIndex === totalQuestions - 1}
+        >
+          <span className="hidden sm:inline">Next</span>
+          <ChevronRight size={20} />
+        </button>
+
+        <button
+          className="bg-[#111933] text-white px-4 py-2 rounded-lg absolute left-1/2 transform translate-x-[-58px] sm:static sm:ml-44 sm:mr-32 sm:translate-x-[-4px]"
+          onClick={handleFinishClick}
+        >
+          Finish
+        </button>
+      </div>
+</div>
+
+{showPopup && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white w-[600px] p-6 rounded-xl shadow-lg">
+      <h3 className="text-xl text-center font-bold mb-2">
+        Confirm Finish
+      </h3>
+      <p className="text-center text-sm mb-4">
+        You have gone through all the questions. <br />
+        Either browse through them once again or finish your assessment.
+      </p>
+
+      {/* Question Status Grid */}
+      <div className="max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+        <div className="grid grid-cols-10 gap-2 mb-6">
+          {Array.from({ length: totalQuestions }).map((_, idx) => (
             <div
-              className={`lg:w-80 bg-white z-40 lg:z-auto
-              fixed lg:static top-0 bottom-0 right-0 transition-transform
-              transform
-              ${
-                screenWidth >= 1024
-                  ? "translate-x-0"
-                  : isMobileSidebarOpen
-                  ? "translate-x-0"
-                  : "translate-x-full"
-              }`}
+              key={idx}
+              className={`aspect-square flex items-center justify-center rounded-lg text-sm font-medium
+                ${
+                  idx === currentIndex
+                    ? "bg-[#ffe078] text-black"
+                    : selectedAnswers[idx]
+                      ? "bg-[#c1f0c8] text-black"
+                      : "border border-[#ffe078] text-black"
+                }`}
             >
-              <div className="sticky top-6 p-4 sm:p-0">
-                <Sidebar
-                  totalQuestions={questions.length}
-                  currentIndex={currentIndex}
-                  selectedAnswers={selectedAnswers}
-                  reviewStatus={reviewStatus}
-                  onQuestionClick={(index) => setCurrentIndex(index)}
-                  sections={questions.reduce((acc, question) => {
-                    const section = acc.find((s) => s.sectionName === question.sectionName);
-                    if (section) {
-                      section.questions.push(question);
-                    } else {
-                      acc.push({ sectionName: question.sectionName, questions: [question] });
-                    }
-                    return acc;
-                  }, [])}
-                />
-              </div>
+              {idx + 1}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Statistics */}
+      <div className="flex justify-between mb-2">
+        <p className="text-sm text-[#009516]">
+          Attempted: {Object.keys(selectedAnswers).length}/{totalQuestions}
+        </p>
+        <p className="text-sm text-[#E4AD00]">
+          Unattempted: {totalQuestions - Object.keys(selectedAnswers).length}
+        </p>
+        <p className="text-sm text-[#E31A00]">
+          Marked for Review: {Object.values(reviewStatus).filter(Boolean).length}
+        </p>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+        <div
+          className="bg-[#111933] h-2 rounded-full"
+          style={{
+            width: `${(Object.keys(selectedAnswers).length / totalQuestions) * 100}%`,
+          }}
+        ></div>
+      </div>
+
+      {/* Completion Percentage */}
+      <p className="text-center text-sm mb-4">
+        {((Object.keys(selectedAnswers).length / totalQuestions) * 100).toFixed(0)}% Completed
+      </p>
+
+      {/* Action Buttons */}
+      <div className="flex justify-between">
+        <button
+          className="px-6 py-2 bg-[#bfbfbf] text-white rounded-lg"
+          onClick={() => setShowPopup(false)}
+        >
+          Close
+        </button>
+        <button
+          className="px-6 py-2 bg-red-500 text-white rounded-lg"
+          onClick={() => {
+            setShowPopup(false);
+            handleFinish();
+          }}
+        >
+          Finish
+        </button>
+      </div>
+    </div>
+  </div>
+   )
+   }
+
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <h3 className="text-xl font-semibold text-center mb-4">
+              Submit Assessment
+            </h3>
+            <p className="text-gray-600 text-center mb-6">
+              Are you sure you want to submit your assessment? This action
+              cannot be undone.
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 py-3 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  handleFinish();
+                }}
+                className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Submitting..." : "Confirm Submit"}
+              </button>
             </div>
           </div>
         </div>
-  
-        {showWarningModal && currentTest?.fullScreenMode === true &&(
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
-              <div className="text-red-600 mb-4">
-                <svg
-                  className="w-12 h-12 mx-auto"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-center mb-4">
-                Warning #{fullscreenWarnings + tabSwitchWarnings}
-              </h3>
-              <p className="text-gray-600 text-center mb-6">
-                {tabSwitchWarnings > 0
-                  ? "You have switched tabs. Please return to the test tab to continue."
-                  : "You have exited fullscreen mode. Please return to fullscreen to continue the test."}
-              </p>
-              <button
-                onClick={handleFullscreenReEntry}
-                className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Return to Fullscreen
-              </button>
-            </div>
-          </div>
-        )}
-  
-        {showConfirmModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
-              <h3 className="text-xl font-semibold text-center mb-4">
-                Submit Assessment
-              </h3>
-              <p className="text-gray-600 text-center mb-6">
-                Are you sure you want to submit your assessment? This action
-                cannot be undone.
-              </p>
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setShowConfirmModal(false)}
-                  className="flex-1 py-3 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    setShowConfirmModal(false);
-                    handleFinish();
-                  }}
-                  className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Submitting..." : "Confirm Submit"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        <Dialog
-          open={openDeviceRestrictionModal}
-          onClose={handleDeviceRestrictionModalClose}
-          aria-labelledby="device-restriction-modal-title"
-          aria-describedby="device-restriction-modal-description"
-        >
-          <DialogTitle id="device-restriction-modal-title">{"Device Restriction"}</DialogTitle>
-          <DialogContent>
-            <DialogContent id="device-restriction-modal-description">
-              This test cannot be taken on a mobile or tablet device.
-            </DialogContent>
+      )}
+      <Dialog
+        open={openDeviceRestrictionModal}
+        onClose={handleDeviceRestrictionModalClose}
+        aria-labelledby="device-restriction-modal-title"
+        aria-describedby="device-restriction-modal-description"
+      >
+        <DialogTitle id="device-restriction-modal-title">{"Device Restriction"}</DialogTitle>
+        <DialogContent>
+          <DialogContent id="device-restriction-modal-description">
+            This test cannot be taken on a mobile or tablet device.
           </DialogContent>
-          <DialogActions>
-            <Button onClick={handleDeviceRestrictionModalClose} color="primary">
-              OK
-            </Button>
-          </DialogActions>
-        </Dialog>
-  
-        {showNoiseWarningModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
-              <div className="text-red-600 mb-4">
-                <svg
-                  className="w-12 h-12 mx-auto"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-center mb-4">
-                Noise Detected
-              </h3>
-              <p className="text-gray-600 text-center mb-6">
-                Noise has been detected. Please ensure a quiet environment to continue the test.
-              </p>
-              <button
-                onClick={() => setShowNoiseWarningModal(false)}
-                className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeviceRestrictionModalClose} color="primary">
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {showNoiseWarningModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="text-red-600 mb-4">
+              <svg
+                className="w-12 h-12 mx-auto"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                Continue
-              </button>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
             </div>
+            <h3 className="text-xl font-semibold text-center mb-4">
+              Noise Detected
+            </h3>
+            <p className="text-gray-600 text-center mb-6">
+              Noise has been detected. Please ensure a quiet environment to continue the test.
+            </p>
+            <button
+              onClick={() => setShowNoiseWarningModal(false)}
+              className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Continue
+            </button>
           </div>
-        )}
-  
-        {faceDetection && (
-          <FaceDetectionComponent
-            contestId={contestId}
-            onWarning={handleFaceDetection}
-          />
-        )}
-  
-        {faceDetectionWarning && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+        </div>
+      )}
+
+      {faceDetection && (
+        <FaceDetectionComponent
+          contestId={contestId}
+          onWarning={handleFaceDetection}
+        />
+      )}
+
+      {faceDetectionWarning && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
             <div className="text-red-600 mb-4">
               <svg
@@ -1025,34 +1090,5 @@ export default function Mcq_Assessment() {
         </div>
       )}
     </div>
-  
-    <style>
-      {`
-        @media (max-width: 640px) {
-          .question-nav {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.5rem;
-          }
-          .question-nav .prev-button,
-          .question-nav .next-button {
-            order: 1;
-          }
-          .question-nav .finish-button {
-            order: 3;
-            margin-top: 0.5rem;
-          }
-        }
-        @media (min-width: 641px) {
-          .question-nav {
-            display: flex;
-            flex-direction: row;
-            gap: 1rem;
-          }
-        }
-      `}
-    </style>
-  </div>
-  );
-}  
+     );
+}
